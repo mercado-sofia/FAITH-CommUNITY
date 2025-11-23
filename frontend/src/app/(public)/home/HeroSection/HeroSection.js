@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -19,6 +19,11 @@ export default function HeroSection() {
   // Fetch hero section data
   const { heroData } = usePublicHeroSection();
 
+  // Filter images to only include those with valid URLs
+  const validImages = useMemo(() => {
+    return heroData?.images?.filter(image => image.url) || [];
+  }, [heroData?.images]);
+
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {
     if (url.includes('youtube.com/watch')) {
@@ -34,11 +39,6 @@ export default function HeroSection() {
     return url;
   };
 
-  // Helper function to get fallback image
-  const getFallbackImage = (index) => {
-    const fallbacks = ["/samples/sample2.jpg", "/samples/sample8.jpg", "/samples/sample3.jpeg"];
-    return fallbacks[index] || fallbacks[0];
-  };
 
   // Check user authentication status
   useEffect(() => {
@@ -68,16 +68,23 @@ export default function HeroSection() {
 
   // Auto-cycling carousel effect for mobile
   useEffect(() => {
-    if (!heroData?.images || heroData.images.length <= 1) return;
+    if (!validImages || validImages.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => 
-        (prevIndex + 1) % heroData.images.length
+        (prevIndex + 1) % validImages.length
       );
     }, 4000); // Change image every 4 seconds
 
     return () => clearInterval(interval);
-  }, [heroData?.images]);
+  }, [validImages]);
+
+  // Reset carousel index when valid images change
+  useEffect(() => {
+    if (currentImageIndex >= validImages.length && validImages.length > 0) {
+      setCurrentImageIndex(0);
+    }
+  }, [validImages, currentImageIndex]);
 
   useEffect(() => {
     if (typeof document !== 'undefined' && document.body) {
@@ -163,14 +170,13 @@ export default function HeroSection() {
           <div className={styles.rightColumn}>
             {/* Desktop Card Layout */}
             <div className={styles.desktopCards}>
-              {heroData?.images?.map((image, index) => {
+              {validImages.map((image, index) => {
                 const isFirst = index === 0;
-                const imageSrc = image.url || getFallbackImage(index);
                 
                 return (
                   <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
                     <Image
-                      src={imageSrc}
+                      src={image.url}
                       alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
                       width={isFirst ? 880 : 360}
                       height={1120}
@@ -197,10 +203,10 @@ export default function HeroSection() {
 
             {/* Mobile Carousel */}
             <div className={styles.mobileCarousel}>
-              {heroData?.images && heroData.images.length > 0 && (
+              {validImages.length > 0 && validImages[currentImageIndex] && (
                 <div className={styles.carouselContainer}>
                   <Image
-                    src={heroData.images[currentImageIndex]?.url || getFallbackImage(currentImageIndex)}
+                    src={validImages[currentImageIndex].url}
                     alt={`Carousel Image ${currentImageIndex + 1}`}
                     width={1920}
                     height={1080}
@@ -210,13 +216,13 @@ export default function HeroSection() {
                     priority
                   />
                   <div className={styles.carouselOverlay}>
-                    <h2>{heroData.images[currentImageIndex]?.heading || "Community Impact"}</h2>
-                    <p>{heroData.images[currentImageIndex]?.subheading || "Making a difference together"}</p>
+                    <h2>{validImages[currentImageIndex]?.heading || "Community Impact"}</h2>
+                    <p>{validImages[currentImageIndex]?.subheading || "Making a difference together"}</p>
                   </div>
                   
                   {/* Carousel Indicators */}
                   <div className={styles.carouselIndicators}>
-                    {heroData.images.map((_, index) => (
+                    {validImages.map((_, index) => (
                       <button
                         key={index}
                         className={`${styles.indicator} ${index === currentImageIndex ? styles.active : ''}`}

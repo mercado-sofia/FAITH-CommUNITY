@@ -40,6 +40,21 @@ const handleMulterError = (err, req, res, next) => {
 };
 
 // Create news for an org (orgId can be numeric or acronym) - with file upload
+router.post("/:orgId", (req, res, next) => {
+  upload.single('featured_image')(req, res, (err) => {
+    if (err) {
+      console.error('[newsRoutes] Multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Image file is too large. Maximum size is 5MB.' });
+      }
+      if (err.message && err.message.includes('Only')) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+      return res.status(400).json({ success: false, message: 'File upload error: ' + err.message });
+    }
+    next();
+  });
+}, createNews);
 router.post("/:orgId", 
   upload.single('featured_image'),
   handleMulterError,
@@ -128,7 +143,21 @@ router.post("/check-scheduled", async (req, res) => {
 router.get("/slug/:slug", getNewsBySlug);
 
 // Generic CRUD operations for individual news items - with file upload for updates
-router.put("/:id", upload.single('featured_image'), updateNews);
+router.put("/:id", (req, res, next) => {
+  upload.single('featured_image')(req, res, (err) => {
+    if (err) {
+      console.error('[newsRoutes] Multer error on update:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Image file is too large. Maximum size is 5MB.' });
+      }
+      if (err.message && err.message.includes('Only')) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+      return res.status(400).json({ success: false, message: 'File upload error: ' + err.message });
+    }
+    next();
+  });
+}, updateNews);
 router.delete("/:id", deleteNewsSubmission);
 router.get("/:id", getNewsById);
 

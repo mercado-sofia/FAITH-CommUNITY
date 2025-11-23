@@ -5,19 +5,24 @@ import { FiUpload } from 'react-icons/fi';
 import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
-import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
+import DateTimePicker from '../DateTimePicker/DateTimePicker';
 import DOMPurify from 'dompurify';
-import { formatDateTime, getRelativeTime } from '@/utils/dateUtils.js';
+import { formatDateTimeForInput, getCurrentDateTimeISO } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
-const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [], onCancel, headerTitle }) => {
+const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
+  const getCurrentLocalDateTime = () => {
+    return getCurrentDateTimeISO();
+  };
+
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     content: '',
     excerpt: '',
     featuredImage: null,
+    publishedAt: getCurrentLocalDateTime(),
     publishedAt: null, // Don't initialize with date - let user choose when scheduling
     status: 'draft',
   });
@@ -54,6 +59,7 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [isCheckingTitle, setIsCheckingTitle] = useState(false);
+  const [existingImageUrl, setExistingImageUrl] = useState(null); // Track existing image URL in edit mode
   const [submitAction, setSubmitAction] = useState(null); // 'draft', 'schedule', 'publish', or null
   const [isValidating, setIsValidating] = useState(false); // Track validation state
   // Initialize publishActionType based on initialData status if in edit mode
@@ -127,6 +133,8 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
         slug: initialData.slug || '',
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
+        featuredImage: null, // Don't pre-populate file input
+        publishedAt: formatDateTimeForInput(initialData.published_at || initialData.date) || getCurrentLocalDateTime(),
         featuredImage: null,
         publishedAt: publishedAtValue,
         status: 'draft',
@@ -160,12 +168,11 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
       // Set image preview if there's an existing featured image
       if (initialData.featured_image) {
         // Check if it's already a full URL (Cloudinary or other)
-        if (initialData.featured_image.startsWith('http')) {
-          setImagePreview(initialData.featured_image);
-        } else {
-          // For legacy local paths, construct the full URL
-          setImagePreview(`${API_BASE_URL || ''}/${initialData.featured_image}`);
-        }
+        const imageUrl = initialData.featured_image.startsWith('http') 
+          ? initialData.featured_image 
+          : `${API_BASE_URL || ''}/${initialData.featured_image}`;
+        setImagePreview(imageUrl);
+        setExistingImageUrl(imageUrl); // Store existing image URL for reference
       }
     }
   }, [isEditMode, initialData]);
@@ -989,6 +996,7 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                     onClick={() => {
                       setImagePreview(null);
                       setFormData(prev => ({ ...prev, featuredImage: null }));
+                      setExistingImageUrl(null); // Clear existing image URL when removed
                     }}
                     className={styles.removeImage}
                   >
@@ -1016,6 +1024,21 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
             {errors.featuredImage && <span className={styles.errorText}>{errors.featuredImage}</span>}
           </div>
 
+          {/* Published At Container */}
+          <div className={styles.container}>
+            <h3 className={styles.containerTitle}>
+              Schedule Publication
+            </h3>
+            <p className={styles.helperText} style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+              Select date and time when this post should be published. The post will only appear on the public portal at the scheduled time.
+            </p>
+            <DateTimePicker
+              value={formData.publishedAt}
+              onChange={(value) => handleInputChange('publishedAt', value)}
+              placeholder="Select date and time"
+            />
+            {errors.publishedAt && <span className={styles.errorText}>{errors.publishedAt}</span>}
+          </div>
           {/* History/Activity Log - Show in edit mode only for published or archived news */}
           {isEditMode && readOnlyFields.status && (readOnlyFields.status === 'published' || readOnlyFields.status === 'archived') && (
             <div className={styles.container}>

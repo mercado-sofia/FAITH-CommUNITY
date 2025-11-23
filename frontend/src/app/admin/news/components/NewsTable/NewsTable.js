@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
+import { FiTrash2, FiX } from "react-icons/fi"
+import { FaEdit } from "react-icons/fa"
+import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
 import { FiTrash2 } from "react-icons/fi"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { formatDateLong } from '@/utils/dateUtils.js';
@@ -25,6 +28,25 @@ const formatDate = (dateString) => {
   return formatDateLong(dateString);
 };
 
+const formatPublishedDate = (publishedAt, createdAt) => {
+  if (!publishedAt) return formatDate(createdAt);
+  
+  const publishedDate = new Date(publishedAt);
+  const now = new Date();
+  const isScheduled = publishedDate > now;
+  
+  if (isScheduled) {
+    return formatDateTime(publishedAt);
+  }
+  
+  return formatDateLong(publishedAt);
+};
+
+const isScheduled = (publishedAt) => {
+  if (!publishedAt) return false;
+  const publishedDate = new Date(publishedAt);
+  const now = new Date();
+  return publishedDate > now;
 const formatStatus = (status) => {
   if (!status) return 'Draft';
   return status.charAt(0).toUpperCase() + status.slice(1);
@@ -314,6 +336,14 @@ export default function NewsTable({
                     </div>
                   </td>
                   <td style={{ color: "#8a919c", fontWeight: "400" }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>{formatPublishedDate(newsItem.published_at, newsItem.date || newsItem.created_at)}</span>
+                      {isScheduled(newsItem.published_at) && (
+                        <span style={{ fontSize: '11px', color: '#1CBFA4', fontWeight: '600' }}>
+                          Scheduled
+                        </span>
+                      )}
+                    </div>
                     {(() => {
                       const status = (newsItem.status || 'draft').toLowerCase();
                       // Always use published_at (not date field) - published_at is the source of truth

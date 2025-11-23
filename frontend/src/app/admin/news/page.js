@@ -47,13 +47,16 @@ export default function AdminNewsPage() {
     }
   }, [successModal.isVisible]);
 
-  // Handle error display
+  // Handle error display - show in modal for better UX
   useEffect(() => {
-    if (error) {
+    if (error && currentAdmin?.org) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      setSuccessModal({ isVisible: true, message: `Failed to fetch news: ${errorMessage}`, type: 'error' });
+      // Only show error modal if we're not already showing an error
+      if (!successModal.isVisible || successModal.type !== 'error') {
+        setSuccessModal({ isVisible: true, message: `Failed to fetch news: ${errorMessage}`, type: 'error' });
+      }
     }
-  }, [error]);
+  }, [error, currentAdmin?.org, successModal.isVisible, successModal.type]);
 
   // Enhanced submit handler that handles both create and update
   const handleSubmitNews = useCallback(async (newsData) => {
@@ -109,22 +112,11 @@ export default function AdminNewsPage() {
   }
 
   // Show loading state if admin data is not yet available
-  if (!currentAdmin?.org) {
+  if (!currentAdmin || !currentAdmin?.org) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingMessage} aria-live="polite">
-          Loading admin data...
-        </div>
-      </div>
-    );
-  }
-
-  // Loading state
-  if (!currentAdmin) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loading} aria-live="polite">
-          Loading admin session...
+          {!currentAdmin ? 'Loading admin session...' : 'Loading admin data...'}
         </div>
       </div>
     );

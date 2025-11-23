@@ -688,11 +688,13 @@ export const getFeaturedHighlights = async (req, res) => {
       SELECT 
         fh.highlight_id,
         fh.display_order,
+        fh.impact_level,
         h.id,
         h.title,
         h.description,
         h.media_files,
         h.created_at,
+        h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as organization_logo${programIdSelect}${programTitleSelect}
@@ -707,7 +709,6 @@ export const getFeaturedHighlights = async (req, res) => {
         AND a.id IS NOT NULL
         AND a.is_active = TRUE
       ORDER BY fh.display_order ASC
-      LIMIT 8
     `;
     
     const [rows] = await promisePool.execute(query);
@@ -743,10 +744,16 @@ export const addFeaturedHighlight = async (req, res) => {
     await connection.beginTransaction();
     
     const { id: highlightId } = req.params;
+    const { impact_level = 'average', organization_id } = req.body;
+    
+    // Validate impact_level
+    if (impact_level && !['low', 'average', 'high'].includes(impact_level)) {
+      return res.status(400).json({ error: 'Invalid impact_level. Must be low, average, or high' });
+    }
     
     // Check if highlight exists and is approved
     const [highlightRows] = await connection.execute(
-      'SELECT id, status FROM admin_highlights WHERE id = ?',
+      'SELECT id, status, organization_id FROM admin_highlights WHERE id = ?',
       [highlightId]
     );
     
@@ -758,6 +765,9 @@ export const addFeaturedHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Only approved highlights can be featured' });
     }
     
+    // Use organization_id from highlight if not provided in body
+    const orgId = organization_id || highlightRows[0].organization_id;
+    
     // Check if already featured
     const [existing] = await connection.execute(
       'SELECT id FROM featured_highlights WHERE highlight_id = ?',
@@ -768,27 +778,38 @@ export const addFeaturedHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Highlight is already featured' });
     }
     
-    // Check current count (max 8)
+    // Check current count per organization (max 12 per organization)
     const [countRows] = await connection.execute(
-      'SELECT COUNT(*) as count FROM featured_highlights'
+      `SELECT COUNT(*) as count 
+       FROM featured_highlights fh
+       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
+       WHERE h.organization_id = ?`,
+      [orgId]
     );
     const currentCount = countRows[0].count;
     
-    if (currentCount >= 8) {
-      return res.status(400).json({ error: 'Maximum of 8 featured highlights allowed' });
+    if (currentCount >= 12) {
+      return res.status(400).json({ error: 'Maximum of 12 featured highlights per organization allowed' });
     }
     
-    // Get next display order
-    const displayOrder = currentCount + 1;
+    // Get next display order for this organization
+    const [orderRows] = await connection.execute(
+      `SELECT COALESCE(MAX(fh.display_order), 0) as max_order
+       FROM featured_highlights fh
+       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
+       WHERE h.organization_id = ?`,
+      [orgId]
+    );
+    const displayOrder = (orderRows[0].max_order || 0) + 1;
     
-    // Add to featured
+    // Add to featured with impact_level
     await connection.execute(
-      'INSERT INTO featured_highlights (highlight_id, display_order) VALUES (?, ?)',
-      [highlightId, displayOrder]
+      'INSERT INTO featured_highlights (highlight_id, display_order, impact_level) VALUES (?, ?, ?)',
+      [highlightId, displayOrder, impact_level || 'average']
     );
     
     await connection.commit();
-    res.json({ message: 'Highlight added to featured', displayOrder });
+    res.json({ message: 'Highlight added to featured', displayOrder, impact_level: impact_level || 'average' });
   } catch (error) {
     await connection.rollback();
     if (process.env.NODE_ENV === 'development') {

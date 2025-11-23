@@ -174,53 +174,25 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
     }
   }
 
-  // Get organization color for badge
-  const getOrganizationColor = () => {
-    if (highlight.organization_color) {
-      return highlight.organization_color
+  // Get impact level label
+  const getImpactLevelLabel = (impactLevel) => {
+    if (!impactLevel) return null
+    switch (impactLevel.toLowerCase()) {
+      case 'low':
+        return 'Low Impact'
+      case 'average':
+        return 'Average Impact'
+      case 'high':
+        return 'High Impact'
+      default:
+        return null
     }
-    // Default fallback color if no organization color is set
-    return '#1d9782'
-  }
-
-  // Get text color for organization badge based on background color
-  const getTextColorForBadge = (bgColor) => {
-    if (!bgColor) return 'white'
-    
-    const color = bgColor.toLowerCase()
-    
-    // Check for white colors
-    if (color === '#ffffff' || color === '#fff' || color === 'white') {
-      return '#374151'
-    }
-    
-    // Check for light gray colors
-    if (color === '#f3f4f6' || color === '#f9fafb' || color === '#e5e7eb' || 
-        color === '#d1d5db' || color === '#9ca3af' || color === '#6b7280') {
-      return '#374151'
-    }
-    
-    // Check if it's a light color by hex value
-    if (color.startsWith('#')) {
-      const hex = color.replace('#', '')
-      const r = parseInt(hex.substr(0, 2), 16)
-      const g = parseInt(hex.substr(2, 2), 16)
-      const b = parseInt(hex.substr(4, 2), 16)
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000
-      
-      // If brightness is high (light color), use dark text
-      return brightness > 128 ? '#374151' : 'white'
-    }
-    
-    // Default to white for other colors
-    return 'white'
   }
 
   const imageUrl = getImageUrl()
   const videoUrl = getVideoUrl()
   const isApproved = highlight.status?.toLowerCase() === 'approved'
-  const orgColor = getOrganizationColor()
-  const badgeTextColor = getTextColorForBadge(orgColor)
+  const impactLevelLabel = getImpactLevelLabel(highlight.impact_level)
   
   // Determine what to show: image first, then video, then placeholder
   const hasImage = imageUrl && !imageError
@@ -267,16 +239,10 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
           <span>No Image</span>
         </div>
         
-        {/* Organization Badge */}
-        {highlight.organization_acronym && (
-          <div 
-            className={styles.orgBadge}
-            style={{ 
-              backgroundColor: orgColor,
-              color: badgeTextColor
-            }}
-          >
-            <span className={styles.orgAcronym}>{highlight.organization_acronym}</span>
+        {/* Impact Level Badge - Only show for featured highlights */}
+        {impactLevelLabel && (
+          <div className={styles.impactBadge}>
+            <span className={styles.impactLabel}>{impactLevelLabel}</span>
           </div>
         )}
         
@@ -285,6 +251,7 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
           <StarButton 
             highlightId={highlight.id}
             highlightTitle={highlight.title}
+            organizationId={highlight.organization_id}
             onStarChange={() => {
               // Trigger refresh when star changes
               if (typeof window !== 'undefined') {

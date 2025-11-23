@@ -603,6 +603,7 @@ const runIncrementalMigrations = async (connection) => {
             id INT AUTO_INCREMENT PRIMARY KEY,
             highlight_id INT NOT NULL,
             display_order INT NOT NULL,
+            impact_level ENUM('low', 'average', 'high') DEFAULT 'average',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,
@@ -613,6 +614,26 @@ const runIncrementalMigrations = async (connection) => {
       }
     } catch (featuredError) {
       // Table might already exist or other error - silently skip
+    }
+
+    // Add impact_level column to featured_highlights if it doesn't exist
+    try {
+      const [columnCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'featured_highlights' 
+        AND COLUMN_NAME = 'impact_level'
+      `);
+      
+      if (columnCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE featured_highlights 
+          ADD COLUMN impact_level ENUM('low', 'average', 'high') DEFAULT 'average'
+        `);
+      }
+    } catch (impactLevelError) {
+      // Column might already exist or other error - silently skip
     }
 
     // Add program_id column to admin_highlights if it doesn't exist
@@ -1413,6 +1434,7 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           highlight_id INT NOT NULL,
           display_order INT NOT NULL,
+          impact_level ENUM('low', 'average', 'high') DEFAULT 'average',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,

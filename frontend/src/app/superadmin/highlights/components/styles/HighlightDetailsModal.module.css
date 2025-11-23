@@ -204,6 +204,26 @@
   align-self: flex-start;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.impactBadge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  background-color: #fbbf24;
+  color: #000;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
 }
 
 .detailsSection {

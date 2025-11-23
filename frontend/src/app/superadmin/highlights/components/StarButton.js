@@ -4,9 +4,9 @@ import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
-const MAX_FEATURED_HIGHLIGHTS = 8
+const MAX_FEATURED_HIGHLIGHTS = 12
 
-const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
+const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showUnfeatureModal, setShowUnfeatureModal] = useState(false)
@@ -54,11 +54,11 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     }
   }
 
-  const addToFeatured = async () => {
+  const addToFeatured = async (impactLevel = 'average') => {
     setIsLoading(true)
     
     try {
-      await addFeaturedHighlight(highlightId).unwrap()
+      await addFeaturedHighlight({ highlightId, organizationId, impactLevel }).unwrap()
       setIsStarred(true)
       if (onStarChange) onStarChange(highlightId, true)
       // Refetch status to get updated display order
@@ -72,7 +72,7 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
       console.error('Error adding to featured:', error)
       const errorMessage = error?.data?.error || error?.message || 'Failed to add highlight to featured'
       if (errorMessage.includes('Maximum')) {
-        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed. Please unfeature another highlight first.`)
+        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights per organization allowed. Please unfeature another highlight first.`)
       } else {
         alert(errorMessage)
       }
@@ -113,8 +113,8 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     setShowUnfeatureModal(false)
   }
 
-  const handleFeatureConfirm = async () => {
-    await addToFeatured()
+  const handleFeatureConfirm = async (impactLevel) => {
+    await addToFeatured(impactLevel)
     setShowFeatureModal(false)
   }
 

@@ -33,13 +33,25 @@ export default function VerifyEmail({ token }) {
 
   const verifyEmail = async (verificationToken) => {
     try {
+      // Trim and validate token
+      const trimmedToken = verificationToken?.trim();
+      
+      if (!trimmedToken) {
+        setVerificationStatus('error')
+        setMessage('Invalid verification link. Please check your email for the correct link.')
+        return
+      }
+
       const { API_BASE_URL } = await import('@/config/api');
-      const response = await fetch(`${API_BASE_URL || ''}/api/users/verify-email?token=${verificationToken}`, {
+      // Properly encode the token in the URL
+      const encodedToken = encodeURIComponent(trimmedToken);
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/verify-email?token=${encodedToken}`, {
         credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
         }
       })
+      
       const data = await response.json()
       
       if (response.ok) {
@@ -50,6 +62,7 @@ export default function VerifyEmail({ token }) {
         setMessage(data.error || 'Verification failed')
       }
     } catch (error) {
+      console.error('Verification error:', error)
       setVerificationStatus('error')
       setMessage('Network error. Please try again.')
     }

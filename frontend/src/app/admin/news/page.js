@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminNews } from '../hooks/useAdminData';
 import { useNewsOperations, useNewsFilters, useNewsModals, useNewsURL } from './hooks';
-import { NewsTable, CreatePostForm, SearchAndFilterControls, RecentlyDeletedModal } from './components';
+import { NewsTable, CreatePostForm, SearchAndFilterControls, ViewDetailsModal } from './components';
 import { ErrorBoundary, SuccessModal } from '@/components';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal } from '@/components';
@@ -29,7 +29,7 @@ export default function AdminNewsPage() {
   const newsOperations = useNewsOperations(orgId, refreshNews, setSuccessModal);
   const urlState = useNewsURL();
   const modals = useNewsModals();
-  const { displayedNews, stats } = useNewsFilters(news, urlState.searchQuery, urlState.sortBy);
+  const { displayedNews, stats } = useNewsFilters(news, urlState.searchQuery, urlState.sortBy, urlState.statusFilter);
 
   // Memoize the selection change handler
   const handleSelectionChange = useCallback((newSelection) => {
@@ -84,6 +84,33 @@ export default function AdminNewsPage() {
     }
   }, [modals, newsOperations]);
 
+  // Handle archive confirmation
+  const handleArchiveConfirm = useCallback(async () => {
+    if (modals.archivingNews) {
+      await newsOperations.handleArchiveNews(modals.archivingNews.id);
+      modals.handleCloseArchiveModal();
+    }
+  }, [modals, newsOperations]);
+
+  // Handle unarchive confirmation
+  const handleUnarchiveConfirm = useCallback(async () => {
+    if (modals.unarchivingNews) {
+      await newsOperations.handleUnarchiveNews(modals.unarchivingNews.id);
+      modals.handleCloseUnarchiveModal();
+    }
+  }, [modals, newsOperations]);
+
+  // Display error message if there's an error and we have a valid admin
+  if (error && currentAdmin?.org) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorMessage} role="alert" aria-live="assertive">
+          Error loading news: {error.message}
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state if admin data is not yet available
   if (!currentAdmin || !currentAdmin?.org) {
     return (
@@ -118,11 +145,10 @@ export default function AdminNewsPage() {
               onSearchChange={urlState.handleSearchChange}
               sortBy={urlState.sortBy}
               onSortChange={urlState.handleSortChange}
+              statusFilter={urlState.statusFilter}
+              onStatusFilterChange={urlState.handleStatusFilterChange}
               showCount={urlState.showCount}
               onShowCountChange={urlState.handleShowCountChange}
-              totalCount={stats.totalCount}
-              filteredCount={stats.filteredCount}
-              onRecentlyDeletedClick={modals.handleShowRecentlyDeleted}
             />
 
             {loading && (
@@ -151,6 +177,9 @@ export default function AdminNewsPage() {
                 news={displayedNews || []}
                 onEdit={modals.handleEdit}
                 onDelete={modals.handleDelete}
+                onView={modals.handleView}
+                onArchive={modals.handleArchive}
+                onUnarchive={modals.handleUnarchive}
                 onBulkDelete={modals.handleBulkDeleteRequest}
                 onSelectionChange={handleSelectionChange}
                 selectedItems={modals.selectedItems}
@@ -160,31 +189,35 @@ export default function AdminNewsPage() {
           </>
         ) : modals.pageMode === 'create' ? (
           <>
-            <div className={styles.createPostHeader}>
-              <h1>Create New Post</h1>
-            </div>
             <CreatePostForm
-              onCancel={modals.handleListMode}
               onSubmit={handleSubmitNews}
               isSubmitting={newsOperations.isSubmitting}
               existingNews={news || []}
+              onCancel={modals.handleListMode}
+              headerTitle="Create New Post"
             />
           </>
         ) : modals.pageMode === 'edit' ? (
           <>
-            <div className={styles.createPostHeader}>
-              <h1>Edit Post</h1>
-            </div>
             <CreatePostForm
-              onCancel={modals.handleListMode}
               onSubmit={handleSubmitNews}
               isSubmitting={newsOperations.isSubmitting}
               initialData={modals.editingNews}
               isEditMode={true}
               existingNews={news || []}
+              onCancel={modals.handleListMode}
+              headerTitle="Edit Post"
             />
           </>
         ) : null}
+
+      {/* View Details Modal */}
+      {modals.showViewModal && (
+        <ViewDetailsModal
+          news={modals.viewingNews}
+          onClose={modals.handleCloseViewModal}
+        />
+      )}
 
       {/* Delete News Modal */}
       <ConfirmationModal
@@ -196,19 +229,26 @@ export default function AdminNewsPage() {
           isDeleting={newsOperations.isDeleting}
       />
 
-      {/* Recently Deleted Modal */}
-      <RecentlyDeletedModal
-          isOpen={modals.showRecentlyDeletedModal}
-          onClose={modals.handleCloseRecentlyDeleted}
-        orgId={orgId}
-        onRestore={() => {
-          refreshNews();
-          setSuccessModal({ isVisible: true, message: 'News restored successfully!', type: 'success' });
-        }}
-        onPermanentDelete={() => {
-          refreshNews();
-          setSuccessModal({ isVisible: true, message: 'News permanently deleted!', type: 'success' });
-        }}
+      {/* Archive News Modal */}
+      <ConfirmationModal
+        isOpen={modals.showArchiveModal}
+        itemName={modals.archivingNews?.title}
+        itemType="news"
+        actionType="archive"
+        onConfirm={handleArchiveConfirm}
+        onCancel={modals.handleCloseArchiveModal}
+        isLoading={newsOperations.isDeleting}
+      />
+
+      {/* Unarchive News Modal */}
+      <ConfirmationModal
+        isOpen={modals.showUnarchiveModal}
+        itemName={modals.unarchivingNews?.title}
+        itemType="news"
+        actionType="unarchive"
+        onConfirm={handleUnarchiveConfirm}
+        onCancel={modals.handleCloseUnarchiveModal}
+        isLoading={newsOperations.isDeleting}
       />
 
       <SuccessModal

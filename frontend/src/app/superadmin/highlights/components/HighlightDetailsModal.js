@@ -328,6 +328,21 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
   }
 
+  // Get impact level label
+  const getImpactLevelLabel = (impactLevel) => {
+    if (!impactLevel) return null
+    switch (impactLevel.toLowerCase()) {
+      case 'low':
+        return 'Low Impact'
+      case 'average':
+        return 'Average Impact'
+      case 'high':
+        return 'High Impact'
+      default:
+        return null
+    }
+  }
+
   const imageUrl = getImageUrl()
   const statusColor = getStatusColor(highlight.status)
 
@@ -406,6 +421,13 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                     }}
                   >
                     {highlight.status.charAt(0).toUpperCase() + highlight.status.slice(1)}
+                  </div>
+                )}
+
+                {/* Impact Level Badge - Only show for featured highlights */}
+                {getImpactLevelLabel(highlight.impact_level) && (
+                  <div className={styles.impactBadge}>
+                    {getImpactLevelLabel(highlight.impact_level)}
                   </div>
                 )}
 

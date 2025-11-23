@@ -132,12 +132,14 @@ export default function Footer() {
   };
   
 
-  // Handle apply link click
+  // Handle apply link click - always navigate to /apply, show modal if not authenticated
   const handleApplyClick = (e) => {
     if (!isLoggedIn) {
-      e.preventDefault();
-      // Dispatch custom event to show login modal
-      window.dispatchEvent(new CustomEvent('showLoginModal'));
+      // Still navigate to /apply page, but show modal
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      }
+      // Don't prevent default - let the Link navigate to /apply
     }
   };
 
@@ -318,7 +320,7 @@ export default function Footer() {
       <div className={styles.footerContent}>
         <div className={styles.about}>
           <h3>{siteNameData?.site_name || 'FAITH CommUNITY'}</h3>
-          <p>Centralized web-based platform for Community EXtension Programs</p>
+          <p>Centralized web-based platform for Community Extension Programs.</p>
           <div className={styles.contactInfo}>
             <div className={styles.contactItem}>
               <div className={`${styles.iconCircle} ${styles.phone}`}>

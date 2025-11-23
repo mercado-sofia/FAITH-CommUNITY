@@ -232,7 +232,7 @@
 }
 
 .tableHeader th:nth-child(3) { /* Volunteer */
-  width: 260px;
+  width: 220px;
 }
 
 .tableHeader th:nth-child(4) { /* Program */
@@ -240,15 +240,17 @@
 }
 
 .tableHeader th:nth-child(5) { /* Date */
-  width: 120px;
+  width: 140px;
 }
 
 .tableHeader th:nth-child(6) { /* Status */
-  width: 100px;
+  width: 140px;
+  text-align: center;
 }
 
 .tableHeader th:nth-child(7) { /* Actions */
   width: 60px;
+  text-align: center;
 }
 
 .tableBody td {
@@ -256,6 +258,16 @@
   color: #2e3136;
   padding: 12px 14px;
   border-top: 1px solid #e5e7eb;
+}
+
+.tableBody td:nth-child(6) { /* Status column */
+  text-align: center;
+}
+
+.tableBody td:nth-child(7) { /* Actions column */
+  text-align: center;
+  padding: 12px 14px;
+  position: relative;
 }
 
 .tableBody td:nth-child(2) { /* Checkbox column */
@@ -337,7 +349,9 @@
 .dropdownWrapper {
   display: flex;
   align-items: center;
+  justify-content: center;
   position: relative;
+  width: 100%;
 }
 
 .dropdownButtonWrapper {
@@ -410,6 +424,7 @@
   font-size: 12.5px;
   font-weight: 500;
   transition: background 0.2s;
+  text-align: left;
 }
 
 .options li:hover {

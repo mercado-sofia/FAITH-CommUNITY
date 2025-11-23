@@ -82,9 +82,13 @@ export const superadminHighlightsApi = createApi({
 
     // Add highlight to featured
     addFeaturedHighlight: builder.mutation({
-      query: (highlightId) => ({
+      query: ({ highlightId, organizationId, impactLevel }) => ({
         url: `/admin/highlights/${highlightId}/feature`,
         method: "POST",
+        body: {
+          organization_id: organizationId,
+          impact_level: impactLevel || 'average'
+        },
       }),
       invalidatesTags: ["SuperadminHighlight"],
     }),

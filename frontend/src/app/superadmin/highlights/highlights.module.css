@@ -206,10 +206,18 @@
 /* Highlights Header */
 .highlightsHeader {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  margin-top: 0;
+}
+
+.highlightsHeaderTop {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0;
-  margin-top: 0;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .highlightsHeader .sectionTitle {
@@ -217,8 +225,56 @@
   font-weight: 700;
   font-family: 'Poppins', sans-serif;
   color: #000;
-  margin: 0.5rem 0 2.4rem;
+  margin: 0.5rem 0 0 0;
   user-select: none;
+}
+
+.featuredCountInfo {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.featuredCountText {
+  font-size: 0.875rem;
+  color: #1d9782;
+  font-weight: 600;
+}
+
+.impactLevelBreakdown {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-left: 1rem;
+  border-left: 2px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.impactBreakdownItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #000;
+}
+
+.impactBreakdownLabel {
+  font-weight: 400;
+  color: #000;
+}
+
+.impactBreakdownValue {
+  color: #000;
+  font-weight: 400;
+}
+
+.highlightsHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 /* Filters */

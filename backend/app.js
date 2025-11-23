@@ -11,6 +11,8 @@ import pino from "pino"
 import pinoHttp from "pino-http"
 import path from "path"
 import { fileURLToPath } from "url"
+import { createServer } from "http"
+import { initializeSocket, getSocketIO } from "./src/utils/socket.js"
 
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
@@ -25,6 +27,9 @@ const __dirname = path.dirname(__filename)
 // Initialize Express
 const app = express()
 const PORT = process.env.PORT || 8080
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app)
 
 // Trust proxy - Required when behind a reverse proxy (Railway, Heroku, etc.)
 // This allows Express to correctly identify client IPs from X-Forwarded-For headers
@@ -346,11 +351,16 @@ app.use((req, res) => {
 })
 
 // Start Server
-// Store interval reference for cleanup (important for graceful shutdown)
+// Store interval references for cleanup (important for graceful shutdown)
 let cleanupInterval = null;
+let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
+let initialScheduledNewsTimeout = null;
 
-app.listen(PORT, async () => {
+// Initialize Socket.io
+initializeSocket(httpServer);
+
+httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
     console.log(`Server running at http://localhost:${PORT}`)
   }
@@ -454,7 +464,6 @@ app.listen(PORT, async () => {
             } else {
               console.warn('⚠️  SMTP verification failed - server is running but email features may not work');
               console.warn('   → To skip verification: Set SMTP_SKIP_VERIFY=true in .env');
-              console.warn('   → To test manually: Run node scripts/test-smtp.js');
               console.warn('   → Alternative: Use SendGrid API: Set USE_SENDGRID_API=true');
             }
           }).catch(() => {
@@ -496,6 +505,35 @@ app.listen(PORT, async () => {
       }
       initialCleanupTimeout = null;
     }, 2000); // 2 second delay to ensure database is fully initialized
+    
+    // Set up scheduled news auto-publish job (runs every 1 minute for more responsive publishing)
+    // This automatically publishes scheduled news when their publish date/time arrives
+    // Import dynamically to avoid potential circular dependency issues
+    scheduledNewsInterval = setInterval(async () => {
+      try {
+        const { autoUpdateScheduledNews } = await import("./src/admin/controllers/newsController.js");
+        const result = await autoUpdateScheduledNews();
+        if (result.success && result.updatedCount > 0) {
+          console.log(`✅ Auto-published ${result.updatedCount} scheduled news item(s)`);
+        }
+      } catch (error) {
+        console.error('Error auto-publishing scheduled news:', error);
+      }
+    }, 60 * 1000); // 1 minute in milliseconds (changed from 5 minutes for more responsive publishing)
+    
+    // Run initial scheduled news check on server start (with delay to ensure DB is ready)
+    initialScheduledNewsTimeout = setTimeout(async () => {
+      try {
+        const { autoUpdateScheduledNews } = await import("./src/admin/controllers/newsController.js");
+        const result = await autoUpdateScheduledNews();
+        if (result.success && result.updatedCount > 0) {
+          console.log(`✅ Auto-published ${result.updatedCount} scheduled news item(s) on startup`);
+        }
+      } catch (error) {
+        console.error('Initial scheduled news check failed:', error);
+      }
+      initialScheduledNewsTimeout = null;
+    }, 3000); // 3 second delay to ensure database is fully initialized
   } else {
     // In serverless environments, cleanup should be triggered via:
     // - API endpoint (e.g., /api/admin/cleanup)
@@ -505,12 +543,20 @@ app.listen(PORT, async () => {
 })
 
 // Graceful shutdown handler
-// Clean up intervals and timeouts on server shutdown
-const gracefulShutdown = () => {
+// Clean up intervals, timeouts, HTTP server, and Socket.io on server shutdown
+const gracefulShutdown = (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
   // Clear cleanup interval
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
+  }
+  
+  // Clear scheduled news interval
+  if (scheduledNewsInterval) {
+    clearInterval(scheduledNewsInterval);
+    scheduledNewsInterval = null;
   }
   
   // Clear initial cleanup timeout
@@ -519,9 +565,56 @@ const gracefulShutdown = () => {
     initialCleanupTimeout = null;
   }
   
-  process.exit(0);
+  // Clear initial scheduled news timeout
+  if (initialScheduledNewsTimeout) {
+    clearTimeout(initialScheduledNewsTimeout);
+    initialScheduledNewsTimeout = null;
+  }
+  
+  // Store forced shutdown timeout so we can clear it on successful shutdown
+  const forcedShutdownTimeout = setTimeout(() => {
+    console.error('Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10000);
+  
+  // Helper function to close HTTP server
+  const closeHttpServer = () => {
+    // Clear the forced shutdown timeout before exiting successfully
+    // This prevents race condition where timeout could fire after process.exit(0)
+    clearTimeout(forcedShutdownTimeout);
+    
+    // Close HTTP server (stop accepting new connections)
+    // Existing connections will be allowed to finish
+    httpServer.close(() => {
+      console.log('HTTP server closed.');
+      console.log('Graceful shutdown completed.');
+      process.exit(0);
+    });
+  };
+  
+  // Close Socket.io server first (disconnect all clients gracefully)
+  // Socket.io v4.8.1 close() returns a Promise, not accepting a callback
+  const io = getSocketIO();
+  if (io) {
+    console.log('Closing Socket.io server...');
+    // Use Promise-based API for Socket.io v4
+    io.close()
+      .then(() => {
+        console.log('Socket.io server closed.');
+        // After Socket.io is closed, close HTTP server
+        closeHttpServer();
+      })
+      .catch((error) => {
+        console.error('Error closing Socket.io server:', error);
+        // Continue with HTTP server closure even if Socket.io fails
+        closeHttpServer();
+      });
+  } else {
+    // If Socket.io is not initialized, close HTTP server directly
+    closeHttpServer();
+  }
 };
 
 // Handle graceful shutdown signals
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

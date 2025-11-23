@@ -7,6 +7,7 @@ import SuccessModal from "../components/SuccessModal";
 import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
 import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
+import { storeRedirectUrl } from "@/utils/redirectUtils";
 import logger from "@/utils/logger";
 
 function SubmitStatus({ status }) {
@@ -23,7 +24,7 @@ function SubmitStatus({ status }) {
   );
 }
 
-export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset }) {
+export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset, isLoggedIn = false }) {
   // Fetch all approved upcoming programs from the API (including already applied ones)
   const {
     programs: programOptions = [],
@@ -202,6 +203,25 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
     setValidationErrors({});
 
     try {
+      // Check authentication status before proceeding with submission
+      // This ensures non-logged in users see the login modal instead of submitting
+      const { getCurrentUser } = await import('@/utils/authService');
+      const userData = await getCurrentUser();
+      
+      if (!userData || userData.role !== 'user') {
+        // User is not authenticated - show login modal
+        // Store current URL for redirect after login
+        setIsLoading(false);
+        if (typeof window !== 'undefined') {
+          const currentUrl = window.location.pathname + window.location.search;
+          storeRedirectUrl(currentUrl);
+          window.dispatchEvent(new CustomEvent('showLoginModal', { 
+            detail: { redirectUrl: currentUrl } 
+          }));
+        }
+        return;
+      }
+
       // Form validation
       const errors = validateForm();
       
@@ -218,10 +238,12 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         return;
       }
 
-      // Get user data from localStorage
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      if (!userData) {
-        throw new Error("User not authenticated");
+      // Get user data from localStorage (should exist if authenticated)
+      const storedUserData = JSON.parse(localStorage.getItem('userData'));
+      if (!storedUserData) {
+        // If localStorage doesn't have user data but we're authenticated, 
+        // store it for consistency
+        localStorage.setItem('userData', JSON.stringify(userData));
       }
 
       // Submit form with new structure (user_id will be extracted from JWT token)

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { FiStar } from 'react-icons/fi'
 import styles from './styles/FeatureConfirmationModal.module.css'
@@ -10,6 +10,9 @@ const FeatureConfirmationModal = ({
   highlightTitle, 
   isLoading = false 
 }) => {
+  const [impactLevel, setImpactLevel] = useState('low') // 'low', 'average', 'high'
+  const [isDragging, setIsDragging] = useState(false)
+  const starContainerRef = useRef(null)
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (typeof document !== 'undefined' && document.body) {
@@ -33,6 +36,55 @@ const FeatureConfirmationModal = ({
     if (e.target === e.currentTarget) {
       onClose()
     }
+  }
+
+  // Reset impact level when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setImpactLevel('low')
+    }
+  }, [isOpen])
+
+  const handleStarClick = (level) => {
+    setImpactLevel(level)
+  }
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true)
+    handleStarInteraction(e)
+  }
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      handleStarInteraction(e)
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleStarInteraction = (e) => {
+    if (!starContainerRef.current) return
+    
+    const rect = starContainerRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const width = rect.width
+    
+    // Divide the container into 3 equal parts
+    const third = width / 3
+    
+    if (x < third) {
+      setImpactLevel('low')
+    } else if (x < third * 2) {
+      setImpactLevel('average')
+    } else {
+      setImpactLevel('high')
+    }
+  }
+
+  const handleConfirm = () => {
+    onConfirm(impactLevel)
   }
 
   const modalContent = (
@@ -61,6 +113,60 @@ const FeatureConfirmationModal = ({
           <p className={styles.infoText}>
             This will make the highlight appear prominently in the Featured Highlights section, giving it more visibility to users.
           </p>
+
+          {/* Impact Level Selector */}
+          <div className={styles.impactSelector}>
+            <p className={styles.impactLabel}>Select Impact Level:</p>
+            <p className={styles.impactExplanation}>
+              Choose the impact level to determine how prominently this highlight will be displayed in the Featured Highlights section.
+            </p>
+            <div 
+              className={styles.starContainer}
+              ref={starContainerRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <div className={styles.starLine}></div>
+              <div 
+                className={`${styles.starLineProgress} ${isDragging ? styles.dragging : ''}`}
+                style={{
+                  width: impactLevel === 'low' 
+                    ? 'calc((100% - 56px) * 0.33)' 
+                    : impactLevel === 'average' 
+                    ? 'calc((100% - 56px) * 0.66)' 
+                    : 'calc(100% - 56px)'
+                }}
+              ></div>
+              <div 
+                className={`${styles.star} ${styles.starLow} ${impactLevel === 'low' ? styles.active : ''} ${(impactLevel === 'average' || impactLevel === 'high') ? styles.passed : ''}`}
+                onClick={() => handleStarClick('low')}
+                title="Low Impact"
+              >
+                <span>⭐</span>
+              </div>
+              <div 
+                className={`${styles.star} ${styles.starAverage} ${impactLevel === 'average' ? styles.active : ''} ${impactLevel === 'high' ? styles.passed : ''}`}
+                onClick={() => handleStarClick('average')}
+                title="Average Impact"
+              >
+                <span>⭐</span>
+              </div>
+              <div 
+                className={`${styles.star} ${styles.starHigh} ${impactLevel === 'high' ? styles.active : ''}`}
+                onClick={() => handleStarClick('high')}
+                title="High Impact"
+              >
+                <span>⭐</span>
+              </div>
+            </div>
+            <p className={styles.impactDescription}>
+              {impactLevel === 'low' && 'Low Impact - Standard visibility'}
+              {impactLevel === 'average' && 'Average Impact - Moderate visibility'}
+              {impactLevel === 'high' && 'High Impact - Maximum visibility'}
+            </p>
+          </div>
         </div>
         
         <div className={styles.modalFooter}>
@@ -73,7 +179,7 @@ const FeatureConfirmationModal = ({
           </button>
           <button 
             className={styles.confirmButton}
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
           >
             {isLoading ? (

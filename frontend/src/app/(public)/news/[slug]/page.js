@@ -129,13 +129,18 @@ export default function NewsDetailPage({ params }) {
           
           <div className={styles.newsMetaInfo}>
             <div><em>Published:</em> {formatDate(news.published_at || news.date)}</div>
-            {news.updated_at && 
-             news.updated_at !== news.published_at && 
-             news.updated_at !== news.date && 
-             news.updated_at !== news.created_at && 
-             new Date(news.updated_at).getTime() !== new Date(news.published_at || news.date).getTime() && (
-              <div><em>Updated:</em> {formatDate(news.updated_at)}</div>
-            )}
+            {(() => {
+              // Only show "Last Updated" if content_updated_at exists
+              // content_updated_at only tracks actual content edits (title, content, excerpt, featured_image)
+              // It does NOT update when status changes or published_at changes
+              if (!news.content_updated_at) {
+                return null;
+              }
+              
+              // formatDate will handle parsing correctly (uses formatDateLong which uses parseMySQLDateTime)
+              // Show content_updated_at if it exists (it only exists when content was actually edited)
+              return <div><em>Last Updated:</em> {formatDate(news.content_updated_at)}</div>;
+            })()}
             <div><em>By:</em> {news.orgName || news.orgID || 'Unknown Organization'}</div>
           </div>
         </header>

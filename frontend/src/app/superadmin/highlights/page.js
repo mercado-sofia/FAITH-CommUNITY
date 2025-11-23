@@ -400,10 +400,42 @@ const SuperadminHighlightsPage = () => {
         }
       }
       
-      // PRIORITY 4: Description (lower priority - 30 points)
+      // PRIORITY 4: Impact Level (medium priority - 60 points)
+      // Search for impact level keywords: "high", "low", "average", "impact"
+      if (highlight.impact_level) {
+        const impactLevel = highlight.impact_level.toLowerCase()
+        const impactLevelLabel = impactLevel === 'low' ? 'low impact' : 
+                                 impactLevel === 'average' ? 'average impact' : 
+                                 impactLevel === 'high' ? 'high impact' : ''
+        
+        // Check if search term matches impact level keywords
+        const searchTermLower = searchTerm.toLowerCase()
+        const matchesImpact = 
+          (searchTermLower === 'high' && impactLevel === 'high') ||
+          (searchTermLower === 'low' && impactLevel === 'low') ||
+          (searchTermLower === 'average' && impactLevel === 'average') ||
+          (searchTermLower === 'impact' && highlight.impact_level) ||
+          (searchTermLower.includes('high') && impactLevel === 'high') ||
+          (searchTermLower.includes('low') && impactLevel === 'low') ||
+          (searchTermLower.includes('average') && impactLevel === 'average') ||
+          (impactLevelLabel.includes(searchTermLower))
+        
+        if (matchesImpact) {
+          hasMatch = true
+          score += 60
+          // Bonus for exact match
+          if (searchTermLower === impactLevel || searchTermLower === impactLevelLabel) {
+            score += 15
+          } else if (impactLevelLabel.includes(searchTermLower)) {
+            score += 10
+          }
+        }
+      }
+      
+      // PRIORITY 5: Description (lower priority - 30 points)
       if (checkMatch(highlight.description, 30, 5, 2, 'description')) {}
       
-      // PRIORITY 5: Status (lowest priority - 10 points)
+      // PRIORITY 6: Status (lowest priority - 10 points)
       if (checkMatch(highlight.status, 10, 2, 1, 'status')) {}
       
       // If no matches found, return null to filter out
@@ -508,6 +540,28 @@ const SuperadminHighlightsPage = () => {
   // This is a defensive measure in case the API returns unexpected data
   let processedHighlights = highlights.filter(h => h.status === 'approved')
 
+  // Create a map of featured highlights with their impact_level (BEFORE search so search can use it)
+  const featuredHighlightsMap = new Map()
+  featuredHighlightsFromApi.forEach(fh => {
+    featuredHighlightsMap.set(fh.highlight_id || fh.id, {
+      isFeatured: true,
+      impact_level: fh.impact_level || 'average'
+    })
+  })
+
+  // Merge impact_level from featured highlights into processed highlights (BEFORE search)
+  processedHighlights = processedHighlights.map(highlight => {
+    const featuredData = featuredHighlightsMap.get(highlight.id)
+    if (featuredData) {
+      return {
+        ...highlight,
+        impact_level: featuredData.impact_level,
+        isFeatured: true
+      }
+    }
+    return highlight
+  })
+
   // Debug: Log before search
   if (searchQuery.trim()) {
     console.log('🔎 Before search filter:', {
@@ -531,7 +585,8 @@ const SuperadminHighlightsPage = () => {
       results: processedHighlights.slice(0, 3).map(h => ({
         id: h.id,
         title: h.title,
-        program_title: h.program_title
+        program_title: h.program_title,
+        impact_level: h.impact_level
       }))
     })
   }
@@ -575,6 +630,31 @@ const SuperadminHighlightsPage = () => {
 
   // Calculate featured count from API data
   const featuredCount = featuredHighlightsFromApi.length
+
+  // Calculate featured count per organization
+  const getFeaturedCountByOrganization = (orgId) => {
+    if (orgId === 'all') {
+      return featuredHighlightsFromApi.length
+    }
+    return featuredHighlightsFromApi.filter(fh => fh.organization_id === parseInt(orgId)).length
+  }
+
+  // Calculate featured count by impact level per organization
+  const getFeaturedCountByImpactLevel = (orgId) => {
+    let filteredHighlights = featuredHighlightsFromApi
+    if (orgId !== 'all') {
+      filteredHighlights = featuredHighlightsFromApi.filter(fh => fh.organization_id === parseInt(orgId))
+    }
+    
+    return {
+      high: filteredHighlights.filter(fh => fh.impact_level === 'high').length,
+      average: filteredHighlights.filter(fh => fh.impact_level === 'average').length,
+      low: filteredHighlights.filter(fh => fh.impact_level === 'low').length
+    }
+  }
+
+  const currentOrgFeaturedCount = getFeaturedCountByOrganization(selectedOrganization)
+  const impactLevelCounts = getFeaturedCountByImpactLevel(selectedOrganization)
 
   // Search handler
   const handleSearchChange = (query) => {
@@ -694,7 +774,7 @@ const SuperadminHighlightsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {featuredCount} / 8 Featured
+                              {featuredCount} Total Featured
                             </span>
                           </div>
                         </div>
@@ -726,9 +806,9 @@ const SuperadminHighlightsPage = () => {
         </div>
       </div>
 
-      {/* Organization Filter Header - Only show in "All" tab */}
-      {activeTab === 'all' && (
-        <div className={styles.highlightsHeader}>
+      {/* Organization Filter Header - Show in both "Featured" and "All" tabs */}
+      <div className={styles.highlightsHeader}>
+        <div className={styles.highlightsHeaderTop}>
           <h2 className={styles.sectionTitle}>Highlights by Organization</h2>
           <div className={styles.filtersContainer}>
             <div className={styles.filterGroup}>
@@ -763,7 +843,31 @@ const SuperadminHighlightsPage = () => {
             </div>
           </div>
         </div>
-      )}
+        {/* Show featured count per organization in Featured tab */}
+        {activeTab === 'featured' && (
+          <div className={styles.featuredCountInfo}>
+            <span className={styles.featuredCountText}>
+              {currentOrgFeaturedCount} / 12 Featured {selectedOrganization !== 'all' ? 'for this organization' : ''}
+            </span>
+            {currentOrgFeaturedCount > 0 && (
+              <div className={styles.impactLevelBreakdown}>
+                <span className={styles.impactBreakdownItem}>
+                  <span className={`${styles.impactBreakdownLabel} ${styles.impactHigh}`}>High:</span> 
+                  <span className={styles.impactBreakdownValue}>{impactLevelCounts.high}</span>
+                </span>
+                <span className={styles.impactBreakdownItem}>
+                  <span className={`${styles.impactBreakdownLabel} ${styles.impactAverage}`}>Average:</span> 
+                  <span className={styles.impactBreakdownValue}>{impactLevelCounts.average}</span>
+                </span>
+                <span className={styles.impactBreakdownItem}>
+                  <span className={`${styles.impactBreakdownLabel} ${styles.impactLow}`}>Low:</span> 
+                  <span className={styles.impactBreakdownValue}>{impactLevelCounts.low}</span>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Highlights Grid */}
       <div className={styles.highlightsSection}>

@@ -3,6 +3,7 @@
 /* Form wrapper - no background container */
 .form {
   width: 100%;
+  padding-bottom: 3rem;
 }
 
 .formLayout {
@@ -150,6 +151,14 @@
   font-family: var(--font-inter);
 }
 
+.errorContainer {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
 .errorText {
   font-size: 12px;
   color: #dc2626;
@@ -157,12 +166,66 @@
   margin-top: 4px;
 }
 
-/* Action Buttons */
-.actionButtons {
+/* Form Header */
+.formHeader {
   display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 6px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  flex: 1;
+}
+
+.headerLeft h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 28px;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: #1CBFA4;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: #1D9782;
+  text-decoration: underline;
+}
+
+.backLink:active {
+  color: #1a8b7a;
 }
 
 .cancelButton {
@@ -188,26 +251,182 @@
   cursor: not-allowed;
 }
 
-.publishButton {
-  padding: 12px 24px;
+.saveButton {
+  padding: 0.65rem 1.2rem;
   background: #06100f;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 0.375rem;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.saveButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.draftButton {
+  padding: 10px 20px;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  height: 38px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.draftButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.draftButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scheduleButton,
+.publishButton {
+  padding: 10px 20px;
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scheduleButton:hover:not(:disabled),
+.publishButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.scheduleButton:disabled,
+.publishButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Split Button Group */
+.splitButtonGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.scheduleDropdownButton,
+.publishDropdownButton {
+  padding: 10px 13px;
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+}
+
+.scheduleDropdownButton:hover:not(:disabled),
+.publishDropdownButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.scheduleDropdownButton:disabled,
+.publishDropdownButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.scheduleDropdownButton.dropdownOpen,
+.publishDropdownButton.dropdownOpen {
+  background: #142220;
+}
+
+/* Dropdown Menu */
+.publishDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  width: 100%;
+  overflow: hidden;
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownOption {
+  width: 100%;
+  padding: 12px 14px;
+  background: white;
+  color: #374151;
+  border: none;
+  text-align: left;
+  font-size: 12.5px;
   font-weight: 500;
   font-family: var(--font-inter);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.publishButton:hover:not(:disabled) {
-  background: #142220;
+.dropdownOption:hover {
+  background: #f3f4f6;
+  color: #111827;
 }
 
-.publishButton:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+.dropdownOptionActive {
+  background: #f3f4f6;
+  color: #000000;
+  font-weight: 700;
 }
 
 /* Right Panel - Separate containers */
@@ -371,22 +590,166 @@
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
+/* Read-only fields */
+.readOnlyField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.readOnlyText {
+  margin: 0;
+  font-size: 14px;
+  color: #374151;
+  font-family: var(--font-inter);
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.readOnlyHint {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-family: var(--font-inter);
+  font-style: italic;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  text-transform: capitalize;
+}
+
+.statusBadge[data-status="draft"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge[data-status="scheduled"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusBadge[data-status="published"] {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge[data-status="archived"] {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* History/Activity Log */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 8px;
+}
+
+.historyItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  position: relative;
+}
+
+.historyItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 28px;
+  bottom: -4px;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+.historyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1CBFA4;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #1CBFA4;
+  flex-shrink: 0;
+  margin-top: 4px;
+  z-index: 1;
+}
+
+.historyContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.historyLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.historyDate {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: var(--font-inter);
+}
+
+.historyRelativeTime {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: var(--font-inter);
+  font-style: italic;
+}
+
+.historyEmpty {
+  padding: 16px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+  font-family: var(--font-inter);
+  font-style: italic;
+}
+
+
 @media (max-width: 768px) {
+  .formHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .draftButton,
+  .saveButton {
+    width: 100%;
+  }
+
+  .splitButtonGroup {
+    width: 100%;
+  }
+
   .uploadArea {
     min-height: 180px;
   }
   
   .previewImage {
     height: 150px;
-  }
-  
-  .actionButtons {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .publishButton,
-  .cancelButton {
-    width: 100%;
   }
 }

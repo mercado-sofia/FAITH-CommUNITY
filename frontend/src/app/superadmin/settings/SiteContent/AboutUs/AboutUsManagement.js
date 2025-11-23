@@ -143,31 +143,17 @@ export default function AboutUsManagement({ showSuccessModal }) {
       try {
         setIsUpdatingAboutUs(true);
         
-        let finalImageUrl = tempAboutUs.image_url;
-        
-        // Upload image if a new file is selected
-        if (selectedFile) {
-          try {
-            finalImageUrl = await handleImageUpload(selectedFile);
-            setSelectedFile(null); // Clear selected file after successful upload
-          } catch (error) {
-            console.error('Image upload error:', error);
-            let errorMessage = 'Failed to upload image';
-            
-            if (error.message) {
-              errorMessage = error.message;
-            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
-            }
-            
-            showSuccessModal(errorMessage);
-            return;
-          }
-        }
-        
         const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
-        const response = await makeAuthenticatedRequest(
+        
+        // CRITICAL: Save the record FIRST (creates it if it doesn't exist)
+        // This ensures the record exists before we try to upload an image
+        // Step 1: Save description and extension_categories first
+        // If there's a new file to upload, use null for image_url (will be updated after upload)
+        // Otherwise, use existing image_url
+        const initialImageUrl = selectedFile ? null : (tempAboutUs.image_url || null);
+        
+        const initialResponse = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
           {
             method: 'PUT',
@@ -177,28 +163,154 @@ export default function AboutUsManagement({ showSuccessModal }) {
             body: JSON.stringify({
               description: tempAboutUs.description?.trim() || null,
               extension_categories: tempAboutUs.extension_categories || [],
-              image_url: finalImageUrl || null
+              image_url: initialImageUrl
             }),
           },
           'superadmin'
         );
 
-        if (response && response.ok) {
-          const data = await response.json();
-          setAboutUsData(data.data);
+        if (!initialResponse) {
+          showSuccessModal('Authentication failed. Please log in again.');
+          return;
+        }
+        
+        if (!initialResponse.ok) {
+          let errorMessage = 'Failed to save about us content';
+          try {
+            const contentType = initialResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await initialResponse.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+            } else {
+              errorMessage = initialResponse.statusText || `Server error (${initialResponse.status})`;
+            }
+          } catch (e) {
+            errorMessage = initialResponse.statusText || `Server error (${initialResponse.status})`;
+          }
+          showSuccessModal(`${errorMessage} (Status: ${initialResponse.status})`);
+          return;
+        }
+        
+        // Parse initial response to get saved data
+        let savedData = null;
+        try {
+          const initialData = await initialResponse.json();
+          if (initialData.success && initialData.data) {
+            savedData = initialData.data;
+          }
+        } catch (e) {
+          console.error('Error parsing initial response:', e);
+        }
+        
+        // Step 2: Upload image if a new file is selected (record now exists)
+        let finalImageUrl = tempAboutUs.image_url;
+        if (selectedFile) {
+          try {
+            finalImageUrl = await handleImageUpload(selectedFile);
+            setSelectedFile(null); // Clear selected file after successful upload
+            
+            // Step 3: Update the record with the new image URL
+            const updateResponse = await makeAuthenticatedRequest(
+              `${baseUrl}/api/superadmin/about-us`,
+              {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  description: tempAboutUs.description?.trim() || null,
+                  extension_categories: tempAboutUs.extension_categories || [],
+                  image_url: finalImageUrl
+                }),
+              },
+              'superadmin'
+            );
+            
+            if (updateResponse && updateResponse.ok) {
+              try {
+                const updateData = await updateResponse.json();
+                if (updateData.success && updateData.data) {
+                  savedData = updateData.data;
+                }
+              } catch (e) {
+                console.error('Error parsing update response:', e);
+              }
+            } else {
+              // Image uploaded but failed to update record - still show success but warn
+              console.warn('Image uploaded but failed to update record with image URL');
+            }
+          } catch (error) {
+            console.error('Image upload error:', error);
+            // Image upload failed, but description was saved - show warning
+            let errorMessage = 'Content saved, but image upload failed: ';
+            if (error.message) {
+              errorMessage += error.message;
+            } else {
+              errorMessage += 'Unknown error';
+            }
+            // Still show success for saved content, but with warning
+            if (savedData) {
+              setAboutUsData(savedData);
+              setIsEditingAboutUs(false);
+              showSuccessModal(errorMessage);
+              return;
+            } else {
+              showSuccessModal(errorMessage);
+              return;
+            }
+          }
+        }
+        
+        // Step 4: Use saved data or fetch final data
+        if (savedData) {
+          setAboutUsData(savedData);
           setIsEditingAboutUs(false);
           showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         } else {
-          let errorMessage = 'Failed to update about us content';
-          try {
-          const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-            console.error('Update error response:', errorData);
-          } catch (e) {
-            errorMessage = response.statusText || `Server error (${response.status})`;
-            console.error('Non-JSON error response:', response.status, response.statusText);
+          // Fallback: Get the final updated data
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/superadmin/about-us`,
+            { method: 'GET' },
+            'superadmin'
+          );
+
+          if (!response) {
+            showSuccessModal('Authentication failed. Please log in again.');
+            return;
           }
-          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+          
+          if (response.ok) {
+            try {
+              const data = await response.json();
+              if (data.success && data.data) {
+                setAboutUsData(data.data);
+                setIsEditingAboutUs(false);
+                showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+              } else {
+                showSuccessModal(data.message || 'Failed to update about us content');
+              }
+            } catch (parseError) {
+              console.error('Error parsing response:', parseError);
+              showSuccessModal('Received invalid response from server. Please try again.');
+            }
+          } else {
+            let errorMessage = 'Failed to update about us content';
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+                console.error('Update error response:', errorData);
+              } else {
+                errorMessage = response.statusText || `Server error (${response.status})`;
+                console.error('Non-JSON error response:', response.status, response.statusText);
+              }
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Error parsing error response:', e);
+            }
+            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+          }
         }
       } catch (error) {
         console.error('Update error:', error);
@@ -312,11 +424,41 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
 
       if (response.ok) {
-        const data = await response.json();
-        return data.imageUrl; // Return the Cloudinary URL from the response
+        try {
+          const data = await response.json();
+          if (data.success && data.imageUrl) {
+            return data.imageUrl; // Return the Cloudinary URL from the response
+          } else {
+            throw new Error(data.message || 'Image uploaded but no URL returned');
+          }
+        } catch (parseError) {
+          console.error('Error parsing upload response:', parseError);
+          throw new Error('Received invalid response from server. Please try again.');
+        }
       } else {
-        // Handle 401 responses
-        if (response.status === 401) {
+        // Handle 401/403 responses - try token refresh
+        if (response.status === 401 || response.status === 403) {
+          try {
+            const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+            const refreshed = await getValidAccessToken(true);
+            if (refreshed) {
+              // Retry upload with refreshed token
+              const retryResponse = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+              });
+              
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                if (retryData.success && retryData.imageUrl) {
+                  return retryData.imageUrl;
+                }
+              }
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed during image upload:', refreshError);
+          }
           throw new Error('Authentication expired. Please log in again.');
         }
         
@@ -327,12 +469,18 @@ export default function AboutUsManagement({ showSuccessModal }) {
         
         let errorMessage = 'Failed to upload image';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Upload error response:', errorData);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Upload error response:', errorData);
+          } else {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+            console.error('Non-JSON error response:', response.status, response.statusText);
+          }
         } catch (e) {
           errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          console.error('Error parsing error response:', e);
         }
         throw new Error(`${errorMessage} (Status: ${response.status})`);
       }

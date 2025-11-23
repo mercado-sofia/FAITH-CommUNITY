@@ -5,6 +5,9 @@ import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiX } from "react-icons/fi"
 import { FaEdit } from "react-icons/fa"
 import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
+import { FiTrash2 } from "react-icons/fi"
+import { HiOutlineDotsHorizontal } from "react-icons/hi"
+import { formatDateLong } from '@/utils/dateUtils.js';
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import styles from "./NewsTable.module.css"
 
@@ -44,12 +47,33 @@ const isScheduled = (publishedAt) => {
   const publishedDate = new Date(publishedAt);
   const now = new Date();
   return publishedDate > now;
+const formatStatus = (status) => {
+  if (!status) return 'Draft';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+const getStatusBadgeClass = (status) => {
+  const normalizedStatus = (status || 'draft').toLowerCase();
+  switch (normalizedStatus) {
+    case 'published':
+      return styles.statusPublished;
+    case 'scheduled':
+      return styles.statusScheduled;
+    case 'archived':
+      return styles.statusArchived;
+    case 'draft':
+    default:
+      return styles.statusDraft;
+  }
 };
 
 export default function NewsTable({ 
   news = [], 
   onEdit, 
-  onDelete, 
+  onDelete,
+  onView,
+  onArchive,
+  onUnarchive,
   onBulkDelete, 
   itemsPerPage = 10,
   onSelectionChange,
@@ -58,6 +82,7 @@ export default function NewsTable({
   const [selectedNews, setSelectedNews] = useState([])
   const [showDropdown, setShowDropdown] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [dropdownPosition, setDropdownPosition] = useState({})
   const dropdownRefs = useRef({})
 
   // Reset to page 1 when news data changes or when current page exceeds total pages
@@ -147,8 +172,22 @@ export default function NewsTable({
     setShowDropdown(null)
     
     switch (action) {
+      case 'view':
+        if (onView) {
+          onView(newsItem);
+        } else if (newsItem.slug) {
+          // Fallback: open in new tab if slug exists
+          window.open(`/news/${newsItem.slug}`, '_blank');
+        }
+        break;
       case 'edit':
         onEdit && onEdit(newsItem);
+        break;
+      case 'archive':
+        onArchive && onArchive(newsItem);
+        break;
+      case 'unarchive':
+        onUnarchive && onUnarchive(newsItem);
         break;
       case 'delete':
         onDelete && onDelete(newsItem);
@@ -166,7 +205,6 @@ export default function NewsTable({
     }
   }
 
-
   const cancelSelection = () => {
     setSelectedNews([])
     // Notify parent to clear selections as well
@@ -181,8 +219,25 @@ export default function NewsTable({
     const buttonElement = dropdownRefs.current[newsId]
     if (buttonElement) {
       const rect = buttonElement.getBoundingClientRect()
-      const top = rect.bottom + 4
-      const left = rect.right - 192
+      const viewportHeight = window.innerHeight
+      const dropdownHeight = 160 // Approximate height of dropdown
+      
+      // Check if there's enough space below
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      
+      let top, position
+      
+      // If not enough space below but enough above, show above
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        position = 'above'
+        top = -dropdownHeight - 4 // 4px gap above the button
+      } else {
+        position = 'below'
+        top = rect.height + 4 // 4px gap below the button
+      }
+      
+      setDropdownPosition({ [newsId]: { top, position } })
     }
 
     setShowDropdown(newsId)
@@ -232,14 +287,15 @@ export default function NewsTable({
                 <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />
               </th>
               <th>Title</th>
-              <th>Date Published</th>
-              <th></th>
+                  <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody className={styles.tableBody}>
             {currentNews.length === 0 ? (
               <tr>
-                <td colSpan="4" className={styles.noNews}>
+                <td colSpan="5" className={styles.noNews}>
                   No news found
                 </td>
               </tr>
@@ -288,23 +344,68 @@ export default function NewsTable({
                         </span>
                       )}
                     </div>
+                    {(() => {
+                      const status = (newsItem.status || 'draft').toLowerCase();
+                      // Always use published_at (not date field) - published_at is the source of truth
+                      const publishedAt = newsItem.published_at;
+                      
+                      if (status === 'published' || (status === 'archived' && publishedAt)) {
+                        // Published or archived (was published before) - show published date
+                        return formatDate(publishedAt);
+                      } else if (status === 'scheduled' && publishedAt) {
+                        // Scheduled - show scheduled date
+                        return formatDate(publishedAt);
+                      } else {
+                        // Draft - show created date
+                        return formatDate(newsItem.created_at);
+                      }
+                    })()}
                   </td>
                   <td>
-                    <div className={styles.actionsCell}>
-                      <button
-                        className={`${styles.actionButton} ${styles.editButton}`}
-                        onClick={() => handleAction(newsItem, 'edit')}
-                        title="Edit news"
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                      <button
-                        className={`${styles.actionButton} ${styles.deleteButton}`}
-                        onClick={() => handleAction(newsItem, 'delete')}
-                        title="Delete news"
-                      >
-                        <FiTrash2 /> Delete
-                      </button>
+                    <span className={`${styles.statusBadge} ${getStatusBadgeClass(newsItem.status)}`}>
+                      {formatStatus(newsItem.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <div
+                      className={styles.dropdownWrapper}
+                      ref={(el) => (dropdownRefs.current[newsItem.id] = el)}
+                    >
+                      <div className={styles.dropdownButtonWrapper}>
+                        <div
+                          className={styles.dropdown}
+                          onClick={() => handleDropdownToggle(newsItem.id)}
+                        >
+                          <HiOutlineDotsHorizontal className={styles.icon} />
+                        </div>
+
+                        {showDropdown === newsItem.id && (
+                          <ul 
+                            className={`${styles.options} ${dropdownPosition[newsItem.id]?.position === 'above' ? styles.above : ''}`}
+                            style={{
+                              top: `${dropdownPosition[newsItem.id]?.top || 0}px`,
+                              right: '0px'
+                            }}
+                          >
+                            <li onClick={() => handleAction(newsItem, "view")}>View</li>
+                            <li onClick={() => handleAction(newsItem, "edit")}>Edit</li>
+                            {/* Only show Archive option for published news */}
+                            {(newsItem.status || '').toLowerCase() === 'published' && (
+                              <li onClick={() => handleAction(newsItem, "archive")}>Archive</li>
+                            )}
+                            {/* Only show Unarchive option for archived news */}
+                            {(newsItem.status || '').toLowerCase() === 'archived' && (
+                              <li onClick={() => handleAction(newsItem, "unarchive")}>Unarchive</li>
+                            )}
+                            <li 
+                              onClick={() => handleAction(newsItem, "delete")}
+                              style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
+                            >
+                              Delete
+                            </li>
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

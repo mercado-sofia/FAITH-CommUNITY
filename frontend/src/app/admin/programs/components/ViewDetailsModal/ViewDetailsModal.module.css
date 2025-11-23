@@ -89,6 +89,8 @@
   gap: 32px;
   padding: 32px;
   padding-bottom: 48px;
+  height: 560px;
+  overflow-y: auto;
 }
 
 .topSection {
@@ -593,8 +595,8 @@
 /* Activity Tracker Styles */
 .activityTrackerContent {
   padding: 24px;
-  flex: 1;
   overflow-y: auto;
+  height: 560px;
 }
 
 .activityTrackerTitle {

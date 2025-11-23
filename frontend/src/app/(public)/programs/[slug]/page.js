@@ -243,11 +243,11 @@ export default function ProgramDetailsPage() {
           return;
         }
         
-        if (!isLoggedIn) {
-          // Show login modal for non-authenticated users
+        // Always navigate to /apply page (with program parameter)
+        router.push(`/apply?program=${program.id}`);
+        // Show modal if not logged in
+        if (!isLoggedIn && typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('showLoginModal'));
-        } else {
-          router.push(`/apply?program=${program.id}`);
         }
       } else if (programStatus !== 'Upcoming' && programStatus !== 'Active' && programStatus !== 'Completed') {
         // Handle Contact Organization button click

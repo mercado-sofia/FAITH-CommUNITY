@@ -171,7 +171,7 @@ const migrateToUnifiedUsersTable = async (connection) => {
     return;
 
     // Note: Old table migration logic removed - this is for fresh installs only
-    // If you need to migrate from old tables, use the SQL migration scripts in backend/scripts/migrations/
+    // The unified users table structure is created automatically on database initialization
 
   } catch (error) {
     logError('Unified users table migration failed', error, { context: 'database' });
@@ -603,6 +603,7 @@ const runIncrementalMigrations = async (connection) => {
             id INT AUTO_INCREMENT PRIMARY KEY,
             highlight_id INT NOT NULL,
             display_order INT NOT NULL,
+            impact_level ENUM('low', 'average', 'high') DEFAULT 'average',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,
@@ -613,6 +614,26 @@ const runIncrementalMigrations = async (connection) => {
       }
     } catch (featuredError) {
       // Table might already exist or other error - silently skip
+    }
+
+    // Add impact_level column to featured_highlights if it doesn't exist
+    try {
+      const [columnCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'featured_highlights' 
+        AND COLUMN_NAME = 'impact_level'
+      `);
+      
+      if (columnCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE featured_highlights 
+          ADD COLUMN impact_level ENUM('low', 'average', 'high') DEFAULT 'average'
+        `);
+      }
+    } catch (impactLevelError) {
+      // Column might already exist or other error - silently skip
     }
 
     // Add program_id column to admin_highlights if it doesn't exist
@@ -805,6 +826,87 @@ const runIncrementalMigrations = async (connection) => {
       // Silently skip if update fails
     }
 
+    // Add status column to news table if it doesn't exist (migration for existing databases)
+    try {
+      const [statusColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'status'
+      `);
+      
+      if (statusColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE news 
+          ADD COLUMN status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft'
+        `);
+        
+        await connection.query(`
+          ALTER TABLE news 
+          ADD INDEX idx_news_status (status)
+        `);
+        
+        // Set status for existing news based on published_at
+        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
+        await connection.query(`
+          UPDATE news 
+          SET status = CASE 
+            WHEN published_at IS NULL THEN 'draft'
+            WHEN TIMESTAMPDIFF(SECOND, published_at, NOW()) < 0 THEN 'scheduled'
+            WHEN is_deleted = TRUE THEN 'archived'
+            ELSE 'published'
+          END
+        `);
+        
+        logInfo('Added status column to news table', { context: 'database' });
+      }
+    } catch (statusError) {
+      // Column might already exist or other error - log but continue
+      logWarn('Status column migration for news table skipped or already exists', { 
+        context: 'database', 
+        error: statusError.message 
+      });
+    }
+
+    // Add content_updated_at column to news table if it doesn't exist
+    // This column tracks when actual content (title, content, excerpt, featured_image) was last edited
+    // It does NOT update when status changes or published_at changes
+    try {
+      const [contentUpdatedColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'content_updated_at'
+      `);
+      
+      if (contentUpdatedColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE news 
+          ADD COLUMN content_updated_at TIMESTAMP NULL DEFAULT NULL
+        `);
+        
+        // Initialize content_updated_at for existing news: set to updated_at if it exists and is different from created_at
+        // This preserves existing "last updated" information
+        await connection.query(`
+          UPDATE news 
+          SET content_updated_at = CASE 
+            WHEN updated_at IS NOT NULL AND updated_at != created_at THEN updated_at
+            ELSE NULL
+          END
+        `);
+        
+        logInfo('Added content_updated_at column to news table', { context: 'database' });
+      }
+    } catch (contentUpdatedError) {
+      // Column might already exist or other error - log but continue
+      logWarn('Content updated_at column migration for news table skipped or already exists', { 
+        context: 'database', 
+        error: contentUpdatedError.message 
+      });
+    }
+
     // Legacy superadmin initialization code removed - migration to unified users table is complete
     // Superadmin initialization is now handled in the main initializeDatabase function
 
@@ -886,10 +988,7 @@ const initializeDatabase = async () => {
           INDEX idx_is_active (is_active),
           INDEX idx_email_verified (email_verified),
           INDEX idx_verification_token (verification_token),
-          INDEX idx_created_at (created_at),
-          CONSTRAINT chk_admin_organization CHECK (
-            (role = 'admin' AND organization_id IS NOT NULL) OR (role != 'admin')
-          )
+          INDEX idx_created_at (created_at)
         )
       `);
 
@@ -985,17 +1084,57 @@ const initializeDatabase = async () => {
           featured_image VARCHAR(500),
           date DATE,
           published_at DATETIME,
+          status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft',
           is_deleted BOOLEAN DEFAULT FALSE,
           deleted_at TIMESTAMP NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+          content_updated_at TIMESTAMP NULL DEFAULT NULL,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
           INDEX idx_news_slug (slug),
           INDEX idx_news_published_at (published_at),
           INDEX idx_news_organization (organization_id),
-          INDEX idx_news_created_at (created_at)
+          INDEX idx_news_created_at (created_at),
+          INDEX idx_news_status (status)
         )
       `);
+
+      // Add status column migration for existing databases
+      try {
+        const [statusColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'news' 
+          AND COLUMN_NAME = 'status'
+        `);
+        
+        if (statusColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE news 
+            ADD COLUMN status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft'
+          `);
+          
+          await connection.query(`
+            ALTER TABLE news 
+            ADD INDEX idx_news_status (status)
+          `);
+          
+          // Set status for existing news based on published_at
+          await connection.query(`
+            UPDATE news 
+            SET status = CASE 
+              WHEN published_at IS NULL THEN 'draft'
+              WHEN TIMESTAMPDIFF(SECOND, published_at, NOW()) < 0 THEN 'scheduled'
+              WHEN is_deleted = TRUE THEN 'archived'
+              ELSE 'published'
+            END
+          `);
+        }
+      } catch (statusError) {
+        // Column might already exist or other error - silently skip
+        logInfo('Status column migration skipped or already exists', { context: 'database' });
+      }
 
       // ============================================
       // 2. WORKFLOW TABLES (Submissions & Notifications)
@@ -1295,6 +1434,7 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           highlight_id INT NOT NULL,
           display_order INT NOT NULL,
+          impact_level ENUM('low', 'average', 'high') DEFAULT 'average',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,

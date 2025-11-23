@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FiX, FiTrash2 } from 'react-icons/fi';
 import { ConfirmationModal } from '@/components';
-import CancelConfirmationModal from '../modals/CancelConfirmationModal';
 import styles from './BulkActionsBar.module.css';
 
 export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection }) {
@@ -77,10 +76,11 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
       </div>
 
       {/* Cancel Confirmation Modal */}
-      <CancelConfirmationModal
+      <ConfirmationModal
         isOpen={showCancelConfirm}
         itemName={`${pendingCount} submission${pendingCount !== 1 ? 's' : ''}`}
         itemType="submission"
+        actionType="cancel"
         onConfirm={handleBulkCancel}
         onCancel={() => setShowCancelConfirm(false)}
       />

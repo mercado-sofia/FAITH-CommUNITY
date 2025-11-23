@@ -44,7 +44,6 @@ class RateLimiter {
   }
 }
 
-
 export default function VolunteersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -75,10 +74,10 @@ export default function VolunteersPage() {
   
   // Mark as initially loaded when data is available
   useEffect(() => {
-    if (!volunteersLoading && volunteersData.length >= 0) {
+    if (!volunteersLoading) {
       setHasInitiallyLoaded(true);
     }
-  }, [volunteersLoading, volunteersData.length]);
+  }, [volunteersLoading]);
 
   // Fetch programs from API using admin's organization with SWR
   const { 
@@ -316,7 +315,6 @@ export default function VolunteersPage() {
     }
   }, [refreshVolunteers])
 
-
   function capitalizeFirstLetter(str) {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
@@ -447,9 +445,6 @@ export default function VolunteersPage() {
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Volunteer Applications</h1>
-          <p style={{ color: '#666', fontSize: '0.9rem' }}>
-            Showing volunteers for {currentAdmin.orgName || currentAdmin.org}
-          </p>
         </div>
         
         {TableSkeleton}
@@ -467,9 +462,6 @@ export default function VolunteersPage() {
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Volunteer Applications</h1>
-          <p style={{ color: '#666', fontSize: '0.9rem' }}>
-            Showing volunteers for {currentAdmin.orgName || currentAdmin.org}
-          </p>
         </div>
         <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
           <p>Error loading volunteer applications: {errorInfo.message}</p>

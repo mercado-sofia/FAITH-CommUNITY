@@ -1,12 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { FiX, FiTrash2 } from 'react-icons/fi';
-import { formatDateShort } from '@/utils/dateUtils.js';
+import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { formatDateShort, formatDateLong } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
-import CancelConfirmationModal from '../modals/CancelConfirmationModal';
-import { ConfirmationModal } from '@/components';
-import { SuccessModal } from '@/components';
+import { ConfirmationModal, SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
-import { API_BASE_URL } from '@/config/api';
+import { API_CONFIG } from '../../../utils';
 
 export default function SubmissionTable({ 
   orgAcronym, 
@@ -15,7 +13,7 @@ export default function SubmissionTable({
   onRefresh, 
   currentPage = 1,
   itemsPerPage = 10,
-  onPageChange = () => {},
+  onPageChange,
   selectedItems = new Set(),
   onSelectItems = () => {},
   onShowBulkActions = () => {}
@@ -26,6 +24,8 @@ export default function SubmissionTable({
   const [deleteId, setDeleteId] = useState(null);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [loadingStates, setLoadingStates] = useState({});
+  const [showDropdown, setShowDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({});
   
   const showToast = (message, type = 'success') => {
     setSuccessModal({ isVisible: true, message, type });
@@ -63,7 +63,7 @@ export default function SubmissionTable({
   const handleCancel = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, { 
         method: 'DELETE',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
@@ -89,7 +89,7 @@ export default function SubmissionTable({
   const handleDelete = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, {
         method: 'DELETE',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
@@ -118,69 +118,6 @@ export default function SubmissionTable({
     }
   };
 
-  // Bulk actions handlers
-  const handleBulkCancel = async () => {
-    try {
-      // Only cancel pending submissions from the selected items
-      const pendingIds = Array.from(selectedItems).filter(id => {
-        const submission = submissions.find(s => s.id === id);
-        return submission && submission.status === 'pending';
-      });
-      
-      if (pendingIds.length === 0) {
-        showToast('No pending submissions selected to cancel.', 'warning');
-        return;
-      }
-      
-      const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
-          method: 'DELETE',
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-            // No Authorization header needed - httpOnly cookies handle authentication
-          }
-        })
-      );
-      await Promise.all(promises);
-      if (onRefresh) onRefresh();
-      onSelectItems(new Set());
-      onShowBulkActions(false);
-      showToast('Submissions cancelled successfully!', 'success');
-    } catch (err) {
-      showToast('Failed to cancel some submissions', 'error');
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      const promises = Array.from(selectedItems).map(id => 
-        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
-          method: 'DELETE',
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-            // No Authorization header needed - httpOnly cookies handle authentication
-          }
-        })
-      );
-      
-      const responses = await Promise.all(promises);
-      const failedResponses = responses.filter(response => !response.ok);
-      
-      if (failedResponses.length > 0) {
-        throw new Error(`${failedResponses.length} deletions failed`);
-      }
-      
-      // Refresh the submissions list
-      if (onRefresh) onRefresh();
-      onSelectItems(new Set());
-      onShowBulkActions(false);
-      showToast('Selected submissions deleted successfully!', 'success');
-    } catch (error) {
-      showToast(`Failed to delete some submissions: ${error.message}`, 'error');
-    }
-  };
 
   const allSelected = currentSubmissions.length > 0 && selectedItems.size === currentSubmissions.length;
 
@@ -189,6 +126,60 @@ export default function SubmissionTable({
     onSelectItems(new Set());
     onShowBulkActions(false);
   }, [currentPage, onSelectItems, onShowBulkActions]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDropdown !== null) {
+        const dropdownWrapper = dropdownRefs.current[showDropdown];
+        if (
+          dropdownWrapper &&
+          !dropdownWrapper.contains(event.target)
+        ) {
+          setShowDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
+  // Handle dropdown toggle with positioning
+  const handleDropdownToggle = (submissionId) => {
+    if (showDropdown === submissionId) {
+      setShowDropdown(null);
+      return;
+    }
+
+    const buttonElement = dropdownRefs.current[submissionId];
+    if (buttonElement) {
+      const rect = buttonElement.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 120; // Approximate height of dropdown
+      
+      // Check if there's enough space below
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      let top, position;
+      
+      // If not enough space below but enough above, show above
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        position = 'above';
+        top = -dropdownHeight - 4; // 4px gap above the button
+      } else {
+        position = 'below';
+        top = rect.height + 4; // 4px gap below the button
+      }
+      
+      setDropdownPosition({ [submissionId]: { top, position } });
+    }
+
+    setShowDropdown(submissionId);
+  };
 
   return (
     <div className={styles.tableContainer}>
@@ -212,14 +203,13 @@ export default function SubmissionTable({
               <th>Section</th>
               <th>Date Submitted</th>
               <th>Status</th>
-              <th></th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody className={styles.tableBody}>
             {!Array.isArray(submissions) || submissions.length === 0 ? (
               <tr>
-                <td colSpan="7" className={styles.noSubmissions}>
+                <td colSpan="6" className={styles.noSubmissions}>
                   No submissions found.
                 </td>
               </tr>
@@ -246,53 +236,63 @@ export default function SubmissionTable({
                     <span className={styles.sectionName}>{s.section.charAt(0).toUpperCase() + s.section.slice(1)}</span>
                   </div>
                 </td>
-                <td>{formatDateShort(s.submitted_at)}</td>
+                <td>{formatDateLong(s.submitted_at)}</td>
                 <td>
                   <span className={`${styles.statusBadge} ${styles[s.status]}`}>
                     {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                   </span>
                 </td>
                 <td>
-                  <button className={styles.viewBtn} onClick={() => setSelected(s)}>View</button>
-                </td>
-                <td>
-                  <div className={styles.actionButtons}>
-                    <button 
-                      className={`${styles.cancelBtn} ${s.status !== 'pending' ? styles.disabledBtn : ''}`}
-                      onClick={s.status === 'pending' ? () => setConfirmId(s.id) : undefined}
-                      disabled={s.status !== 'pending' || loadingStates[`cancel-${s.id}`]}
-                      title={
-                        s.status === 'pending' 
-                          ? "Cancel submission" 
-                          : s.status === 'approved' 
-                            ? "Cannot cancel - submission already approved" 
-                            : s.status === 'rejected' 
-                              ? "Cannot cancel - submission was rejected" 
-                              : "Cannot cancel - submission already processed"
-                      }
-                    >
-                      {loadingStates[`cancel-${s.id}`] ? (
-                        <span className={styles.spinner}></span>
-                      ) : (
-                        <>
-                          <FiX size={14} /> Cancel
-                        </>
+                  <div
+                    className={styles.dropdownWrapper}
+                    ref={(el) => (dropdownRefs.current[s.id] = el)}
+                  >
+                    <div className={styles.dropdownButtonWrapper}>
+                      <div
+                        className={styles.dropdown}
+                        onClick={() => handleDropdownToggle(s.id)}
+                      >
+                        <HiOutlineDotsHorizontal className={styles.icon} />
+                      </div>
+
+                      {showDropdown === s.id && (
+                        <ul 
+                          className={`${styles.options} ${dropdownPosition[s.id]?.position === 'above' ? styles.above : ''}`}
+                          style={{
+                            top: `${dropdownPosition[s.id]?.top || 0}px`,
+                            right: '0px'
+                          }}
+                        >
+                          <li onClick={() => {
+                            setShowDropdown(null);
+                            setSelected(s);
+                          }}>
+                            View
+                          </li>
+                          {s.status === 'pending' && !loadingStates[`cancel-${s.id}`] && (
+                            <li 
+                              onClick={() => {
+                                setShowDropdown(null);
+                                setConfirmId(s.id);
+                              }}
+                            >
+                              Cancel
+                            </li>
+                          )}
+                          {!loadingStates[`delete-${s.id}`] && (
+                            <li 
+                              onClick={() => {
+                                setShowDropdown(null);
+                                setDeleteId(s.id);
+                              }}
+                              style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
+                            >
+                              Delete
+                            </li>
+                          )}
+                        </ul>
                       )}
-                    </button>
-                    <button 
-                      className={styles.deleteBtn} 
-                      onClick={() => setDeleteId(s.id)}
-                      disabled={loadingStates[`delete-${s.id}`]}
-                      title="Delete submission from history"
-                    >
-                      {loadingStates[`delete-${s.id}`] ? (
-                        <span className={styles.spinner}></span>
-                      ) : (
-                        <>
-                          <FiTrash2 size={14} /> Delete
-                        </>
-                      )}
-                    </button>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -303,7 +303,15 @@ export default function SubmissionTable({
         </table>
       )}
       {selected && <SubmissionModal data={selected} onClose={() => setSelected(null)} />}
-      {confirmId && <CancelConfirmationModal isOpen={!!confirmId} onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
+      {confirmId && (
+        <ConfirmationModal
+          isOpen={!!confirmId}
+          itemType="submission"
+          actionType="cancel"
+          onConfirm={() => handleCancel(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
+      )}
       {deleteId && (
         <ConfirmationModal
           isOpen={!!deleteId}

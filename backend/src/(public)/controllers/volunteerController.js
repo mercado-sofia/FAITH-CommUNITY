@@ -3,6 +3,10 @@
 import db from "../../database.js";
 import { createUserNotification } from './userController.js';
 import { calculateAge } from '../../utils/dateUtils.js';
+import { emitUserNotification } from '../../utils/socket.js';
+import { getVolunteerStatusEmail } from '../../utils/volunteerEmailTemplates.js';
+import { getSiteName } from '../../utils/siteName.js';
+import sendMail from '../../utils/mailer.js';
 
 // Status validation constants
 const VALID_STATUSES = ['Pending', 'Approved', 'Declined', 'Cancelled', 'Completed'];
@@ -138,6 +142,41 @@ export const submitVolunteer = async (req, res) => {
 
     if (programInfo.length > 0) {
       const program = programInfo[0];
+      
+      // Create notification for the user who submitted the application
+      try {
+        const userNotificationTitle = "Application Submitted Successfully";
+        const userNotificationMessage = `Your volunteer application for "${program.program_title}" has been submitted successfully. We will review your application and notify you of the status soon.`;
+        
+        const userNotificationId = await createUserNotification(
+          user_id,
+          'volunteer_application',
+          userNotificationTitle,
+          userNotificationMessage,
+          'volunteers',
+          volunteerId
+        );
+
+        // Emit real-time notification to the user
+        if (userNotificationId) {
+          try {
+            emitUserNotification(user_id, {
+              id: userNotificationId,
+              type: 'volunteer_application',
+              title: userNotificationTitle,
+              message: userNotificationMessage,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            });
+          } catch (socketError) {
+            console.error('Failed to emit real-time notification to user:', socketError);
+            // Don't throw - socket failure shouldn't block the application submission
+          }
+        }
+      } catch (userNotificationError) {
+        console.error('Failed to create user notification:', userNotificationError);
+        // Don't throw - notification failure shouldn't block the application submission
+      }
       
       // Find all admins of this organization
       const [adminRows] = await db.execute(
@@ -493,10 +532,12 @@ export const updateVolunteerStatus = async (req, res) => {
     
     // First, get the volunteer details to find the user and current status
     const [volunteerRows] = await db.execute(`
-      SELECT v.*, p.title as program_name, u.id as user_id, u.email
+      SELECT v.*, p.title as program_name, u.id as user_id, u.email,
+             CONCAT(up.first_name, ' ', up.last_name) as user_name
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN users u ON v.user_id = u.id
+      LEFT JOIN user_profiles up ON u.id = up.user_id
       WHERE v.id = ?
     `, [id]);
     
@@ -531,9 +572,10 @@ export const updateVolunteerStatus = async (req, res) => {
       });
     }
     
-    // Create notification for the user if they exist and status changed
+    // Create notification, send email, and emit real-time event for the user if they exist and status changed
     if (volunteer.user_id && volunteer.status !== status) {
       const programName = volunteer.program_name || 'Program';
+      const userName = volunteer.user_name || 'Valued Volunteer';
       let notificationTitle, notificationMessage;
       
       if (status === 'Approved') {
@@ -548,12 +590,52 @@ export const updateVolunteerStatus = async (req, res) => {
       }
       
       if (notificationTitle && notificationMessage) {
-        await createUserNotification(
+        // Get site name for email
+        const siteName = await getSiteName();
+
+        // Prepare email content
+        const emailContent = getVolunteerStatusEmail({
+          userName,
+          programName,
+          status,
+          siteName
+        });
+
+        // Create in-app notification and get the notification ID
+        const notificationId = await createUserNotification(
           volunteer.user_id,
           'volunteer_status',
           notificationTitle,
           notificationMessage
         );
+
+        // Send email notification (don't block the response if email fails)
+        sendMail({
+          to: volunteer.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        }).catch(error => {
+          console.error('Failed to send volunteer status email:', error);
+          // Don't throw - email failure shouldn't block the status update
+        });
+
+        // Emit real-time notification with actual notification ID (if notification was created successfully)
+        if (notificationId) {
+          try {
+            emitUserNotification(volunteer.user_id, {
+              id: notificationId,
+              type: 'volunteer_status',
+              title: notificationTitle,
+              message: notificationMessage,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            });
+          } catch (socketError) {
+            console.error('Failed to emit real-time notification:', socketError);
+            // Don't throw - socket failure shouldn't block the status update
+          }
+        }
       }
     }
     
@@ -616,20 +698,6 @@ export const softDeleteVolunteer = async (req, res) => {
       error: err.message 
     });
   }
-};
-
-// Test endpoints
-export const testGet = (req, res) => res.send("Hello from volunteer controller!");
-export const testPost = (req, res) => {
-  res.json({ success: true, message: "Test POST successful" });
-};
-export const testAuth = (req, res) => {
-  res.json({ 
-    success: true, 
-    message: "Auth test successful",
-    user: req.user,
-    hasToken: !!req.headers.authorization
-  });
 };
 
 // Get volunteers by program ID

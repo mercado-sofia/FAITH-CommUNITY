@@ -69,9 +69,12 @@ export const formatDateForInput = (dateString) => {
 export const formatDateShort = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
-    const date = new Date(dateString);
     
-    if (isNaN(date.getTime())) {
+    // Parse MySQL DATETIME as local time (no timezone conversion)
+    // Even though we only display the date part, we need to parse correctly to avoid timezone shifts
+    const date = parseMySQLDateTime(dateString);
+    
+    if (!date || isNaN(date.getTime())) {
       logger.warn('Invalid date string provided to formatDateShort', { dateString });
       return 'Invalid date';
     }
@@ -95,9 +98,12 @@ export const formatDateShort = (dateString) => {
 export const formatDateLong = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
-    const date = new Date(dateString);
     
-    if (isNaN(date.getTime())) {
+    // Parse MySQL DATETIME as local time (no timezone conversion)
+    // Even though we only display the date part, we need to parse correctly to avoid timezone shifts
+    const date = parseMySQLDateTime(dateString);
+    
+    if (!date || isNaN(date.getTime())) {
       logger.warn('Invalid date string provided to formatDateLong', { dateString });
       return 'Invalid date';
     }
@@ -649,35 +655,157 @@ export const getRelativeTime = (dateString) => {
  * @param {string} dateString - Date string to format
  * @returns {string} Formatted date and time string
  */
+/**
+ * Parse MySQL DATETIME string as local time (no timezone conversion)
+ * MySQL DATETIME is timezone-naive, so we treat it as local time
+ * @param {string} dateString - MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or ISO format
+ * @returns {Date} Date object in local time
+ */
+const parseMySQLDateTime = (dateString) => {
+  if (!dateString) return null;
+  
+  // Handle MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+  // IMPORTANT: MySQL DATETIME is timezone-naive, so we must parse it as-is without any timezone conversion
+  let normalizedString = dateString.trim();
+  
+  // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+  if (normalizedString.includes('T')) {
+    normalizedString = normalizedString.replace(/Z$/, '');
+    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+  } else if (normalizedString.includes(' ')) {
+    // MySQL format: replace space with 'T' for easier parsing
+    normalizedString = normalizedString.replace(' ', 'T');
+  }
+  
+  // Parse components manually to avoid ANY timezone conversion
+  // Format: YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm
+  const match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const [, year, month, day, hour, minute, second = '00'] = match;
+    
+    // Create date in local time using Date constructor with individual components
+    // This creates a date in the browser's local timezone, treating the input as local time
+    // month is 0-indexed in JavaScript Date constructor
+    const date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+      parseInt(hour, 10),
+      parseInt(minute, 10),
+      parseInt(second, 10)
+    );
+    
+    // Verify the date was created correctly by checking if the components match
+    // This helps catch any timezone conversion issues
+    if (date.getFullYear() === parseInt(year, 10) &&
+        date.getMonth() === parseInt(month, 10) - 1 &&
+        date.getDate() === parseInt(day, 10) &&
+        date.getHours() === parseInt(hour, 10) &&
+        date.getMinutes() === parseInt(minute, 10)) {
+      return date;
+    }
+    
+    // If components don't match, log a warning (in development) but return the date anyway
+    // This might happen in edge cases with DST transitions
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Date component mismatch in parseMySQLDateTime:', {
+        input: dateString,
+        expected: { year, month, day, hour, minute, second },
+        actual: {
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+          day: date.getDate(),
+          hour: date.getHours(),
+          minute: date.getMinutes(),
+          second: date.getSeconds()
+        }
+      });
+    }
+    
+    return date;
+  }
+  
+  // Fallback: try to parse as-is (this might cause timezone issues, but it's a last resort)
+  // Log a warning in development
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('parseMySQLDateTime: Could not parse date string, using fallback:', dateString);
+  }
+  return new Date(dateString);
+};
+
 export const formatDateTime = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
     
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      logger.warn('Invalid date string provided to formatDateTime', { dateString });
+    // Parse the date string directly without creating a Date object to avoid timezone conversion
+    // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+    // Or ISO format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
+    let normalizedString = dateString.trim();
+    
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+    normalizedString = normalizedString.replace(/Z$/, '');
+    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+    
+    // Try to match both formats: ISO (with T) and MySQL (with space)
+    // First try ISO format: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss
+    let match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    
+    // If no match, try MySQL format: YYYY-MM-DD HH:mm:ss or YYYY-MM-DD HH:mm
+    if (!match) {
+      match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+    }
+    
+    if (!match) {
+      logger.warn('Invalid date string format in formatDateTime', { 
+        dateString, 
+        normalizedString,
+        hasT: normalizedString.includes('T'),
+        hasSpace: normalizedString.includes(' ')
+      });
       return 'Invalid date';
     }
     
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const [, year, month, day, hour, minute] = match;
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+    let hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+    
+    // Validate components
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum) || isNaN(hourNum) || isNaN(minuteNum)) {
+      logger.warn('Invalid date components in formatDateTime', { dateString, year, month, day, hour, minute });
+      return 'Invalid date';
+    }
+    
+    // Additional validation: ensure hour is 0-23 and minute is 0-59
+    if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+      logger.warn('Invalid time values in formatDateTime', { dateString, hourNum, minuteNum });
+      return 'Invalid date';
+    }
+    
+    // Format month name
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const monthName = monthNames[monthNum - 1]; // month is 1-indexed in the string
+    
+    // Convert to 12-hour format
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    hourNum = hourNum % 12;
+    hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
+    
+    // Format minutes with leading zero
+    const minutesStr = minuteNum.toString().padStart(2, '0');
+    
+    return `${monthName} ${dayNum}, ${yearNum}, ${hourNum}:${minutesStr} ${ampm}`;
   } catch (error) {
     logger.error('Error in formatDateTime', error, { dateString });
     return 'Invalid date';
   }
 };
 
-/**
- * Format datetime for HTML5 datetime-local input (YYYY-MM-DDTHH:mm)
- * Uses local timezone to avoid date shifting issues
- * @param {string} dateString - Date string in any valid format
- * @returns {string} ISO datetime string (YYYY-MM-DDTHH:mm) or empty string
- */
 export const formatDateTimeForInput = (dateString) => {
   try {
     if (!dateString) return '';
@@ -753,5 +881,69 @@ export const formatDateTimeForAPI = (dateString) => {
   } catch (error) {
     logger.error('Error in formatDateTimeForAPI', error, { dateString });
     return '';
+ * Format time only for display (12-hour format with AM/PM)
+ * @param {string} dateString - Date string to format
+ * @returns {string} Formatted time string (e.g., "9:26 AM")
+ */
+export const formatTime = (dateString) => {
+  try {
+    if (!dateString) return 'Not specified';
+    
+    // Parse the date string directly without creating a Date object to avoid timezone conversion
+    // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+    // Or ISO format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
+    let normalizedString = dateString.trim();
+    
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+    normalizedString = normalizedString.replace(/Z$/, '');
+    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+    
+    // Try to match both formats: ISO (with T) and MySQL (with space)
+    // First try ISO format: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss
+    let match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    
+    // If no match, try MySQL format: YYYY-MM-DD HH:mm:ss or YYYY-MM-DD HH:mm
+    if (!match) {
+      match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+    }
+    
+    if (!match) {
+      logger.warn('Invalid date string format in formatTime', { 
+        dateString, 
+        normalizedString,
+        hasT: normalizedString.includes('T'),
+        hasSpace: normalizedString.includes(' ')
+      });
+      return 'Invalid time';
+    }
+    
+    const [, , , , hour, minute] = match;
+    let hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+    
+    // Validate components
+    if (isNaN(hourNum) || isNaN(minuteNum)) {
+      logger.warn('Invalid time components in formatTime', { dateString, hour, minute });
+      return 'Invalid time';
+    }
+    
+    // Additional validation: ensure hour is 0-23 and minute is 0-59
+    if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+      logger.warn('Invalid time values in formatTime', { dateString, hourNum, minuteNum });
+      return 'Invalid time';
+    }
+    
+    // Convert to 12-hour format
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    hourNum = hourNum % 12;
+    hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
+    
+    // Format minutes with leading zero
+    const minutesStr = minuteNum.toString().padStart(2, '0');
+    
+    return `${hourNum}:${minutesStr} ${ampm}`;
+  } catch (error) {
+    logger.error('Error in formatTime', error, { dateString });
+    return 'Invalid time';
   }
 };

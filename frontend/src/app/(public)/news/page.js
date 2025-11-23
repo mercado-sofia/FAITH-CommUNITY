@@ -114,15 +114,49 @@ export default function AllNewsPage() {
     return <Loader small centered />;
   }
 
+  // Handle errors with better user-friendly messages
   if (newsError || orgError) {
+    const error = newsError || orgError;
+    const errorMessage = error?.message || error?.toString() || 'An error occurred while loading news';
+    const isNetworkError = error?.isNetworkError || error?.message?.includes('Network') || error?.message?.includes('fetch');
+    const statusCode = error?.status;
+    
+    // Provide user-friendly error messages based on error type
+    let userMessage = 'Unable to load news at this time.';
+    if (isNetworkError) {
+      userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+    } else if (statusCode === 404) {
+      userMessage = 'News page not found.';
+    } else if (statusCode >= 500) {
+      userMessage = 'Server error. Please try again later.';
+    } else if (statusCode === 403 || statusCode === 401) {
+      userMessage = 'Access denied.';
+    }
+    
     return (
       <main className={styles.container}>
         <h1 className={styles.heading}>All News</h1>
         <div className={styles.errorContainer}>
-          <p>{newsError || orgError}</p>
+          <p>{userMessage}</p>
+          {process.env.NODE_ENV === 'development' && (
+            <details style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#666' }}>
+              <summary style={{ cursor: 'pointer', marginBottom: '0.5rem' }}>Technical Details</summary>
+              <pre style={{ 
+                background: '#f5f5f5', 
+                padding: '0.5rem', 
+                borderRadius: '4px',
+                overflow: 'auto',
+                fontSize: '0.75rem'
+              }}>
+                {errorMessage}
+                {statusCode && `\nStatus: ${statusCode}`}
+              </pre>
+            </details>
+          )}
           <button 
             onClick={() => window.location.reload()}
             className={styles.retryButton}
+            style={{ marginTop: '1rem' }}
           >
             Try Again
           </button>

@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
-import { formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
+import { FaTimes, FaTag, FaCalendar, FaEye, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
+import { formatDateShort, formatTime } from '@/utils/dateUtils.js';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
+import { API_CONFIG } from '../../../utils';
 import styles from './SubmissionModal.module.css';
 
 // Note: advocacy and competency are no longer part of the submission workflow
@@ -98,54 +98,6 @@ export default function SubmissionModal({ data, onClose }) {
         </div>
       );
     } else if (data.section === 'programs') {
-      // Format event dates for display
-      const formatEventDates = (programData) => {
-        if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
-          return (
-            <div className={styles.programDetailItem}>
-              <FaCalendar className={styles.detailIcon} />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Event Date(s)</span>
-                <div className={styles.eventDatesList}>
-                  {programData.multiple_dates.map((date, index) => (
-                    <span key={index} className={styles.eventDateTag}>
-                      {formatDateShort(date)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        } else if (programData.event_start_date && programData.event_end_date) {
-          if (programData.event_start_date === programData.event_end_date) {
-            return (
-              <div className={styles.programDetailItem}>
-                <FaCalendar className={styles.detailIcon} />
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>Event Date</span>
-                  <span className={styles.detailValue}>
-                    {formatDateShort(programData.event_start_date)}
-                  </span>
-                </div>
-              </div>
-            );
-          } else {
-            return (
-              <div className={styles.programDetailItem}>
-                <FaCalendar className={styles.detailIcon} />
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>Event Date Range</span>
-                  <span className={styles.detailValue}>
-                    {formatDateShort(programData.event_start_date)} - {formatDateShort(programData.event_end_date)}
-                  </span>
-                </div>
-              </div>
-            );
-          }
-        }
-        return null;
-      };
-
       return (
         <div className={styles.programLayout}>
           {/* Left side - Image */}
@@ -193,13 +145,12 @@ export default function SubmissionModal({ data, onClose }) {
             {/* Program Title */}
             <div className={styles.programTitle}>{dataObj.title}</div>
 
-            {/* Category, Event Date, and Date Submitted in same row */}
+            {/* Category and Event Date in same row */}
             <div className={styles.programDetailItem}>
               {/* Category */}
               {dataObj.category && (
                 <div className={styles.detailContent}>
                   <span className={styles.detailLabel}>
-                    <FaTag className={styles.detailIcon} />
                     Category
                   </span>
                   <span className={styles.detailValue}>{dataObj.category}</span>
@@ -269,17 +220,6 @@ export default function SubmissionModal({ data, onClose }) {
                 }
                 return null;
               })()}
-              
-              {/* Date Submitted */}
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>
-                  <FaCalendar className={styles.detailIcon} />
-                  Date Submitted
-                </span>
-                <span className={styles.detailValue}>
-                  {formatDateShort(data.submitted_at)}
-                </span>
-              </div>
             </div>
 
             {/* Description */}
@@ -517,7 +457,7 @@ export default function SubmissionModal({ data, onClose }) {
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Time</span>
               <span className={styles.metaValue}>
-                {formatDateTime(data.submitted_at)}
+                {formatTime(data.submitted_at)}
               </span>
             </div>
           </div>
@@ -718,16 +658,6 @@ export default function SubmissionModal({ data, onClose }) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className={styles.modalActions}>
-          <button 
-            className={styles.closeButtonAction} 
-            onClick={onClose}
-            type="button"
-          >
-            Close
-          </button>
-        </div>
       </div>
 
     </div>

@@ -1,13 +1,17 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { formatDateShort } from '@/utils/dateUtils.js'
+import { getProfilePhotoUrl } from '@/utils/uploadPaths'
+import { FaUser } from 'react-icons/fa'
 
 import styles from './ViewDetailsModal.module.css'
 import { IoClose, IoPerson, IoMail, IoDocumentText } from "react-icons/io5"
 
-export default function VolunteerDetailModal({ app, onClose }) {
+export default function ViewDetailsModal({ app, onClose }) {
   const reasonTextareaRef = useRef(null)
+  const [imageError, setImageError] = useState(false)
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -17,6 +21,15 @@ export default function VolunteerDetailModal({ app, onClose }) {
       textarea.style.height = textarea.scrollHeight + 'px'
     }
   }, [app.reason])
+
+  // Get the proper profile photo URL using the utility function
+  const profilePhotoUrl = getProfilePhotoUrl(app.profile_photo_url)
+  
+  // Check if we have a valid profile photo URL (not the fallback)
+  const hasValidProfilePhoto = profilePhotoUrl && 
+    profilePhotoUrl !== '/defaults/default-profile.png' && 
+    profilePhotoUrl !== 'IMAGE_UNAVAILABLE' &&
+    !imageError
 
   return (
     <div className={styles.modal}>
@@ -29,8 +42,28 @@ export default function VolunteerDetailModal({ app, onClose }) {
         </div>
 
         <div className={styles.applicantHeader}>
-          <div className={styles.applicantName}>{app.name}</div>
-          <div className={styles.applicantProgram}>{app.program}</div>
+          <div className={styles.profileAvatar}>
+            {!hasValidProfilePhoto ? (
+              <div className={styles.avatarFallback}>
+                <FaUser size={32} />
+              </div>
+            ) : (
+              <div className={styles.avatarContainer}>
+                <Image
+                  src={profilePhotoUrl}
+                  alt={`${app.name || 'Volunteer'}'s profile`}
+                  width={64}
+                  height={64}
+                  className={styles.avatarImage}
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            )}
+          </div>
+          <div className={styles.applicantInfo}>
+            <div className={styles.applicantName}>{app.name}</div>
+            <div className={styles.applicantProgram}>{app.program}</div>
+          </div>
         </div>
 
         <div className={styles.contentWrapper}>

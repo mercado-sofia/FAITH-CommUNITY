@@ -110,9 +110,10 @@ function SuperAdminLayoutContent({ children }) {
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
         const { getCurrentUser } = await import('@/utils/authService');
+        const { getValidAccessToken } = await import('@/utils/tokenRefresh');
         let userData = null;
         let retryCount = 0;
-        const maxRetries = 3;
+        const maxRetries = 5; // Increased retries to handle token refresh
         const retryDelay = 500; // 500ms between retries
         
         while (retryCount < maxRetries && !userData) {
@@ -131,6 +132,20 @@ function SuperAdminLayoutContent({ children }) {
               userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
             });
             
+            // If no user data but we have retries left, try refreshing token
+            if (!userData && retryCount < maxRetries - 1) {
+              console.log('[Superadmin Layout] No user data, attempting token refresh...');
+              const refreshed = await getValidAccessToken(true); // Force refresh
+              if (refreshed) {
+                console.log('[Superadmin Layout] Token refreshed, retrying auth check...');
+                // Wait a bit for cookies to be set
+                await new Promise(resolve => setTimeout(resolve, 200));
+                continue; // Retry auth check
+              } else {
+                console.warn('[Superadmin Layout] Token refresh failed');
+              }
+            }
+            
             if (userData && userData.role === 'superadmin') {
               break; // Success, exit retry loop
             }
@@ -138,6 +153,22 @@ function SuperAdminLayoutContent({ children }) {
             retryCount++;
           } catch (error) {
             console.error(`[Superadmin Layout] Auth check error (attempt ${retryCount + 1}):`, error);
+            
+            // Try token refresh on error if we have retries left
+            if (retryCount < maxRetries - 1) {
+              try {
+                console.log('[Superadmin Layout] Error occurred, attempting token refresh...');
+                const refreshed = await getValidAccessToken(true);
+                if (refreshed) {
+                  await new Promise(resolve => setTimeout(resolve, 200));
+                  retryCount++;
+                  continue; // Retry auth check
+                }
+              } catch (refreshError) {
+                console.error('[Superadmin Layout] Token refresh error:', refreshError);
+              }
+            }
+            
             retryCount++;
             
             // If it's the last retry and still failing, break
@@ -172,6 +203,7 @@ function SuperAdminLayoutContent({ children }) {
         
         setIsInitialLoading(false);
       } catch (error) {
+        console.error('[Superadmin Layout] Initialization error:', error);
         // Use centralized immediate cleanup for security
         clearAuthImmediate(USER_TYPES.SUPERADMIN);
         if (typeof window !== 'undefined') {

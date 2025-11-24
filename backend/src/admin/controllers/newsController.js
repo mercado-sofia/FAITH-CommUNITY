@@ -1440,7 +1440,28 @@ export const getNewsBySlug = async (req, res) => {
   try {
     // Check if this is a public request (no auth token) or admin request
     const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
-    const isPublicRequest = !token;
+    let isPublicRequest = !token;
+    let decoded = null;
+    let isAdmin = false;
+    let isSuperadmin = false;
+
+    // If token exists, verify authentication and authorization
+    if (!isPublicRequest) {
+      const authResult = await getOrRefreshAccessToken(req, res);
+      if (authResult.decoded) {
+        decoded = authResult.decoded;
+        isAdmin = decoded.role === 'admin';
+        isSuperadmin = decoded.role === 'superadmin';
+        // If token is invalid or user is not admin/superadmin, treat as public request
+        if (!isAdmin && !isSuperadmin) {
+          isPublicRequest = true;
+          decoded = null;
+        }
+      } else {
+        // Invalid token, treat as public request
+        isPublicRequest = true;
+      }
+    }
 
     // Auto-update scheduled news to published if publish date has passed
     await autoUpdateScheduledNews(null, slug);
@@ -1461,6 +1482,8 @@ export const getNewsBySlug = async (req, res) => {
         if (isPublicRequest) {
           query += ` AND n.status = 'published' AND o.status = 'ACTIVE'`;
         }
+        // For authenticated admin/superadmin requests, no status filter (they can see all statuses)
+        // But we'll verify authorization after fetching
       } else {
         // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
@@ -1497,6 +1520,84 @@ export const getNewsBySlug = async (req, res) => {
     }
 
     const n = rows[0];
+
+    // Authorization check for authenticated admin requests viewing non-published content
+    // Only check authorization if:
+    // 1. Request is authenticated (not public)
+    // 2. Status column exists
+    // 3. Status is not 'published' (null status is treated as non-published for security)
+    const isPublished = statusColumnExists && n.status === 'published';
+    const needsAuthorization = !isPublicRequest && decoded && statusColumnExists && !isPublished;
+    
+    if (needsAuthorization) {
+      // Superadmins can see all statuses
+      if (isSuperadmin) {
+        // No additional check needed - superadmins have access to all content
+      } else if (isAdmin) {
+        // Verify admin belongs to the organization that owns this news
+        let adminOrgId = null;
+        let adminOrgAcronym = null;
+
+        // Get admin's organization from database
+        const [adminRows] = await db.execute(
+          `SELECT u.id, u.is_active, u.organization_id, o.status as org_status, o.org as org_acronym
+           FROM users u
+           LEFT JOIN organizations o ON u.organization_id = o.id
+           WHERE u.id = ? AND u.role = 'admin'`,
+          [decoded.id]
+        );
+
+        if (adminRows.length === 0 || !adminRows[0].is_active) {
+          // Admin is inactive - deny access to non-published content
+          // Return 404 to avoid revealing existence of non-published content
+          return res.status(404).json({ success: false, message: "News not found" });
+        }
+
+        // Check if admin's organization is active
+        if (adminRows[0].organization_id && adminRows[0].org_status !== 'ACTIVE') {
+          // Admin's organization is inactive - deny access to non-published content
+          return res.status(403).json({ 
+            success: false, 
+            message: "Access denied. Your organization is inactive." 
+          });
+        }
+
+        adminOrgId = adminRows[0].organization_id;
+        adminOrgAcronym = adminRows[0].org_acronym;
+
+        // Check if admin has access to this organization
+        const newsOrgId = n.organization_id;
+        const newsOrgAcronym = n.orgAcronym;
+
+        // Primary check: Token org field (most reliable - comes from login)
+        const tokenOrg = decoded.org ? String(decoded.org).trim().toUpperCase() : null;
+        const newsOrgAcronymUpper = newsOrgAcronym ? String(newsOrgAcronym).trim().toUpperCase() : null;
+        
+        const tokenOrgMatches = tokenOrg && tokenOrg === newsOrgAcronymUpper;
+        
+        // Secondary check: Organization ID from token
+        const tokenOrgIdMatches = decoded.organization_id && 
+                                  Number(decoded.organization_id) === Number(newsOrgId);
+        
+        // Tertiary check: Database values
+        const dbOrgIdMatches = adminOrgId && Number(adminOrgId) === Number(newsOrgId);
+        const dbOrgAcronymMatches = adminOrgAcronym && (
+          String(adminOrgAcronym).trim().toUpperCase() === newsOrgAcronymUpper
+        );
+        
+        const hasAccess = tokenOrgMatches || tokenOrgIdMatches || dbOrgIdMatches || dbOrgAcronymMatches;
+
+        if (!hasAccess) {
+          // Admin doesn't have access to this organization's news
+          // Deny access to non-published content
+          return res.status(403).json({ 
+            success: false, 
+            message: "Access denied. You do not have permission to access this resource." 
+          });
+        }
+      }
+    }
+
     const newsData = mapNewsToResponse(n);
 
     return res.json(newsData);

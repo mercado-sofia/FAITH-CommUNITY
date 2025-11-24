@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
-import { FiTrash2, FiX } from "react-icons/fi"
-import { FaEdit } from "react-icons/fa"
+import { FiTrash2 } from "react-icons/fi"
 import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"

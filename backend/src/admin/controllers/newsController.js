@@ -828,22 +828,11 @@ export const createNews = async (req, res) => {
     console.log('[createNews] News created successfully with ID:', newsId, 'featured_image:', featured_image || 'null');
 
     // 4) 🔔 Notify subscribers (announcement) - only if published immediately
-    const publishedAtDate = new Date(published_at);
-    const now = new Date();
-    const isPublishedImmediately = publishedAtDate <= now;
-
-    if (isPublishedImmediately) {
+    if (status === 'published') {
       const appBase = process.env.APP_BASE_URL;
       const url = `${appBase}/news/${slug}`;
 
       // Fire-and-forget (remove await to make it truly background)
-
-    // 5) 🔔 Notify subscribers (announcement) - only if published immediately
-    const appBase = process.env.APP_BASE_URL;
-    const url = `${appBase}/news/${slug}`;
-
-    // Fire-and-forget (remove await to make it truly background) - only notify if published immediately
-    if (status === 'published') {
       notifySubscribers({
         type: "announcement",
         subject: `New Announcement: ${title}`,
@@ -871,14 +860,6 @@ export const createNews = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[createNews] Error creating news:', error);
-    console.error('[createNews] Error stack:', error.stack);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Failed to create news", 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
     if (process.env.NODE_ENV === 'development') {
       console.error('[createNews] Unexpected error:', {
         message: error.message,
@@ -957,7 +938,6 @@ export const getNewsByOrg = async (req, res) => {
     console.log('[getNewsByOrg] Token verified, admin ID:', decoded.id, 'role:', decoded.role, 'org:', decoded.org);
   } catch (err) {
     console.error('[getNewsByOrg] Token verification failed:', err.message);
-  } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
   }
 
@@ -1119,14 +1099,6 @@ export const getNewsByOrg = async (req, res) => {
 // Get all published news (for public view) - only published status, no approval needed
 export const getApprovedNews = async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
-       FROM news n
-       LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.is_deleted = FALSE AND o.status = 'ACTIVE'
-         AND (n.published_at IS NULL OR n.published_at <= NOW())
-       ORDER BY n.created_at DESC`
-    );
     // Auto-update scheduled news to published if publish date has passed
     // Don't let this break the main query if it fails
     await autoUpdateScheduledNews();
@@ -1470,17 +1442,6 @@ export const getNewsBySlug = async (req, res) => {
     const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
     const isPublicRequest = !token;
 
-    let query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
-       FROM news n
-       LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.slug = ? AND n.is_deleted = FALSE`;
-    
-    // For public requests, filter out future-dated posts
-    if (isPublicRequest) {
-      query += ` AND (n.published_at IS NULL OR n.published_at <= NOW()) AND o.status = 'ACTIVE'`;
-    }
-    
-    const [rows] = await db.execute(query, [slug]);
     // Auto-update scheduled news to published if publish date has passed
     await autoUpdateScheduledNews(null, slug);
 
@@ -1494,7 +1455,12 @@ export const getNewsBySlug = async (req, res) => {
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  LEFT JOIN organizations o ON n.organization_id = o.id
-                 WHERE n.slug = ? AND n.is_deleted = FALSE AND n.status = 'published'`;
+                 WHERE n.slug = ? AND n.is_deleted = FALSE`;
+        
+        // For public requests, filter by published status and active organization
+        if (isPublicRequest) {
+          query += ` AND n.status = 'published' AND o.status = 'ACTIVE'`;
+        }
       } else {
         // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
@@ -1503,6 +1469,11 @@ export const getNewsBySlug = async (req, res) => {
                  WHERE n.slug = ? AND n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
                    AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
+        
+        // For public requests, also filter by active organization
+        if (isPublicRequest) {
+          query += ` AND o.status = 'ACTIVE'`;
+        }
       }
       [rows] = await db.execute(query, [slug]);
     } catch (dbError) {
@@ -1860,7 +1831,7 @@ export const permanentlyDeleteNews = async (req, res) => {
 // Update news (for admin)
 export const updateNews = async (req, res) => {
   const { id } = req.params;
-  const { title, slug, content, excerpt, published_at } = req.body;
+  const { title, slug, content, excerpt, published_at, action } = req.body;
 
   // Verify authentication - automatically refresh if needed
   const { token, decoded, refreshed } = await getOrRefreshAccessToken(req, res);
@@ -1870,7 +1841,6 @@ export const updateNews = async (req, res) => {
   }
 
   req.admin = decoded;
-  const { title, slug, content, excerpt, published_at, action } = req.body;
   
   // Log request body for debugging (only in development)
   if (process.env.NODE_ENV === 'development') {
@@ -2010,12 +1980,6 @@ export const updateNews = async (req, res) => {
     // Determine new status based on action (for drafts/scheduled) or auto-update logic (for published/archived)
     let newStatus = currentStatus; // Default: preserve current status
     
-    if (featured_image) {
-      query += ', featured_image = ?';
-      params.push(featured_image);
-      console.log('[updateNews] Updating with new featured_image:', featured_image);
-    } else {
-      console.log('[updateNews] No new image provided - preserving existing image');
     // Handle archive action (works for any status)
     if (normalizedAction === 'archive') {
       newStatus = 'archived';
@@ -2229,8 +2193,6 @@ export const updateNews = async (req, res) => {
       params.splice(whereIndex, 0, featured_image);
     }
 
-    const [result] = await db.execute(query, params);
-    console.log('[updateNews] Update result - affectedRows:', result.affectedRows);
     let result;
     try {
       // Log query and params for debugging (only in development)

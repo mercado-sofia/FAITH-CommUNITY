@@ -5,9 +5,7 @@ import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiX } from "react-icons/fi"
 import { FaEdit } from "react-icons/fa"
 import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
-import { FiTrash2 } from "react-icons/fi"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
-import { formatDateLong } from '@/utils/dateUtils.js';
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import styles from "./NewsTable.module.css"
 
@@ -47,6 +45,8 @@ const isScheduled = (publishedAt) => {
   const publishedDate = new Date(publishedAt);
   const now = new Date();
   return publishedDate > now;
+};
+
 const formatStatus = (status) => {
   if (!status) return 'Draft';
   return status.charAt(0).toUpperCase() + status.slice(1);

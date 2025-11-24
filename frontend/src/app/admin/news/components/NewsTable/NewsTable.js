@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
-import { FiTrash2 } from "react-icons/fi"
+import { FiTrash2, FiArchive } from "react-icons/fi"
 import { formatDateLong } from '@/utils/dateUtils.js';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
@@ -52,7 +52,8 @@ export default function NewsTable({
   onView,
   onArchive,
   onUnarchive,
-  onBulkDelete, 
+  onBulkDelete,
+  onBulkArchive,
   itemsPerPage = 10,
   onSelectionChange,
   selectedItems = []
@@ -183,6 +184,14 @@ export default function NewsTable({
     }
   }
 
+  const handleBulkArchive = () => {
+    if (selectedNews.length === 0) return
+    // Pass selected news IDs to parent for confirmation modal
+    if (onBulkArchive) {
+      onBulkArchive(selectedNews)
+    }
+  }
+
   const cancelSelection = () => {
     setSelectedNews([])
     // Notify parent to clear selections as well
@@ -238,6 +247,14 @@ export default function NewsTable({
             </span>
           </div>
           <div className={styles.bulkActionsRight}>
+            <button 
+              className={`${styles.bulkButton} ${styles.archiveButton}`}
+              onClick={handleBulkArchive}
+              title="Archive selected news items"
+            >
+              <FiArchive size={16} />
+              Archive Selected
+            </button>
             <button 
               className={`${styles.bulkButton} ${styles.deleteButton}`}
               onClick={handleBulkDelete}
@@ -318,7 +335,8 @@ export default function NewsTable({
                       const status = (newsItem.status || 'draft').toLowerCase();
                       const publishedAt = newsItem.published_at;
                       
-                      // Only show date if news is published or archived (was published before)
+                      // Only show "Date Published" for news that has actually been published or archived
+                      // Scheduled and draft items haven't been published yet, so show "-"
                       if ((status === 'published' || status === 'archived') && publishedAt) {
                         return formatDate(publishedAt);
                       } else {

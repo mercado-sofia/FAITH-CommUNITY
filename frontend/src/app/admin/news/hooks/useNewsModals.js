@@ -2,9 +2,10 @@ import { useState, useCallback } from 'react';
 
 /**
  * Custom hook for managing news modal states and handlers
+ * @param {object} urlState - URL state from useNewsURL hook (optional)
  * @returns {object} Modal states and handlers
  */
-export const useNewsModals = () => {
+export const useNewsModals = (urlState = null) => {
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -17,14 +18,22 @@ export const useNewsModals = () => {
   const [unarchivingNews, setUnarchivingNews] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
-  // Page mode state
-  const [pageMode, setPageMode] = useState('list'); // 'list', 'create', or 'edit'
+  // Page mode state - initialize from URL if available
+  const [pageMode, setPageMode] = useState(() => {
+    if (urlState?.isCreateMode) return 'create';
+    if (urlState?.editId) return 'edit';
+    return 'list';
+  });
 
-  // Handle edit action
+  // Handle edit action - updates URL parameter
   const handleEdit = useCallback((newsItem) => {
     setEditingNews(newsItem);
     setPageMode('edit');
-  }, []);
+    // Update URL parameter
+    if (urlState?.updateURLParams && newsItem?.id) {
+      urlState.updateURLParams({ edit: newsItem.id.toString() });
+    }
+  }, [urlState]);
 
   // Handle delete action
   const handleDelete = useCallback((newsItem) => {
@@ -50,6 +59,12 @@ export const useNewsModals = () => {
     setShowDeleteModal(true);
   }, []);
 
+  // Handle bulk archive request
+  const handleBulkArchiveRequest = useCallback((selectedNewsIds) => {
+    setSelectedItems(selectedNewsIds);
+    setShowArchiveModal(true);
+  }, []);
+
   // Handle archive action
   const handleArchive = useCallback((newsItem) => {
     setArchivingNews(newsItem);
@@ -60,6 +75,12 @@ export const useNewsModals = () => {
   const handleCloseArchiveModal = useCallback(() => {
     setShowArchiveModal(false);
     setArchivingNews(null);
+    // Clear selected items if closing after bulk archive operation
+    setSelectedItems(prev => {
+      // Only clear if there are selected items (indicating it was a bulk operation)
+      // Single archive operations don't set selectedItems
+      return prev.length > 0 ? [] : prev;
+    });
   }, []);
 
   // Handle unarchive action
@@ -88,22 +109,25 @@ export const useNewsModals = () => {
     setSelectedItems([]);
   }, []);
 
-  // Handle create mode
+  // Handle create mode - updates URL parameter
   const handleCreateMode = useCallback(() => {
     setPageMode('create');
     setEditingNews(null);
-  }, []);
+    // Update URL parameter
+    if (urlState?.updateURLParams) {
+      urlState.updateURLParams({ create: 'true' });
+    }
+  }, [urlState]);
 
-  // Handle list mode
+  // Handle list mode - clears URL parameters
   const handleListMode = useCallback(() => {
     setPageMode('list');
     setEditingNews(null);
-  }, []);
-
-  // Handle delete modal
-  const handleShowDeleteModal = useCallback(() => {
-    setShowDeleteModal(true);
-  }, []);
+    // Clear edit and create parameters from URL
+    if (urlState?.updateURLParams) {
+      urlState.updateURLParams({ edit: '', create: '' });
+    }
+  }, [urlState]);
 
   const handleCloseDeleteModal = useCallback(() => {
     setShowDeleteModal(false);
@@ -124,6 +148,17 @@ export const useNewsModals = () => {
     }
     return '';
   }, [deletingNews, selectedItems]);
+
+  // Get archive modal item name
+  const getArchiveModalItemName = useCallback(() => {
+    if (archivingNews) {
+      return archivingNews.title;
+    }
+    if (selectedItems.length > 0) {
+      return `${selectedItems.length} selected news items`;
+    }
+    return '';
+  }, [archivingNews, selectedItems]);
 
   return {
     // Modal states
@@ -150,14 +185,15 @@ export const useNewsModals = () => {
     handleCloseArchiveModal,
     handleCloseUnarchiveModal,
     handleBulkDeleteRequest,
+    handleBulkArchiveRequest,
     handleCloseModals,
     handleCreateMode,
     handleListMode,
-    handleShowDeleteModal,
     handleCloseDeleteModal,
     
     // Utility functions
     getDeleteModalItemName,
+    getArchiveModalItemName,
     
     // State setters (for direct control if needed)
     setEditingNews,

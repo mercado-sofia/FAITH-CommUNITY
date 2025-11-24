@@ -63,19 +63,7 @@ export const useNewsFilters = (news, searchQuery, sortBy, statusFilter = 'all') 
     return sortedNews || [];
   }, [sortedNews]);
 
-  // Get statistics
-  const stats = useMemo(() => {
-    return {
-      totalCount: news?.length || 0,
-      filteredCount: filteredNews?.length || 0,
-      displayedCount: displayedNews?.length || 0
-    };
-  }, [news?.length, filteredNews?.length, displayedNews?.length]);
-
   return {
-    filteredNews,
-    sortedNews,
-    displayedNews,
-    stats
+    displayedNews
   };
 };

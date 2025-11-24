@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, parse, isBefore, startOfDay } from 'date-fns';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import styles from './DatePickerPopover.module.css';
@@ -192,7 +192,9 @@ export default function DatePickerPopover({
       
       // Validate hour is 0-23 (24-hour format)
       if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
-        console.error('[DatePickerPopover] Invalid time values in handleConfirm:', { hour24, minute, draftTime });
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[DatePickerPopover] Invalid time values in handleConfirm:', { hour24, minute, draftTime });
+        }
         return;
       }
       
@@ -344,7 +346,9 @@ export default function DatePickerPopover({
                     
                     // Validate hour is 0-23
                     if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
-                      console.error('[DatePickerPopover] Invalid time values:', { hour24, minute });
+                      if (process.env.NODE_ENV === 'development') {
+                        console.error('[DatePickerPopover] Invalid time values:', { hour24, minute });
+                      }
                       return;
                     }
                     

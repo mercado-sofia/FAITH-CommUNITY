@@ -248,8 +248,8 @@ const ViewDetailsModal = ({
                           <span className={styles.detailLabel}>Created</span>
                           <span className={styles.detailValue}>
                             {mode === 'collaboration' 
-                              ? formatDateShort(data.program_created_at)
-                              : formatDateShort(data.created_at)
+                              ? formatDateTime(data.program_created_at)
+                              : formatDateTime(data.created_at)
                             }
                           </span>
                         </div>

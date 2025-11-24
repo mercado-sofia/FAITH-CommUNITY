@@ -511,7 +511,7 @@ const runIncrementalMigrations = async (connection) => {
     try {
       await connection.query(`
         ALTER TABLE programs_projects 
-        MODIFY COLUMN status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming'
+        MODIFY COLUMN status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled', 'archived') DEFAULT 'Upcoming'
       `);
       // Programs status enum updated successfully
     } catch (enumError) {
@@ -1022,7 +1022,7 @@ const initializeDatabase = async () => {
           slug VARCHAR(255) UNIQUE,
           description TEXT NOT NULL,
           category VARCHAR(100),
-          status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming',
+          status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled', 'archived') DEFAULT 'Upcoming',
           image VARCHAR(500),
           event_start_date DATE NULL,
           event_end_date DATE NULL,

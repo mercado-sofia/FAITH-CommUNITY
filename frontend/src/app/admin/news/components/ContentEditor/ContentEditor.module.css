@@ -229,11 +229,3 @@
   font-size: 20px !important;
   font-weight: 600 !important;
 }
-
-@media (max-width: 768px) {
-  .editor {
-    padding: 12px;
-    font-size: 13px;
-    min-height: 250px;
-  }
-}

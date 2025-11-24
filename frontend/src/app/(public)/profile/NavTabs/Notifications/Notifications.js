@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { makeAuthenticatedRequest } from '../../utils/profileApi';
-import { getRelativeTime } from '@/utils/dateUtils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuthState } from '@/hooks/useAuthState';
 import ConfirmationModal from '../../components/ConfirmationModal';

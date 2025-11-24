@@ -47,18 +47,6 @@
   border-color: #0b1b19;
 }
 
-.createPostHeader {
-  margin-bottom: 24px;
-}
-
-.createPostHeader h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  font-family: var(--font-poppins), sans-serif;
-  color: #06100f;
-  margin: 0;
-}
-
 /* Status Navigation Tabs */
 .statusTabs {
   display: flex;
@@ -81,6 +69,8 @@
   transition: all 0.2s ease;
   user-select: none;
   border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .statusTab:hover {
@@ -91,4 +81,13 @@
   color: #000;
   font-weight: 600;
   background: #f3f4f6;
+}
+
+.statusTabIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  vertical-align: middle;
+  line-height: 1;
 }

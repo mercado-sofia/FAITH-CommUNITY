@@ -11,9 +11,6 @@ import { SuccessModal, ErrorBoundary } from '@/components';
 import { handleApiError, API_CONFIG, PAGINATION, TIMEOUTS } from '../utils';
 import styles from './submissions.module.css';
 
-// Track if submissions page has been visited
-let hasVisitedSubmissions = false;
-
 export default function SubmissionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,7 +51,6 @@ export default function SubmissionsPage() {
     if (!loading && submissions.length >= 0) {
       setHasInitiallyLoaded(true);
       setPageReady(true);
-      hasVisitedSubmissions = true;
     }
   }, [loading, submissions.length]);
 
@@ -281,13 +277,11 @@ export default function SubmissionsPage() {
 
       <div className={styles.tableContainer}>
         <SubmissionTable 
-          orgAcronym={orgAcronym} 
           submissions={paginatedSubmissions}
           loading={loading}
           onRefresh={refreshSubmissions}
           currentPage={currentPage}
           itemsPerPage={showCount}
-          onPageChange={handlePageChange}
           selectedItems={selectedItems}
           onSelectItems={setSelectedItems}
           onShowBulkActions={setShowBulkActions}

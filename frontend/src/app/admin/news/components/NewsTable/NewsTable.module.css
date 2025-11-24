@@ -126,31 +126,51 @@
   text-transform: uppercase;
 }
 
-/* Adjust column widths for 4-column layout */
-.tableHeader th:nth-child(1) { /* Checkbox */
+/* Numbering column */
+.numberColumn {
+  width: 5%;
+  text-align: center !important;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 12px 4px 12px 2px !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* Adjust column widths for 5-column layout */
+.tableHeader th:nth-child(1) { /* Number */
+  width: 5%;
+  text-align: center;
+  padding-right: 4px;
+}
+
+.tableHeader th:nth-child(2) { /* Checkbox */
   width: 50px;
   text-align: center;
   vertical-align: middle;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 4px;
 }
 
-.tableHeader th:nth-child(2) { /* Title */
+.tableHeader th:nth-child(3) { /* Title */
   width: 45%; /* Increased width for Title column */
 }
 
-.tableHeader th:nth-child(3) { /* Date */
+.tableHeader th:nth-child(4) { /* Date */
   width: 200px;
   padding-right: 8px; /* Reduce right padding to bring closer to Status */
 }
 
-.tableHeader th:nth-child(4) { /* Status */
+.tableHeader th:nth-child(5) { /* Status */
   width: 120px;
   text-align: left;
   padding-left: 8px; /* Add left padding to create small gap from Date */
   padding-right: 40px; /* Add right padding to create space before Actions */
 }
 
-.tableHeader th:nth-child(5) { /* Actions */
+.tableHeader th:nth-child(6) { /* Actions */
   width: 60px;
   text-align: center;
   padding-left: 40px; /* Add left padding to create space from Status */
@@ -165,26 +185,34 @@
   vertical-align: middle;
 }
 
-/* Checkbox column alignment */
+/* Number column alignment */
 .tableBody td:nth-child(1) {
   text-align: center;
   vertical-align: middle;
+  padding-right: 4px;
+}
+
+/* Checkbox column alignment */
+.tableBody td:nth-child(2) {
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 4px;
 }
 
 /* Adjust Date column padding */
-.tableBody td:nth-child(3) {
+.tableBody td:nth-child(4) {
   padding-right: 8px; /* Match header padding */
 }
 
 /* Left align Status column content and adjust padding */
-.tableBody td:nth-child(4) {
+.tableBody td:nth-child(5) {
   text-align: left;
   padding-left: 8px; /* Match header padding */
   padding-right: 40px; /* Match header padding */
 }
 
 /* Adjust Actions column padding */
-.tableBody td:nth-child(5) {
+.tableBody td:nth-child(6) {
   padding-left: 40px; /* Match header padding */
 }
 
@@ -192,9 +220,6 @@
   position: relative;
 }
 
-.tableBody td:first-child {
-  text-align: center;
-}
 
 /* News Info Cell Styles - similar to volunteer info */
 .titleCell {

@@ -1,19 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
-import { formatDateShort, formatDateLong } from '@/utils/dateUtils.js';
+import { formatDateLong } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
 import { ConfirmationModal, SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
 import { API_CONFIG } from '../../../utils';
 
 export default function SubmissionTable({ 
-  orgAcronym, 
   submissions = [], 
   loading = false, 
   onRefresh, 
   currentPage = 1,
   itemsPerPage = 10,
-  onPageChange,
   selectedItems = new Set(),
   onSelectItems = () => {},
   onShowBulkActions = () => {}

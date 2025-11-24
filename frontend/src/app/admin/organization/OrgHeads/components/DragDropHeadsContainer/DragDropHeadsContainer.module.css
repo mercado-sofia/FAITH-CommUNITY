@@ -211,33 +211,6 @@
   box-shadow: 0 0 10px rgba(22, 160, 133, 0.3);
 }
 
-@media (max-width: 768px) {
-  .headCard {
-    border-radius: 4px;
-  }
-  
-  .headPhoto {
-    width: 100px;
-    height: 125px;
-    align-self: center;
-  }
-  
-  .headInfo {
-    width: 100%;
-  }
-  
-  .orderIndicator {
-    top: 8px;
-    right: 8px;
-    left: auto;
-  }
-  
-  .selectCheckbox {
-    top: 40px;
-    right: 8px;
-  }
-}
-
 /* Animation for smooth reordering */
 @keyframes slideIn {
   from {

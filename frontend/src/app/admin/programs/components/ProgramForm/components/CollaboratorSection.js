@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { FiTrash2, FiUsers, FiX } from 'react-icons/fi';
 import styles from '../ProgramForm.module.css';
 

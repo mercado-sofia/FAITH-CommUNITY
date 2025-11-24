@@ -102,7 +102,7 @@ All API responses follow this structure:
 - **POST** `/api/users/register` - Register new user
 - **POST** `/api/users/login` - Login user
 - **POST** `/api/users/logout` - Logout user (requires auth)
-- **POST** `/api/users/refresh` - Refresh access token
+- **POST** `/api/users/refresh` - Refresh access token (unified endpoint for all roles: user, admin, superadmin)
 - **GET** `/api/users/auth/check` - Check authentication status (unified for all roles)
 - **POST** `/api/users/forgot-password` - Request password reset
 - **POST** `/api/users/reset-password` - Reset password with token
@@ -155,7 +155,8 @@ All API responses follow this structure:
 ## Admin APIs (Admin Authentication Required)
 
 ### Authentication
-- **POST** `/api/admins/login` - Login admin
+- **POST** `/api/admins/login` - Login admin (issues access token and refresh token)
+- **POST** `/api/users/refresh` - Refresh access token (unified endpoint, works for admin users)
 - **POST** `/api/admins/forgot-password` - Request password reset
 - **POST** `/api/admins/reset-password` - Reset password with token
 - **POST** `/api/admins/validate-reset-token` - Validate password reset token
@@ -297,7 +298,8 @@ All API responses follow this structure:
 ## Superadmin APIs (Superadmin Authentication Required)
 
 ### Authentication
-- **POST** `/api/superadmin/auth/login` - Login superadmin
+- **POST** `/api/superadmin/auth/login` - Login superadmin (issues access token and refresh token)
+- **POST** `/api/users/refresh` - Refresh access token (unified endpoint, works for superadmin users)
 - **POST** `/api/superadmin/auth/forgot-password` - Request password reset
 - **POST** `/api/superadmin/auth/reset-password` - Reset password with token
 - **POST** `/api/superadmin/auth/validate-reset-token` - Validate password reset token

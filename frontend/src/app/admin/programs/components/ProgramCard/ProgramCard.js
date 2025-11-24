@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers } from 'react-icons/fa';
 import { TbListDetails } from 'react-icons/tb';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2, FiArchive } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
@@ -14,7 +14,7 @@ import ProgramModals from './ProgramModals';
 import { useProgramActions } from '../../hooks';
 import styles from './ProgramCard.module.css';
 
-const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut, onShowSuccessModal, onToggleVolunteerAcceptance, onAcceptCollaboration, onDeclineCollaboration, isCollaborationCard = false }) => {
+const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut, onShowSuccessModal, onToggleVolunteerAcceptance, onAcceptCollaboration, onDeclineCollaboration, onArchive, onUnarchive, isCollaborationCard = false }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -56,6 +56,8 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     onToggleVolunteerAcceptance,
     onAcceptCollaboration,
     onDeclineCollaboration,
+    onArchive,
+    onUnarchive,
     isCollaborationCard
   });
 
@@ -195,6 +197,30 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                       >
                         <FaEdit /> Edit
                       </button>
+                      {/* Show Archive or Unarchive based on program status */}
+                      {getDisplayStatus() === 'archived' ? (
+                        <button
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            setShowDropdown(false);
+                            actions.handleUnarchiveClick();
+                          }}
+                          disabled={actions.isArchiving}
+                        >
+                          <FiArchive /> {actions.isArchiving ? 'Unarchiving...' : 'Unarchive'}
+                        </button>
+                      ) : (
+                        <button
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            setShowDropdown(false);
+                            actions.handleArchiveClick();
+                          }}
+                          disabled={actions.isArchiving}
+                        >
+                          <FiArchive /> {actions.isArchiving ? 'Archiving...' : 'Archive'}
+                        </button>
+                      )}
                       <button
                         className={styles.dropdownItem}
                         onClick={() => {
@@ -286,6 +312,30 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                       >
                         <FaEdit /> Edit
                       </button>
+                      {/* Show Archive or Unarchive based on program status */}
+                      {getDisplayStatus() === 'archived' ? (
+                        <button
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            setShowDropdown(false);
+                            actions.handleUnarchiveClick();
+                          }}
+                          disabled={actions.isArchiving}
+                        >
+                          <FiArchive /> {actions.isArchiving ? 'Unarchiving...' : 'Unarchive'}
+                        </button>
+                      ) : (
+                        <button
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            setShowDropdown(false);
+                            actions.handleArchiveClick();
+                          }}
+                          disabled={actions.isArchiving}
+                        >
+                          <FiArchive /> {actions.isArchiving ? 'Archiving...' : 'Archive'}
+                        </button>
+                      )}
                       <button
                         className={styles.dropdownItem}
                         onClick={() => {

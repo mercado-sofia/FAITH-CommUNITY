@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { useAdminPrograms } from '../hooks/useAdminData';
+import { useAdminPrograms, useArchivedPrograms } from '../hooks/useAdminData';
 import { useCollaborationRequests } from './hooks';
 import { ViewDetailsModal, ProgramsContainer, CollaborationsContainer, SearchAndFilterControls } from './components';
 import ProgramForm from './components/ProgramForm/ProgramForm';
@@ -12,15 +13,23 @@ import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
 import { handleApiError, TIMEOUTS } from '../utils';
 import { useProgramsManagement, useProgramFilters, useModalManagement, useCollaborationManagement } from './hooks';
 import styles from './programs.module.css';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaUsers } from 'react-icons/fa';
+import { FiArchive } from 'react-icons/fi';
+import { IoMdCheckboxOutline } from 'react-icons/io';
+import { LuCalendarClock } from 'react-icons/lu';
+import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
+  const searchParams = useSearchParams();
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
 
   // Use SWR hook for programs data
   const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms();
+  
+  // Fetch archived programs when archive tab is active
+  const { programs: archivedPrograms = [], isLoading: archivedLoading, mutate: refreshArchivedPrograms } = useArchivedPrograms(currentAdmin?.org);
   
   // Use collaboration requests hook
   const { 
@@ -32,15 +41,20 @@ export default function AdminProgramsPage() {
     fetchCollaborations
   } = useCollaborationRequests();
   
+  // Get the appropriate programs list based on active tab (must be before useEffect that uses them)
+  const activeTabFromUrl = searchParams.get('tab') || 'active';
+  const allPrograms = activeTabFromUrl === 'archived' ? archivedPrograms : programs;
+  const allProgramsLoading = activeTabFromUrl === 'archived' ? archivedLoading : isLoading;
+  
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
   // Mark as initially loaded when data is available
   useEffect(() => {
-    if (!isLoading && programs.length >= 0) {
+    if (!allProgramsLoading && allPrograms.length >= 0) {
       setHasInitiallyLoaded(true);
     }
-  }, [isLoading, programs.length]);
+  }, [allProgramsLoading, allPrograms.length]);
 
   // Handle error display
   useEffect(() => {
@@ -74,8 +88,26 @@ export default function AdminProgramsPage() {
 
   // Use custom hooks
   const modals = useModalManagement();
-  const programsManagement = useProgramsManagement(currentAdmin, refreshPrograms, setSuccessModal, () => modals.setPageMode('list'), modals.cancelDeleteProgram);
-  const filters = useProgramFilters(programs, collaborations);
+  
+  // Create a refresh function that refreshes both regular and archived programs
+  const refreshAllPrograms = useCallback(() => {
+    refreshPrograms();
+    if (currentAdmin?.org) {
+      refreshArchivedPrograms();
+    }
+  }, [refreshPrograms, refreshArchivedPrograms, currentAdmin?.org]);
+  
+  const programsManagement = useProgramsManagement(
+    currentAdmin, 
+    refreshAllPrograms, 
+    setSuccessModal, 
+    () => modals.setPageMode('list'), 
+    modals.cancelDeleteProgram,
+    modals.cancelArchiveProgram,
+    modals.cancelUnarchiveProgram
+  );
+  
+  const filters = useProgramFilters(allPrograms, collaborations);
   const collaborationManagement = useCollaborationManagement(
     acceptCollaboration,
     declineCollaboration,
@@ -94,14 +126,9 @@ export default function AdminProgramsPage() {
     collaborationManagement.handleOptOut(programIdToRemove, modals.refreshCollaboratorsFn, modals.pageMode);
   }, [collaborationManagement, modals.refreshCollaboratorsFn, modals.pageMode]);
 
-  // Handle collaboration action with modal close (memoized)
-  const handleCollaborationActionWithClose = useCallback((collaborationId, action) => {
-    collaborationManagement.handleCollaborationAction(collaborationId, action);
-    modals.closeCollaborationModal();
-  }, [collaborationManagement, modals]);
 
   // Show skeleton immediately on first load or when loading
-  if (!hasInitiallyLoaded || isLoading || (filters.activeTab === 'collaborations' && collaborationsLoading)) {
+  if (!hasInitiallyLoaded || allProgramsLoading || (filters.activeTab === 'collaborations' && collaborationsLoading)) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -144,17 +171,18 @@ export default function AdminProgramsPage() {
             collaborationStatusFilter={filters.collaborationStatusFilter}
             onCollaborationStatusChange={filters.handleCollaborationStatusChange}
             // Count props
-            totalCount={filters.activeTab === 'collaborations' ? collaborations?.length || 0 : programs?.length || 0}
+            totalCount={filters.activeTab === 'collaborations' ? collaborations?.length || 0 : allPrograms?.length || 0}
             filteredCount={filters.activeTab === 'collaborations' ? filters.filteredAndSortedCollaborations()?.length || 0 : filters.filteredAndSortedPrograms()?.length || 0}
           />
 
           {/* Status Navigation Tabs */}
           <div className={styles.statusTabs}>
             {[
-              { key: 'active', label: 'Active' },
-              { key: 'upcoming', label: 'Upcoming' },
-              { key: 'completed', label: 'Completed' },
-              { key: 'collaborations', label: 'Collaborations' }
+              { key: 'active', label: 'Active', icon: <MdOutlineRadioButtonChecked /> },
+              { key: 'upcoming', label: 'Upcoming', icon: <LuCalendarClock /> },
+              { key: 'completed', label: 'Completed', icon: <IoMdCheckboxOutline /> },
+              { key: 'collaborations', label: 'Collaborations', icon: <FaUsers /> },
+              { key: 'archived', label: 'Archived', icon: <FiArchive /> }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -163,6 +191,7 @@ export default function AdminProgramsPage() {
                   filters.handleTabChange(tab.key);
                 }}
               >
+                {tab.icon && <span className={styles.statusTabIcon}>{tab.icon}</span>}
                 {tab.label}
               </button>
             ))}
@@ -191,33 +220,27 @@ export default function AdminProgramsPage() {
               onOptOut={handleOptOut}
               onShowSuccessModal={setSuccessModal}
               onToggleVolunteerAcceptance={programsManagement.handleToggleVolunteerAcceptance}
+              onArchive={modals.handleArchiveProgram}
+              onUnarchive={modals.handleUnarchiveProgram}
             />
           )}
         </>
       ) : modals.pageMode === 'create' ? (
-        <>
-          <div className={styles.createPostHeader}>
-            <h1>Add New Program</h1>
-          </div>
-          <ProgramForm
-            mode="create"
-            onCancel={() => modals.setPageMode('list')}
-            onSubmit={programsManagement.handleSubmitProgram}
-          />
-        </>
+        <ProgramForm
+          mode="create"
+          headerTitle="Add New Program"
+          onCancel={() => modals.setPageMode('list')}
+          onSubmit={programsManagement.handleSubmitProgram}
+        />
       ) : modals.pageMode === 'edit' ? (
-        <>
-          <div className={styles.createPostHeader}>
-            <h1>Edit Program</h1>
-          </div>
-          <ProgramForm
-            mode="edit"
-            program={modals.editingProgram}
-            onCancel={modals.resetEditMode}
-            onSubmit={(programData) => programsManagement.handleUpdateProgram(programData, modals.editingProgram)}
-            onRefreshCollaborators={modals.setRefreshCollaboratorsFn}
-          />
-        </>
+        <ProgramForm
+          mode="edit"
+          headerTitle="Edit Program"
+          program={modals.editingProgram}
+          onCancel={modals.resetEditMode}
+          onSubmit={(programData) => programsManagement.handleUpdateProgram(programData, modals.editingProgram)}
+          onRefreshCollaborators={modals.setRefreshCollaboratorsFn}
+        />
       ) : null}
 
       {/* Modals */}
@@ -245,6 +268,28 @@ export default function AdminProgramsPage() {
         onConfirm={() => programsManagement.confirmDeleteProgram(modals.deletingProgram)}
         onCancel={modals.cancelDeleteProgram}
         isDeleting={programsManagement.isDeleting}
+      />
+
+      <ConfirmationModal
+        isOpen={!!modals.archivingProgram}
+        itemName={modals.archivingProgram?.title || 'this program'}
+        itemType="program"
+        actionType="archive"
+        customMessage={`Are you sure you want to archive "${modals.archivingProgram?.title || 'this program'}"? This will hide the program from the public portal, but it will still be visible in your admin interface. You can unarchive it later if needed.`}
+        onConfirm={() => programsManagement.handleArchiveProgram(modals.archivingProgram?.id)}
+        onCancel={modals.cancelArchiveProgram}
+        isLoading={programsManagement.isDeleting}
+      />
+
+      <ConfirmationModal
+        isOpen={!!modals.unarchivingProgram}
+        itemName={modals.unarchivingProgram?.title || 'this program'}
+        itemType="program"
+        actionType="unarchive"
+        customMessage={`Are you sure you want to unarchive "${modals.unarchivingProgram?.title || 'this program'}"? This will restore the program and make it visible on the public portal again.`}
+        onConfirm={() => programsManagement.handleUnarchiveProgram(modals.unarchivingProgram?.id)}
+        onCancel={modals.cancelUnarchiveProgram}
+        isLoading={programsManagement.isDeleting}
       />
 
       {/* Success Modal */}

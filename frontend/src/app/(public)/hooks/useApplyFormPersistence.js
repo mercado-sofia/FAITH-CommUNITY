@@ -6,7 +6,8 @@ import { isReturningFromLogin, clearReturningFromLogin } from '@/utils/redirectU
  * Custom hook for form persistence in the apply section
  * - Saves form data on page refresh within apply section
  * - Persists data when navigating to other pages (selected program preview)
- * - Only clears data on page refresh, not on navigation
+ * - Clears data when returning from login redirect (form resets after login)
+ * - Only clears data on page refresh, not on normal navigation
  */
 export function useApplyFormPersistence(key, initialData) {
   const [formData, setFormData] = useState(initialData);
@@ -25,20 +26,14 @@ export function useApplyFormPersistence(key, initialData) {
       const returningFromLogin = isReturningFromLogin();
       
       if (isPageRefresh && isApplySection) {
-        // This is a page refresh within apply section, load saved data
-        try {
-          const savedData = localStorage.getItem(key);
-          if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            setFormData(parsedData);
-          }
-        } catch (error) {
-          localStorage.removeItem(key);
-        }
-      } else if (!isPageRefresh && isInitialLoad.current && isApplySection) {
-        // This is initial navigation to apply section
+        // This is a page refresh within apply section
         if (returningFromLogin) {
-          // Coming back from login - preserve form data
+          // Coming back from login after redirect - clear form data
+          // Don't clear the flag here - let the form component handle it
+          localStorage.removeItem(key);
+          setFormData(initialData);
+        } else {
+          // Regular page refresh - load saved data if any (for normal refresh persistence)
           try {
             const savedData = localStorage.getItem(key);
             if (savedData) {
@@ -48,8 +43,14 @@ export function useApplyFormPersistence(key, initialData) {
           } catch (error) {
             localStorage.removeItem(key);
           }
-          // Clear the flag
-          clearReturningFromLogin();
+        }
+      } else if (!isPageRefresh && isInitialLoad.current && isApplySection) {
+        // This is initial navigation to apply section (not a page refresh)
+        if (returningFromLogin) {
+          // Coming back from login - clear form data
+          // Don't clear the flag here - let the form component handle it
+          localStorage.removeItem(key);
+          setFormData(initialData);
         } else {
           // Normal navigation - clear any existing data
           localStorage.removeItem(key);
@@ -58,7 +59,7 @@ export function useApplyFormPersistence(key, initialData) {
       
       isInitialLoad.current = false;
     }
-  }, [key, isApplySection]);
+  }, [key, isApplySection, initialData]);
 
   // Save form data to localStorage when it changes (only if in apply section)
   useEffect(() => {

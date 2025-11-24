@@ -5,6 +5,8 @@ export const useModalManagement = () => {
   const [editingProgram, setEditingProgram] = useState(null);
   const [viewingProgram, setViewingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
+  const [archivingProgram, setArchivingProgram] = useState(null);
+  const [unarchivingProgram, setUnarchivingProgram] = useState(null);
   const [selectedCollaboration, setSelectedCollaboration] = useState(null);
   const [isCollaborationModalOpen, setIsCollaborationModalOpen] = useState(false);
   const [refreshCollaboratorsFn, setRefreshCollaboratorsFn] = useState(null);
@@ -27,6 +29,26 @@ export const useModalManagement = () => {
   // Cancel program deletion
   const cancelDeleteProgram = useCallback(() => {
     setDeletingProgram(null);
+  }, []);
+
+  // Handle program archiving
+  const handleArchiveProgram = useCallback((program) => {
+    setArchivingProgram(program);
+  }, []);
+
+  // Cancel program archiving
+  const cancelArchiveProgram = useCallback(() => {
+    setArchivingProgram(null);
+  }, []);
+
+  // Handle program unarchiving
+  const handleUnarchiveProgram = useCallback((program) => {
+    setUnarchivingProgram(program);
+  }, []);
+
+  // Cancel program unarchiving
+  const cancelUnarchiveProgram = useCallback(() => {
+    setUnarchivingProgram(null);
   }, []);
 
   // Close view modal
@@ -59,6 +81,8 @@ export const useModalManagement = () => {
     editingProgram,
     viewingProgram,
     deletingProgram,
+    archivingProgram,
+    unarchivingProgram,
     selectedCollaboration,
     isCollaborationModalOpen,
     refreshCollaboratorsFn,
@@ -68,6 +92,8 @@ export const useModalManagement = () => {
     setEditingProgram,
     setViewingProgram,
     setDeletingProgram,
+    setArchivingProgram,
+    setUnarchivingProgram,
     setSelectedCollaboration,
     setIsCollaborationModalOpen,
     setRefreshCollaboratorsFn,
@@ -77,6 +103,10 @@ export const useModalManagement = () => {
     handleEditProgram,
     handleDeleteProgram,
     cancelDeleteProgram,
+    handleArchiveProgram,
+    cancelArchiveProgram,
+    handleUnarchiveProgram,
+    cancelUnarchiveProgram,
     closeViewModal,
     handleViewCollaboration,
     closeCollaborationModal,

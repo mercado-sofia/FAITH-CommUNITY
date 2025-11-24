@@ -1,12 +1,87 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { FaTimes, FaTag, FaCalendar, FaEye, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
-import { formatDateShort, formatTime } from '@/utils/dateUtils.js';
+import { formatDateShort } from '@/utils/dateUtils.js';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { API_CONFIG } from '../../../utils';
 import styles from './SubmissionModal.module.css';
 
 // Note: advocacy and competency are no longer part of the submission workflow
+
+// Helper function to format time only with timezone-aware logic (matches formatDateTime logic)
+const formatTimeOnly = (dateString) => {
+  try {
+    if (!dateString) return 'Not specified';
+    
+    let normalizedString = dateString.trim();
+    
+    // Check if this is an ISO format with timezone (TIMESTAMP field from backend)
+    const hasTimezone = normalizedString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalizedString);
+    
+    if (hasTimezone) {
+      // This is a TIMESTAMP field (timezone-aware) - parse as UTC and convert to local time
+      const date = new Date(normalizedString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid time';
+      }
+      
+      // Get local time components from the Date object
+      let hour = date.getHours();
+      const minute = date.getMinutes();
+      
+      // Convert to 12-hour format
+      const originalHour = hour;
+      const ampm = originalHour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12;
+      hour = hour === 0 ? 12 : hour; // the hour '0' should be '12'
+      
+      // Format minutes with leading zero
+      const minutesStr = minute.toString().padStart(2, '0');
+      
+      return `${hour}:${minutesStr} ${ampm}`;
+    }
+    
+    // This is a DATETIME field (timezone-naive) - parse as local time without conversion
+    // Try to match both formats: ISO (with T) and MySQL (with space)
+    let match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    
+    // If no match, try MySQL format: YYYY-MM-DD HH:mm:ss or YYYY-MM-DD HH:mm
+    if (!match) {
+      match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+    }
+    
+    if (!match) {
+      return 'Invalid time';
+    }
+    
+    const [, , , , hour, minute] = match;
+    let hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+    
+    // Validate components
+    if (isNaN(hourNum) || isNaN(minuteNum)) {
+      return 'Invalid time';
+    }
+    
+    // Additional validation: ensure hour is 0-23 and minute is 0-59
+    if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+      return 'Invalid time';
+    }
+    
+    // Convert to 12-hour format
+    const originalHour = hourNum;
+    const ampm = originalHour >= 12 ? 'PM' : 'AM';
+    hourNum = hourNum % 12;
+    hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
+    
+    // Format minutes with leading zero
+    const minutesStr = minuteNum.toString().padStart(2, '0');
+    
+    return `${hourNum}:${minutesStr} ${ampm}`;
+  } catch (error) {
+    return 'Invalid time';
+  }
+};
 
 // Helper function to parse JSON data safely
 const parseJsonData = (data) => {
@@ -190,6 +265,7 @@ export default function SubmissionModal({ data, onClose }) {
       );
     } else if (data.section === 'programs') {
       return (
+        <>
         <div className={styles.programLayout}>
           {/* Left side - Image */}
           <div className={styles.programImageSection}>
@@ -398,7 +474,29 @@ export default function SubmissionModal({ data, onClose }) {
               </div>
             )}
           </div>
+
         </div>
+
+        {/* Post Act Report Section - Outside programLayout to span full width */}
+        {dataObj.postActReport && dataObj.postActReport.file_url && (
+          <div className={styles.postActReportSection}>
+            <div className={styles.postActReportLabel}>
+              <FaFile className={styles.postActReportIcon} />
+              Post Act Report
+            </div>
+            <div className={styles.postActReportContent}>
+              <a 
+                href={dataObj.postActReport.file_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={styles.postActReportLink}
+              >
+                View/Download Post Act Report
+              </a>
+            </div>
+          </div>
+        )}
+        </>
       );
     } else if (data.section === 'highlights') {
       // Parse media_files
@@ -547,14 +645,14 @@ export default function SubmissionModal({ data, onClose }) {
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Submitted</span>
-                <span className={styles.metaValue}>
-                  {formatDateShort(data.submitted_at)}
-                </span>
+              <span className={styles.metaValue}>
+                {formatDateShort(data.submitted_at)}
+              </span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Time</span>
               <span className={styles.metaValue}>
-                {formatTime(data.submitted_at)}
+                {formatTimeOnly(data.submitted_at)}
               </span>
             </div>
           </div>

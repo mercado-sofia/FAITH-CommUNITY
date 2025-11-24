@@ -36,7 +36,7 @@ export const clearRedirectUrl = () => {
 
 /**
  * Set flag indicating user is returning from login
- * Used to preserve form data when redirecting back
+ * Used to detect when user returns from login redirect
  */
 export const setReturningFromLogin = () => {
   if (typeof window === 'undefined') return;

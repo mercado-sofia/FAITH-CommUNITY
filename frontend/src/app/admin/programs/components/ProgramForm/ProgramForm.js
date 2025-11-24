@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FaSpinner } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { useProgramForm, useImageUpload, useCollaboration } from '../../hooks';
@@ -8,14 +8,14 @@ import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } 
 import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
 import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
-import { ERROR_MESSAGES } from '../../constants/programConstants';
 import logger from '@/utils/logger';
 import styles from './ProgramForm.module.css';
 
-const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators }) => {
+const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators, headerTitle }) => {
   const isEditMode = mode === 'edit';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [postActReportFile, setPostActReportFile] = useState(null);
 
   // Use custom hooks
   const {
@@ -127,6 +127,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
   }, [formData.submitted_by_role]);
 
   // Initialize custom edited role if existing role is not in predefined options (for edit mode)
+  // Note: edited_by_role is always reset to empty on form open, so this only handles user input
   useEffect(() => {
     if (isEditMode && formData.edited_by_role && !ROLE_OPTIONS.find(option => option.value === formData.edited_by_role)) {
       setCustomEditedRole(formData.edited_by_role);
@@ -136,6 +137,13 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       setCustomEditedRole('');
     }
   }, [formData.edited_by_role, isEditMode]);
+  
+  // Reset customEditedRole when edit mode is entered (form opens)
+  useEffect(() => {
+    if (isEditMode) {
+      setCustomEditedRole('');
+    }
+  }, [isEditMode, program?.id]); // Reset when entering edit mode or when program changes
 
   // Initialize existing images in edit mode
   useEffect(() => {
@@ -269,8 +277,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
   const handleSubmit = useCallback(async (e) => {
     if (e) e.preventDefault();
     
-    // Validate form with image preview for edit mode
-    const isValid = validateForm(imagePreview);
+    // Validate form with image preview for edit mode and post-act report file
+    const isValid = validateForm(imagePreview, postActReportFile);
     
     // If validation failed, return early (errors are already set by validateForm)
     if (!isValid) {
@@ -301,6 +309,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         image: null,
         // Include additional images from formData
         additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : [],
+        // Include post-act report file if provided (only in create mode)
+        postActReport: !isEditMode ? postActReportFile : undefined,
         // Officer information - use submitted_by for create mode, edited_by for edit mode
         // Note: Backend expects submitted_by_name/role for both create and edit, but in edit mode
         // we send edited_by_name/role as submitted_by_name/role
@@ -344,13 +354,14 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         resetForm();
         resetImageUploads();
         resetCollaboration();
+        setPostActReportFile(null);
       }
     } catch (error) {
       updateFormData({ submit: error.message || 'Failed to submit form' });
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators, imagePreview]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators, imagePreview, postActReportFile]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {
@@ -369,6 +380,19 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     onCancel();
   }, [hasChanges, onCancel]);
 
+  // Handle back click (replaces Cancel button)
+  const handleBackClick = useCallback(() => {
+    if (isEditMode) {
+      handleClose();
+    } else {
+      if (hasChanges) {
+        setShowUnsavedModal(true);
+        return;
+      }
+      onCancel();
+    }
+  }, [isEditMode, handleClose, hasChanges, onCancel]);
+
   // Handle unsaved changes modal actions
   const handleUnsavedModalConfirm = useCallback(() => {
     setShowUnsavedModal(false);
@@ -386,6 +410,31 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       onKeyDown={handleFormKeyDown}
       noValidate={isEditMode}
     >
+      {/* Header with Title and Action Buttons */}
+      <div className={styles.formHeader}>
+        <div className={styles.headerLeft}>
+          <button
+            type="button"
+            onClick={handleBackClick}
+            className={styles.backLink}
+          >
+            Go Back
+          </button>
+          <h1>{headerTitle || (isEditMode ? 'Edit Program' : 'Add New Program')}</h1>
+        </div>
+        <div className={styles.headerActions}>
+          <button
+            type={isEditMode ? "button" : "submit"}
+            onClick={isEditMode ? handleSubmit : undefined}
+            className={styles.submitButton}
+            disabled={isSubmitting}
+          >
+            {isEditMode ? "Save Changes" : "Submit for Approval"}
+            {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
+          </button>
+        </div>
+      </div>
+
       <div className={styles.formLayout}>
         {/* Left Panel - Main Container */}
         <div className={styles.leftContainer}>
@@ -397,6 +446,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
               isEditMode={isEditMode}
               onFormDataChange={handleFormDataChange}
               onClearError={clearError}
+              postActReportFile={postActReportFile}
+              onPostActReportChange={setPostActReportFile}
             />
           </div>
 
@@ -491,7 +542,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                     <input
                       type="text"
                       className={`${styles.input} ${errors.edited_by_name ? styles.inputError : ''}`}
-                      value={formData.edited_by_name || program?.edited_by_name || ''}
+                      value={formData.edited_by_name || ''}
                       onChange={(e) => {
                         updateFormData({ edited_by_name: e.target.value });
                         if (errors.edited_by_name) clearError('edited_by_name');
@@ -509,9 +560,9 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                     <div className={styles.inputWrapper}>
                       <CustomDropdown
                         options={ROLE_OPTIONS}
-                        value={ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)) 
-                          ? (formData.edited_by_role || program?.edited_by_role)
-                          : ((formData.edited_by_role || program?.edited_by_role) && !ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)) 
+                        value={ROLE_OPTIONS.find(option => option.value === formData.edited_by_role) 
+                          ? formData.edited_by_role
+                          : (formData.edited_by_role && !ROLE_OPTIONS.find(option => option.value === formData.edited_by_role) 
                             ? 'Others' 
                             : '')}
                         onChange={(selectedValue) => {
@@ -524,7 +575,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                       />
                     </div>
                     {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
-                    {((formData.edited_by_role || program?.edited_by_role) === 'Others' || ((formData.edited_by_role || program?.edited_by_role) && !ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)))) && (
+                    {(formData.edited_by_role === 'Others' || (formData.edited_by_role && !ROLE_OPTIONS.find(option => option.value === formData.edited_by_role))) && (
                       <div className={styles.customRoleInput}>
                         <input
                           type="text"
@@ -546,28 +597,6 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className={styles.formActions}>
-            <button
-              type="button"
-              onClick={isEditMode ? handleClose : onCancel}
-              className={styles.cancelButton}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            
-            <button
-              type={isEditMode ? "button" : "submit"}
-              onClick={isEditMode ? handleSubmit : undefined}
-              className={styles.submitButton}
-              disabled={isSubmitting}
-            >
-              {isEditMode ? "Save Changes" : "Submit for Approval"}
-              {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
-            </button>
-          </div>
-              
           {/* Submit Error */}
           {errors.submit && (
             <div className={styles.submitError}>
@@ -578,6 +607,40 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
 
         {/* Right Panel - Images and Actions */}
         <div className={styles.rightPanel}>
+          {/* Volunteer Applications Container */}
+          <div className={styles.container}>
+            <h3 className={styles.containerTitle}>Volunteer Applications</h3>
+            <div className={styles.volunteerToggleContainer}>
+              <div className={styles.toggleWrapper}>
+                <input
+                  type="checkbox"
+                  id="accepts_volunteers"
+                  className={styles.toggleInput}
+                  checked={formData.accepts_volunteers}
+                  onChange={(e) => {
+                    updateFormData({ accepts_volunteers: e.target.checked });
+                    if (errors.accepts_volunteers) clearError('accepts_volunteers');
+                  }}
+                />
+                <label htmlFor="accepts_volunteers" className={styles.toggleLabel}>
+                  <span className={styles.toggleSlider}></span>
+                </label>
+              </div>
+              <div className={styles.volunteerToggleText}>
+                <span className={formData.accepts_volunteers ? styles.toggleTextActive : styles.toggleTextInactive}>
+                  {formData.accepts_volunteers ? 'Accepting applications' : 'Not accepting applications'}
+                </span>
+                <p className={styles.volunteerToggleDescription}>
+                  {formData.accepts_volunteers 
+                    ? 'Public users can apply to volunteer'
+                    : 'Public users cannot apply to volunteer'
+                  }
+                </p>
+              </div>
+            </div>
+            {errors.accepts_volunteers && <span className={styles.errorText}>{errors.accepts_volunteers}</span>}
+          </div>
+
           {/* Main Image Upload */}
           <ImageUpload
             title="Highlight Image"

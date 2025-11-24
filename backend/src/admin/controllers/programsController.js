@@ -331,7 +331,9 @@ export const getApprovedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.is_approved = TRUE AND o.status = 'ACTIVE'
+      WHERE p.is_approved = TRUE 
+      AND p.status != 'archived'
+      AND o.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `);
 
@@ -483,7 +485,10 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ? AND p.is_approved = TRUE AND o.status = 'ACTIVE'
+       WHERE p.organization_id = ? 
+       AND p.is_approved = TRUE 
+       AND p.status != 'archived'
+       AND o.status = 'ACTIVE'
        ORDER BY p.created_at DESC
     `, [organization.id]);
 
@@ -695,15 +700,25 @@ export const updateProgram = async (req, res) => {
     // Program found
     const currentStatus = existingProgram[0].status;
     const currentManualOverride = existingProgram[0].manual_status_override === 1 || existingProgram[0].manual_status_override === true;
-    const newStatus = status || currentStatus; // Use current status if not provided
+    
+    // Check if action is provided (for archiving)
+    const { action } = req.body;
+    let newStatus = status || currentStatus; // Use current status if not provided
+    
+    // Handle archive action (works for any status)
+    if (action === 'archive') {
+      newStatus = 'archived';
+    }
     
     // Determine if we should set manual_status_override to TRUE:
     // 1. If admin is explicitly providing a status that differs from current status, set manual override
     // 2. If status is already manually overridden and admin is keeping the same status, preserve it
     // 3. If status is "Completed" (likely from Post Act Report approval), preserve it
+    // 4. If archiving, always set manual override
     // Only set to FALSE if this is a new program creation (which should not happen in update)
-    const shouldSetManualOverride = status !== undefined && status !== null && 
-                                    (currentStatus !== newStatus || currentManualOverride);
+    const shouldSetManualOverride = (action === 'archive') || 
+                                    (status !== undefined && status !== null && 
+                                    (currentStatus !== newStatus || currentManualOverride));
     
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
@@ -1383,7 +1398,10 @@ export const getFeaturedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo, o.org_color as orgColor
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.is_featured = TRUE AND p.is_approved = TRUE AND o.status = 'ACTIVE'
+      WHERE p.is_featured = TRUE 
+      AND p.is_approved = TRUE 
+      AND p.status != 'archived'
+      AND o.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `);
 
@@ -1512,7 +1530,11 @@ export const getProgramBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
     
-    const query = `
+    // Check if this is a public request (no authentication) or admin/superadmin request
+    const isPublicRequest = !req.admin && !req.superadmin;
+    
+    // Build query - exclude archived programs for public requests
+    let query = `
       SELECT 
         pp.id,
         pp.title,
@@ -1537,6 +1559,11 @@ export const getProgramBySlug = async (req, res) => {
       LEFT JOIN organizations o ON pp.organization_id = o.id
       WHERE pp.slug = ? AND pp.is_approved = TRUE AND o.status = 'ACTIVE'
     `;
+    
+    // For public requests, exclude archived programs
+    if (isPublicRequest) {
+      query += ` AND pp.status != 'archived'`;
+    }
     
     const [results] = await db.execute(query, [slug]);
     
@@ -2447,6 +2474,321 @@ export const toggleVolunteerAcceptance = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update volunteer acceptance status",
+      error: error.message
+    });
+  }
+};
+
+// Archive a program
+export const archiveProgram = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Program ID is required"
+    });
+  }
+
+  try {
+    // Check if program exists and admin has permission
+    const [programRows] = await db.execute(`
+      SELECT p.*, o.orgName 
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND (p.organization_id = ? OR p.id IN (
+        SELECT program_id FROM program_collaborations 
+        WHERE collaborator_admin_id = ? AND status = 'accepted'
+      ))
+    `, [id, req.admin?.organization_id, req.admin?.id]);
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found or you don't have permission to archive it"
+      });
+    }
+
+    const program = programRows[0];
+
+    // Update program status to archived
+    await db.execute(
+      "UPDATE programs_projects SET status = 'archived', manual_status_override = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Program archived successfully",
+      data: {
+        id: id,
+        title: program.title,
+        status: 'archived'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to archive program",
+      error: error.message
+    });
+  }
+};
+
+// Unarchive a program (restore from archived status)
+export const unarchiveProgram = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Program ID is required"
+    });
+  }
+
+  try {
+    // Check if program exists and is archived
+    const [programRows] = await db.execute(
+      "SELECT id, title, status, event_start_date, event_end_date FROM programs_projects WHERE id = ?",
+      [id]
+    );
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found"
+      });
+    }
+
+    const program = programRows[0];
+
+    if (program.status !== 'archived') {
+      return res.status(400).json({
+        success: false,
+        message: "Program is not archived"
+      });
+    }
+
+    // Determine restore status based on event dates
+    // Use the same logic as news restore
+    let restoreStatus = 'Upcoming';
+    const now = new Date();
+    
+    if (program.event_start_date) {
+      const startDate = new Date(program.event_start_date);
+      const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
+      
+      if (endDate && endDate < now) {
+        restoreStatus = 'Completed';
+      } else if (startDate <= now && (!endDate || endDate >= now)) {
+        restoreStatus = 'Active';
+      } else {
+        restoreStatus = 'Upcoming';
+      }
+    }
+
+    // Update program status to restored status
+    await db.execute(
+      "UPDATE programs_projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'archived'",
+      [restoreStatus, id]
+    );
+
+    res.json({
+      success: true,
+      message: "Program unarchived successfully",
+      data: {
+        id: id,
+        title: program.title,
+        status: restoreStatus
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to unarchive program",
+      error: error.message
+    });
+  }
+};
+
+// Get archived programs for a specific organization
+export const getArchivedPrograms = async (req, res) => {
+  const { orgId } = req.params;
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID is required"
+    });
+  }
+
+  try {
+    const currentAdminId = req.admin?.id || req.superadmin?.id;
+    
+    if (!currentAdminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Admin ID not found in request'
+      });
+    }
+
+    // Get organization ID
+    let [orgRows] = await db.execute(
+      "SELECT id FROM organizations WHERE id = ?",
+      [orgId]
+    );
+
+    if (orgRows.length === 0) {
+      // Try to find by org acronym
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    if (orgRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found"
+      });
+    }
+
+    const organization = orgRows[0];
+
+    // Get archived programs
+    const [programRows] = await db.execute(`
+      SELECT DISTINCT 
+        p.*, 
+        o.org as orgAcronym, 
+        o.orgName as orgName, 
+        o.logo as orgLogo
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE (p.organization_id = ? 
+         OR p.id IN (
+           SELECT program_id FROM program_collaborations 
+           WHERE collaborator_admin_id = ? AND status = 'accepted'
+         ))
+      AND p.status = 'archived'
+      AND p.is_approved = TRUE
+      ORDER BY p.updated_at DESC, p.created_at DESC
+    `, [organization.id, currentAdminId]);
+
+    // Process programs similar to getAdminPrograms
+    const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
+      let multipleDates = [];
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
+      const [collaborationRows] = await db.execute(`
+        SELECT 
+          pc.id as collaboration_id,
+          pc.status as collaboration_status,
+          a.email as collaborator_email,
+          o.orgName as collaborator_org
+        FROM program_collaborations pc
+        LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.collaborator_admin_id = ? AND o.status = 'ACTIVE'
+      `, [program.id, currentAdminId]);
+
+      let userRole = 'creator';
+      let collaborationStatus = null;
+      
+      if (collaborationRows.length > 0) {
+        userRole = 'collaborator';
+        collaborationStatus = collaborationRows[0].collaboration_status;
+      }
+
+      const [allCollaborators] = await db.execute(`
+        SELECT 
+          a.id,
+          a.email,
+          o.orgName as organization_name,
+          o.org as organization_acronym,
+          pc.status as collaboration_status
+        FROM program_collaborations pc
+        LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending') AND o.status = 'ACTIVE'
+      `, [program.id]);
+
+      if (userRole === 'creator' && program.is_collaborative) {
+        const hasPending = allCollaborators.some(c => c.collaboration_status === 'pending');
+        const hasAccepted = allCollaborators.some(c => c.collaboration_status === 'accepted');
+        
+        if (hasPending) {
+          collaborationStatus = 'pending';
+        } else if (hasAccepted) {
+          collaborationStatus = 'accepted';
+        } else {
+          collaborationStatus = 'declined';
+        }
+      }
+
+      let logoUrl;
+      if (program.orgLogo) {
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
+      } else {
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status,
+        image: program.image,
+        additional_images: additionalImages,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: multipleDates,
+        created_at: program.created_at,
+        updated_at: program.updated_at,
+        orgID: program.orgAcronym,
+        orgName: program.orgName,
+        orgLogo: logoUrl,
+        slug: program.slug,
+        is_approved: program.is_approved,
+        is_collaborative: program.is_collaborative,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
+        user_role: userRole,
+        collaboration_status: collaborationStatus,
+        collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
+        collaborators: allCollaborators,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+        edited_by_name: program.edited_by_name || null,
+        edited_by_role: program.edited_by_role || null,
+        submitted_by_name: program.submitted_by_name || null,
+        submitted_by_role: program.submitted_by_role || null,
+        archived_at: program.updated_at || null
+      };
+    }));
+
+    res.json({
+      success: true,
+      data: programsWithCollaboration
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch archived programs",
       error: error.message
     });
   }

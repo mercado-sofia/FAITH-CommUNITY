@@ -278,6 +278,7 @@ export default function NewsTable({
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th>
                 <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />
               </th>
@@ -290,11 +291,11 @@ export default function NewsTable({
           <tbody className={styles.tableBody}>
             {currentNews.length === 0 ? (
               <tr>
-                <td colSpan="5" className={styles.noNews}>
+                <td colSpan="6" className={styles.noNews}>
                   No news found
                 </td>
               </tr>
-            ) : currentNews.map((newsItem) => {
+            ) : currentNews.map((newsItem, index) => {
               // Validate news data before rendering
               if (!validateNewsData(newsItem)) {
                 return null;
@@ -306,6 +307,9 @@ export default function NewsTable({
 
               return (
                 <tr key={newsItem.id}>
+                  <td className={styles.numberCell}>
+                    {startIndex + index + 1}
+                  </td>
                   <td>
                     <input
                       type="checkbox"

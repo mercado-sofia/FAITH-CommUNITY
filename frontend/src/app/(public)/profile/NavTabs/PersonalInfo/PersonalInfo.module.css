@@ -22,6 +22,7 @@
   padding: 0 0 0.8rem 0;
   margin-bottom: 1rem;
   border-bottom: 1px solid #e9ecef;
+  width: 100%;
 }
 
 .sectionHeader h2 {
@@ -236,9 +237,6 @@
   min-height: 40px;
   display: flex;
   align-items: center;
-}
-
-.formField p {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -414,9 +412,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
   }
-}
 
-@media (max-width: 768px) {
   .personalInfoSection {
     padding: 0.25rem 1rem 1.25rem;
     align-items: flex-start;
@@ -457,10 +453,6 @@
   .changePhotoButton,
   .removePhotoButton {
     padding: 0.5rem 0.75rem;
-  }
-
-  .sectionHeader {
-    margin-bottom: 0.75rem;
   }
 
   .actionButton {

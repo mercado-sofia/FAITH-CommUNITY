@@ -609,6 +609,29 @@ const ViewDetailsModal = ({
                 </div>
               </div>
 
+              {/* Post Act Report Section */}
+              {programData.postActReport && programData.postActReport.file_url && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>POST ACT REPORT:</h4>
+                  <div className={styles.postActReportContainer}>
+                    <div className={styles.postActReportInfo}>
+                      <FaFile className={styles.fileIcon} />
+                      <div className={styles.postActReportDetails}>
+                        <span className={styles.postActReportLabel}>Post Act Report File</span>
+                        <a 
+                          href={programData.postActReport.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.postActReportLink}
+                        >
+                          View/Download Post Act Report
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           ) : submissionData.section === 'highlights' && highlightsData ? (
             // For highlights approvals, show formatted highlight data

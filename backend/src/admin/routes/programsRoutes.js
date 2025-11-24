@@ -18,6 +18,9 @@ import {
   getProgramById,
   markProgramAsActive,
   toggleVolunteerAcceptance,
+  archiveProgram,
+  unarchiveProgram,
+  getArchivedPrograms,
   // Functions from programProjectsController
   addProgramProject,
   updateProgramProject,
@@ -39,12 +42,17 @@ router.use('/admin', verifyAdminOrSuperadmin);
 const upload = cloudinaryUploadConfigs.programMain;
 
 // Admin routes
+// IMPORTANT: Specific routes must be registered before generic parameterized routes
+// to prevent route conflicts (Express matches routes in registration order)
 router.get('/admin/programs', getAdminPrograms);
-router.get('/admin/programs/:orgId', getProgramsByOrg);
 router.get('/admin/programs/single/:id', getProgramById);
+router.get('/admin/programs/:orgId/archived', getArchivedPrograms); // Specific route before generic :orgId route
+router.get('/admin/programs/:orgId', getProgramsByOrg);
 router.put('/admin/programs/:id', updateProgram);
 router.put('/admin/programs/:id/mark-active', markProgramAsActive);
 router.put('/admin/programs/:id/toggle-volunteers', toggleVolunteerAcceptance);
+router.put('/admin/programs/:id/archive', archiveProgram);
+router.patch('/admin/programs/:id/unarchive', unarchiveProgram);
 // Error handling middleware for Post Act Report multer errors
 const handlePostActReportMulterError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {

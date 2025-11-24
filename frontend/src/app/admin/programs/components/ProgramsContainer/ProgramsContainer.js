@@ -10,7 +10,9 @@ const ProgramsContainer = ({
   onMarkActive,
   onOptOut,
   onShowSuccessModal,
-  onToggleVolunteerAcceptance
+  onToggleVolunteerAcceptance,
+  onArchive,
+  onUnarchive
 }) => {
   if ((filteredPrograms?.length || 0) === 0) {
     return (
@@ -38,6 +40,8 @@ const ProgramsContainer = ({
             onOptOut={onOptOut}
             onShowSuccessModal={onShowSuccessModal}
             onToggleVolunteerAcceptance={onToggleVolunteerAcceptance}
+            onArchive={onArchive}
+            onUnarchive={onUnarchive}
           />
         ))}
       </div>

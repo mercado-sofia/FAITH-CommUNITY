@@ -465,6 +465,7 @@
 
 .loginButton:hover {
   color: #0ECCAC;
+  text-decoration: underline;
 }
 
 .spinner {

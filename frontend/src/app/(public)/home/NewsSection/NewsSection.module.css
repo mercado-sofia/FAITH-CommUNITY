@@ -3,6 +3,8 @@
   margin: 1rem 0 6rem;
   padding: 0 1rem;
   position: relative;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .newsSection.noNews .newsList {
@@ -50,17 +52,17 @@
 }
 
 .orgNav {
-  width: 100vw;
+  width: 100%;
   position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  left: 0;
+  margin-left: calc(-1rem - 1px);
+  margin-right: calc(-1rem - 1px);
   background: #f5f7f6;
   overflow-x: hidden;
   overflow-y: visible;
   margin-bottom: 1rem;
   padding-bottom: 0;
+  box-sizing: border-box;
 }
 
 .orgNavInner {

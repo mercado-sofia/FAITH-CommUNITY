@@ -462,13 +462,6 @@ export const createNews = async (req, res) => {
       return res.status(400).json({ success: false, message: "Slug already exists" });
     }
 
-    // 3) Insert news with new fields
-    console.log('[createNews] Inserting news with featured_image:', featured_image ? 'YES' : 'NO', featured_image || 'null');
-    const [result] = await db.execute(
-      `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-      [organization.id, title, slug, content, excerpt, featured_image, published_at, published_at]
-    );
     // 3) Determine status based on action and publish date
     let status = 'draft';
     let finalPublishedAt = published_at;

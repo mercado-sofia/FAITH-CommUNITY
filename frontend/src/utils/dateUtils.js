@@ -881,6 +881,10 @@ export const formatDateTimeForAPI = (dateString) => {
   } catch (error) {
     logger.error('Error in formatDateTimeForAPI', error, { dateString });
     return '';
+  }
+};
+
+/**
  * Format time only for display (12-hour format with AM/PM)
  * @param {string} dateString - Date string to format
  * @returns {string} Formatted time string (e.g., "9:26 AM")

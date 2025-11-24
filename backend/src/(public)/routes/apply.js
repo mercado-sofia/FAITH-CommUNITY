@@ -10,6 +10,6 @@ dotenv.config();
 const router = express.Router();
 
 router.post('/apply', verifyToken, submitVolunteer);
-router.get('/programs/approved/upcoming', verifyToken, getApprovedUpcomingPrograms);
+router.get('/programs/approved/upcoming', getApprovedUpcomingPrograms);
 
 export default router;

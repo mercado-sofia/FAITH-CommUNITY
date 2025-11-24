@@ -799,9 +799,10 @@ export const getVolunteersByProgram = async (req, res) => {
 };
 
 // Get approved programs with status "Upcoming" for volunteer application dropdown
+// This endpoint is public and does not require authentication
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {
-    // Get user_id from the authenticated user (from JWT token)
+    // Note: user_id is optional - this endpoint is accessible to both authenticated and non-authenticated users
     const user_id = req.user?.id;
     
     // Get all approved programs (Upcoming and Active) that are not Completed

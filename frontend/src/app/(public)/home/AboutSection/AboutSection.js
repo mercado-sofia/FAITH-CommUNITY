@@ -36,9 +36,7 @@ function AboutSection() {
             <p className={styles.aboutLabel}>Who we are</p>
             <h2 className={styles.aboutHeading}>The Story Behind {siteNameData?.site_name || 'FAITH CommUNITY'}</h2>
             <p className={styles.aboutParagraph}>
-              {siteNameData?.site_name || 'FAITH CommUNITY'} serves as a bridge between volunteers and organizations,
-              created to support and document the shared efforts of the FAITH Colleges
-              community in delivering meaningful outreach and service.
+              {aboutUsLoading ? 'Loading description...' : aboutUsData?.description}
             </p>
             
             <div className={styles.aboutBoxes}>

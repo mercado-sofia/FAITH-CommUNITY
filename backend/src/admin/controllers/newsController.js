@@ -282,6 +282,27 @@ function mapNewsToResponse(n) {
     logoUrl = `/logo/faith_community_logo.png`;
   }
   
+  // Convert TIMESTAMP fields to ISO format with timezone info
+  // MySQL TIMESTAMP is timezone-aware (stored in UTC, converted to server timezone when retrieved)
+  // Converting to ISO format ensures frontend can properly handle timezone conversion
+  const convertTimestampToISO = (timestamp) => {
+    if (!timestamp) return null;
+    // If it's already a Date object, convert to ISO
+    if (timestamp instanceof Date) {
+      return timestamp.toISOString();
+    }
+    // If it's a string, try to parse it as a date and convert to ISO
+    try {
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    } catch (e) {
+      // If parsing fails, return as-is
+    }
+    return timestamp;
+  };
+  
   return {
     id: n.id || null,
     title: n.title || '',
@@ -290,11 +311,11 @@ function mapNewsToResponse(n) {
     description: n.excerpt || '', // Map excerpt to description for backward compatibility
     excerpt: n.excerpt || '',
     featured_image: n.featured_image || null,
-    published_at: n.published_at || null,
+    published_at: n.published_at || null, // DATETIME - timezone-naive, keep as-is
     date: n.date || n.created_at || null,
-    created_at: n.created_at || null,
-    updated_at: n.updated_at || null,
-    content_updated_at: n.content_updated_at || null, // Only updated when content changes
+    created_at: convertTimestampToISO(n.created_at), // TIMESTAMP - convert to ISO
+    updated_at: convertTimestampToISO(n.updated_at), // TIMESTAMP - convert to ISO
+    content_updated_at: convertTimestampToISO(n.content_updated_at), // TIMESTAMP - convert to ISO
     status: n.status || 'draft',
     organization_id: n.organization_id || null,
     orgID: n.orgAcronym || (n.organization_id ? `Org-${n.organization_id}` : 'Unknown'),
@@ -625,26 +646,20 @@ export const createNews = async (req, res) => {
       
       status = 'scheduled';
     } else {
-      // Default: if no action specified but published_at is provided, treat as schedule
-      // This handles backward compatibility
-      if (normalizedPublishedAt) {
-        const publishDate = new Date(normalizedPublishedAt);
-        const now = new Date();
-        if (publishDate <= now) {
-          status = 'published';
-        } else {
-          status = 'scheduled';
-        }
-        // Normalize datetime format for MySQL
-        if (normalizedPublishedAt.includes('T')) {
-          finalPublishedAt = normalizedPublishedAt.replace('T', ' ').slice(0, 19);
-        } else {
-          finalPublishedAt = normalizedPublishedAt;
-        }
-      } else {
-        // No action and no published_at - default to draft
+      // No action specified - this should not happen in normal flow
+      // Frontend always sends an action, but if it's missing, default to draft for safety
+      // IMPORTANT: Only explicit "publish" action should result in published status
+      // We do NOT auto-publish based on published_at date - user must explicitly choose "publish"
+      if (!normalizedAction) {
+        // No action provided - default to draft (safest option)
         status = 'draft';
         finalPublishedAt = null;
+      } else {
+        // Invalid action - return error
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid action: "${action}". Action must be 'draft', 'publish', or 'schedule'.` 
+        });
       }
     }
 
@@ -1285,6 +1300,23 @@ export const getApprovedNews = async (req, res) => {
               console.error('Error mapping individual news row:', rowError, 'Row:', row);
             }
             // Return a safe fallback object for this row
+            // Convert TIMESTAMP fields to ISO format (same as mapNewsToResponse)
+            const convertTimestampToISO = (timestamp) => {
+              if (!timestamp) return null;
+              if (timestamp instanceof Date) {
+                return timestamp.toISOString();
+              }
+              try {
+                const date = new Date(timestamp);
+                if (!isNaN(date.getTime())) {
+                  return date.toISOString();
+                }
+              } catch (e) {
+                // If parsing fails, return as-is
+              }
+              return timestamp;
+            };
+            
             return {
               id: row?.id || null,
               title: row?.title || 'Untitled',
@@ -1293,11 +1325,11 @@ export const getApprovedNews = async (req, res) => {
               description: row?.excerpt || '',
               excerpt: row?.excerpt || '',
               featured_image: row?.featured_image || null,
-              published_at: row?.published_at || null,
+              published_at: row?.published_at || null, // DATETIME - timezone-naive, keep as-is
               date: row?.date || row?.created_at || null,
-              created_at: row?.created_at || null,
-              updated_at: row?.updated_at || null,
-              content_updated_at: row?.content_updated_at || null,
+              created_at: convertTimestampToISO(row?.created_at), // TIMESTAMP - convert to ISO
+              updated_at: convertTimestampToISO(row?.updated_at), // TIMESTAMP - convert to ISO
+              content_updated_at: convertTimestampToISO(row?.content_updated_at), // TIMESTAMP - convert to ISO
               status: row?.status || 'published',
               organization_id: row?.organization_id || null,
               orgID: row?.orgAcronym || 'Unknown',

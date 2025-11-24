@@ -1,7 +1,7 @@
 export { default as ContentEditor } from './ContentEditor/ContentEditor'
 export { default as CreatePostForm } from './PostForm/CreatePostForm'
 export { default as DatePickerPopover } from './DatePickerPopover/DatePickerPopover'
-export { default as DateTimePicker } from './DateTimePicker/DateTimePicker'
 export { default as NewsTable } from './NewsTable/NewsTable'
 export { default as SearchAndFilterControls } from './SearchAndFilterControls/SearchAndFilterControls'
 export { default as ViewDetailsModal } from './ViewDetailsModal/ViewDetailsModal'
+export { default as UnsaveChangesModal } from './UnsaveChangesModal/UnsaveChangesModal'

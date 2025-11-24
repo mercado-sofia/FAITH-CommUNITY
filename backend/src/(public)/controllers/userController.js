@@ -2225,6 +2225,23 @@ export const getUserApplications = async (req, res) => {
     }));
 
     // Transform the data to match frontend expectations
+    // Convert TIMESTAMP fields to ISO format with timezone info
+    const convertTimestampToISO = (timestamp) => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+      }
+      try {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      } catch (e) {
+        // If parsing fails, return as-is
+      }
+      return timestamp;
+    };
+    
     const transformedApplications = applicationsWithDates.map(application => {
       // Construct proper organization logo URL
       let orgLogoUrl = null;
@@ -2249,7 +2266,7 @@ export const getUserApplications = async (req, res) => {
         orgLogo: orgLogoUrl,
         reason: application.reason,
         status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
-        appliedAt: application.appliedAt,
+        appliedAt: convertTimestampToISO(application.appliedAt), // TIMESTAMP - convert to ISO
         notes: application.reason, // Using reason as notes for now
         feedback: null // This could be added later if feedback system is implemented
       };
@@ -2343,6 +2360,23 @@ export const getApplicationDetails = async (req, res) => {
     }
     
     // Transform the data to match frontend expectations
+    // Convert TIMESTAMP fields to ISO format with timezone info
+    const convertTimestampToISO = (timestamp) => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+      }
+      try {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      } catch (e) {
+        // If parsing fails, return as-is
+      }
+      return timestamp;
+    };
+    
     const transformedApplication = {
       id: application.id,
       programId: application.program_id,
@@ -2361,8 +2395,8 @@ export const getApplicationDetails = async (req, res) => {
       organizationColor: application.organizationColor,
       reason: application.reason,
       status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
-      appliedAt: application.appliedAt,
-      updatedAt: application.updatedAt,
+      appliedAt: convertTimestampToISO(application.appliedAt), // TIMESTAMP - convert to ISO
+      updatedAt: convertTimestampToISO(application.updatedAt), // TIMESTAMP - convert to ISO
       notes: application.reason,
       feedback: null // This could be added later if feedback system is implemented
     };

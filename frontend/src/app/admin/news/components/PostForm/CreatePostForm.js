@@ -1,21 +1,18 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { FiUpload } from 'react-icons/fi';
 import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
+import UnsaveChangesModal from '../UnsaveChangesModal/UnsaveChangesModal';
 import DOMPurify from 'dompurify';
-import { formatDateTimeForInput, getCurrentDateTimeISO } from '@/utils/dateUtils.js';
+import { formatDateTimeForInput, formatDateTime, getRelativeTime } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [], headerTitle }) => {
-  const getCurrentLocalDateTime = () => {
-    return getCurrentDateTimeISO();
-  };
-
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -58,7 +55,6 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [isCheckingTitle, setIsCheckingTitle] = useState(false);
-  const [existingImageUrl, setExistingImageUrl] = useState(null); // Track existing image URL in edit mode
   const [submitAction, setSubmitAction] = useState(null); // 'draft', 'schedule', 'publish', or null
   const [isValidating, setIsValidating] = useState(false); // Track validation state
   // Initialize publishActionType based on initialData status if in edit mode
@@ -75,6 +71,29 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   const [showPublishDropdown, setShowPublishDropdown] = useState(false);
   const publishDropdownRef = useRef(null);
   const submitActionRef = useRef(null); // Use ref to store action synchronously
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  
+  // Store initial form data for comparison
+  const initialFormDataRef = useRef(null);
+  const initialPublishActionTypeRef = useRef(null);
+  const initialImagePreviewRef = useRef(null);
+  
+  // Initialize initial form data ref for create mode (use useEffect to avoid render issues)
+  useEffect(() => {
+    if (!isEditMode && initialFormDataRef.current === null) {
+      initialFormDataRef.current = {
+        title: '',
+        slug: '',
+        content: '',
+        excerpt: '',
+        featuredImage: null,
+        publishedAt: null,
+        status: 'draft',
+      };
+      initialPublishActionTypeRef.current = 'publish';
+      initialImagePreviewRef.current = null;
+    }
+  }, [isEditMode]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -90,29 +109,37 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   }, [showPublishDropdown]);
 
   // Helper function to convert datetime to ISO format for DatePickerPopover
+  // Handles both timezone-aware (UTC) and timezone-naive (DATETIME) strings
   const convertToISOFormat = (dateTimeString) => {
     if (!dateTimeString) return null;
     
-    // Remove timezone info if present
-    let cleanDateTime = dateTimeString.trim();
-    if (cleanDateTime.endsWith('Z')) {
-      cleanDateTime = cleanDateTime.slice(0, -1);
-    }
-    const timezoneMatch = cleanDateTime.match(/([+-]\d{2}:\d{2})$/);
-    if (timezoneMatch) {
-      cleanDateTime = cleanDateTime.slice(0, timezoneMatch.index);
-    }
-    cleanDateTime = cleanDateTime.trim();
+    const normalizedString = dateTimeString.trim();
     
-    // Convert MySQL format (yyyy-MM-dd HH:mm:ss) to ISO format (yyyy-MM-ddTHH:mm)
-    if (cleanDateTime.includes(' ')) {
-      return cleanDateTime.replace(' ', 'T').substring(0, 16); // Keep only date and time (HH:mm), remove seconds
+    // Check if the string has timezone info (Z or offset like +08:00)
+    const hasTimezone = normalizedString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalizedString);
+    
+    if (hasTimezone) {
+      // This is a timezone-aware string (likely UTC from JSON serialization of Date object)
+      // Parse as UTC and convert to local time
+      const date = new Date(normalizedString);
+      if (isNaN(date.getTime())) {
+        // If parsing fails, fall back to formatDateTimeForInput
+        return formatDateTimeForInput(dateTimeString) || null;
+      }
+      
+      // Get local time components from the Date object
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
-    // If already in ISO format, just ensure it's in the right format
-    if (cleanDateTime.includes('T')) {
-      return cleanDateTime.substring(0, 16); // Keep only date and time (HH:mm), remove seconds if present
-    }
-    return cleanDateTime;
+    
+    // This is a timezone-naive string (DATETIME field) - parse components directly
+    // Use formatDateTimeForInput which extracts components without timezone conversion
+    return formatDateTimeForInput(dateTimeString) || null;
   };
 
   // Initialize form data when in edit mode
@@ -127,20 +154,26 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         publishedAtValue = convertToISOFormat(publishedAt);
       }
       
-      setFormData({
+      const initialFormData = {
         title: initialData.title || '',
         slug: initialData.slug || '',
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
-        featuredImage: null, // Don't pre-populate file input
+        featuredImage: null,
         publishedAt: publishedAtValue,
         status: 'draft',
-      });
+      };
+      
+      setFormData(initialFormData);
+      // Store initial form data for change detection (deep copy to prevent reference issues)
+      initialFormDataRef.current = { ...initialFormData };
       
       // Set publishActionType to 'schedule' if editing scheduled news
-      if (currentStatus === 'scheduled') {
-        setPublishActionType('schedule');
-      }
+      const initialActionType = currentStatus === 'scheduled' ? 'schedule' : 'publish';
+      // Update state to match initial action type
+      setPublishActionType(initialActionType);
+      // Always update the ref to track the initial value
+      initialPublishActionTypeRef.current = initialActionType;
 
       // Store read-only fields (published_at is immutable, updated_at is auto-set)
       // Only set originalPublishedAt if the news has actually been published (status = 'published')
@@ -169,10 +202,77 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           ? initialData.featured_image 
           : `${API_BASE_URL || ''}/${initialData.featured_image}`;
         setImagePreview(imageUrl);
-        setExistingImageUrl(imageUrl); // Store existing image URL for reference
+        initialImagePreviewRef.current = imageUrl;
+      } else {
+        initialImagePreviewRef.current = null;
       }
     }
   }, [isEditMode, initialData]);
+  
+  // Detect if form has unsaved changes
+  const hasChanges = useMemo(() => {
+    // Don't check for changes if initial data hasn't been set yet
+    if (!initialFormDataRef.current) return false;
+    
+    const initial = initialFormDataRef.current;
+    const current = formData;
+    
+    // Compare text fields (trim whitespace for accurate comparison)
+    if ((initial.title || '').trim() !== (current.title || '').trim()) return true;
+    if ((initial.slug || '').trim() !== (current.slug || '').trim()) return true;
+    if ((initial.content || '').trim() !== (current.content || '').trim()) return true;
+    if ((initial.excerpt || '').trim() !== (current.excerpt || '').trim()) return true;
+    
+    // Compare publishedAt (handle null/undefined cases)
+    const initialPublishedAt = initial.publishedAt || null;
+    const currentPublishedAt = current.publishedAt || null;
+    if (initialPublishedAt !== currentPublishedAt) return true;
+    
+    // Compare featured image - only true if a NEW file was selected or existing image was removed
+    // In edit mode: check if new file was selected OR if existing image was removed
+    // In create mode: check if a file was selected
+    if (isEditMode) {
+      // In edit mode, check if:
+      // 1. A new file was selected (current.featuredImage is a File object)
+      // 2. Existing image was removed (had image before, now imagePreview is null and no new file)
+      const hadInitialImage = initialImagePreviewRef.current !== null;
+      const hasCurrentImage = imagePreview !== null;
+      const hasNewFile = current.featuredImage instanceof File;
+      
+      if (hasNewFile) return true; // New file selected
+      // If we had an image initially but don't have one now (and no new file), image was removed
+      if (hadInitialImage && !hasCurrentImage && !hasNewFile) return true;
+    } else {
+      // In create mode, only check if a file was selected
+      if (current.featuredImage instanceof File) return true;
+    }
+    
+    // Compare publishActionType
+    const initialActionType = initialPublishActionTypeRef.current || 'publish';
+    if (publishActionType !== initialActionType) return true;
+    
+    return false;
+  }, [formData, publishActionType, isEditMode, imagePreview]);
+  
+  // Handle back button click - check for unsaved changes
+  const handleBackClick = useCallback(() => {
+    if (hasChanges) {
+      setShowUnsavedModal(true);
+      return;
+    }
+    onCancel();
+  }, [hasChanges, onCancel]);
+  
+  // Handle unsaved changes modal confirm (discard changes)
+  const handleUnsavedModalConfirm = useCallback(() => {
+    setShowUnsavedModal(false);
+    onCancel();
+  }, [onCancel]);
+  
+  // Handle unsaved changes modal cancel (keep editing)
+  const handleUnsavedModalCancel = useCallback(() => {
+    setShowUnsavedModal(false);
+  }, []);
 
   // Auto-generate slug from title
   const generateSlug = (title) => {
@@ -732,7 +832,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         <div className={styles.headerLeft}>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleBackClick}
             className={styles.backLink}
           >
             Go Back
@@ -993,7 +1093,6 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
                     onClick={() => {
                       setImagePreview(null);
                       setFormData(prev => ({ ...prev, featuredImage: null }));
-                      setExistingImageUrl(null); // Clear existing image URL when removed
                     }}
                     className={styles.removeImage}
                   >
@@ -1076,6 +1175,13 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           )}
         </div>
       </div>
+      
+      {/* Unsaved Changes Modal */}
+      <UnsaveChangesModal
+        isOpen={showUnsavedModal}
+        onConfirm={handleUnsavedModalConfirm}
+        onCancel={handleUnsavedModalCancel}
+      />
     </form>
   );
 };

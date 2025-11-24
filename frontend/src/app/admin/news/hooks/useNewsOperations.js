@@ -470,6 +470,65 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     }
   }, [refreshNews, setSuccessModal]);
 
+  // Handle bulk news archiving
+  const handleBulkArchive = useCallback(async (selectedNewsIds, newsItems) => {
+    setIsDeleting(true);
+    try {
+      // Archive each selected news item
+      const archivePromises = selectedNewsIds.map(async (newsId) => {
+        // Find the news item to get its data
+        const newsItem = newsItems.find(item => item.id === newsId);
+        if (!newsItem) {
+          throw new Error(`News item with ID ${newsId} not found`);
+        }
+
+        // Create FormData with all required fields and set status to archived
+        const formData = new FormData();
+        formData.append('title', newsItem.title.trim());
+        formData.append('slug', newsItem.slug.trim());
+        formData.append('content', newsItem.content || '');
+        formData.append('excerpt', newsItem.excerpt || '');
+        // Include published_at if it exists
+        if (newsItem.published_at || newsItem.date) {
+          formData.append('published_at', newsItem.published_at || newsItem.date);
+        }
+        formData.append('action', 'archive');
+
+        return fetch(`${API_BASE_URL || ''}/api/news/${newsId}`, {
+          method: 'PUT',
+          credentials: 'include',
+          body: formData
+        });
+      });
+
+      const results = await Promise.allSettled(archivePromises);
+      const failedArchives = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.ok)).length;
+      
+      if (failedArchives > 0) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length - failedArchives} news items archived successfully. ${failedArchives} failed to archive.`, 
+          type: 'warning' 
+        });
+      } else {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length} news items archived successfully!`, 
+          type: 'success' 
+        });
+      }
+
+      refreshNews();
+      invalidateNewsCache();
+      return { success: true, failedCount: failedArchives };
+    } catch (error) {
+      setSuccessModal({ isVisible: true, message: 'Failed to archive news items. Please try again.', type: 'error' });
+      return { success: false, error: error.message };
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshNews, setSuccessModal]);
+
   return {
     // State
     isSubmitting,
@@ -482,6 +541,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     handleArchiveNews,
     handleUnarchiveNews,
     handleBulkDelete,
+    handleBulkArchive,
     
     // Utilities
     validateNewsData

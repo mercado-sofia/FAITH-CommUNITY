@@ -28,8 +28,30 @@ export default function AdminNewsPage() {
   // Use custom hooks
   const newsOperations = useNewsOperations(orgId, refreshNews, setSuccessModal);
   const urlState = useNewsURL();
-  const modals = useNewsModals();
-  const { displayedNews, stats } = useNewsFilters(news, urlState.searchQuery, urlState.sortBy, urlState.statusFilter);
+  const modals = useNewsModals(urlState);
+  const { displayedNews } = useNewsFilters(news, urlState.searchQuery, urlState.sortBy, urlState.statusFilter);
+  
+  // Initialize edit/create mode from URL parameter on mount or when URL changes
+  useEffect(() => {
+    if (urlState.editId && news.length > 0) {
+      const newsItem = news.find(n => n.id.toString() === urlState.editId);
+      if (newsItem && (!modals.editingNews || modals.editingNews.id.toString() !== urlState.editId)) {
+        modals.setEditingNews(newsItem);
+        if (modals.pageMode !== 'edit') {
+          modals.setPageMode('edit');
+        }
+      } else if (!newsItem && modals.pageMode === 'edit') {
+        // News item not found, go back to list
+        modals.handleListMode();
+      }
+    } else if (urlState.isCreateMode && modals.pageMode !== 'create') {
+      modals.setPageMode('create');
+      modals.setEditingNews(null);
+    } else if (!urlState.editId && !urlState.isCreateMode && modals.pageMode !== 'list') {
+      modals.setPageMode('list');
+      modals.setEditingNews(null);
+    }
+  }, [urlState.editId, urlState.isCreateMode, news, modals]);
 
   // Memoize the selection change handler
   const handleSelectionChange = useCallback((newSelection) => {
@@ -87,10 +109,16 @@ export default function AdminNewsPage() {
   // Handle archive confirmation
   const handleArchiveConfirm = useCallback(async () => {
     if (modals.archivingNews) {
+      // Single archive
       await newsOperations.handleArchiveNews(modals.archivingNews.id);
       modals.handleCloseArchiveModal();
+    } else if (modals.selectedItems.length > 0) {
+      // Bulk archive
+      const selectedNewsItems = news.filter(n => modals.selectedItems.includes(n.id));
+      await newsOperations.handleBulkArchive(modals.selectedItems, selectedNewsItems);
+      modals.handleCloseArchiveModal();
     }
-  }, [modals, newsOperations]);
+  }, [modals, newsOperations, news]);
 
   // Handle unarchive confirmation
   const handleUnarchiveConfirm = useCallback(async () => {
@@ -181,6 +209,7 @@ export default function AdminNewsPage() {
                 onArchive={modals.handleArchive}
                 onUnarchive={modals.handleUnarchive}
                 onBulkDelete={modals.handleBulkDeleteRequest}
+                onBulkArchive={modals.handleBulkArchiveRequest}
                 onSelectionChange={handleSelectionChange}
                 selectedItems={modals.selectedItems}
                 itemsPerPage={urlState.showCount}
@@ -232,7 +261,7 @@ export default function AdminNewsPage() {
       {/* Archive News Modal */}
       <ConfirmationModal
         isOpen={modals.showArchiveModal}
-        itemName={modals.archivingNews?.title}
+        itemName={modals.getArchiveModalItemName()}
         itemType="news"
         actionType="archive"
         onConfirm={handleArchiveConfirm}

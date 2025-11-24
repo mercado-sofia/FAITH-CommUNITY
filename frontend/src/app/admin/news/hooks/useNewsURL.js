@@ -23,6 +23,10 @@ export const useNewsURL = () => {
     const showParam = searchParams.get('show');
     return showParam ? parseInt(showParam, 10) : 10;
   });
+  
+  // Get edit and create mode from URL
+  const editId = searchParams.get('edit');
+  const isCreateMode = searchParams.get('create') === 'true';
 
   // Function to update URL parameters
   const updateURLParams = useCallback((newParams) => {
@@ -67,31 +71,14 @@ export const useNewsURL = () => {
     updateURLParams({ show: value.toString() });
   }, [updateURLParams]);
 
-  // Reset to defaults
-  const resetToDefaults = useCallback(() => {
-    setSearchQuery('');
-    setSortBy('newest');
-    setStatusFilter('all');
-    setShowCount(10);
-    updateURLParams({ search: '', sort: 'newest', status: 'all', show: '10' });
-  }, [updateURLParams]);
-
-  // Get current URL state
-  const getCurrentURLState = useCallback(() => {
-    return {
-      search: searchParams.get('search') || '',
-      sort: searchParams.get('sort') || 'newest',
-      status: searchParams.get('status') || 'all',
-      show: parseInt(searchParams.get('show')) || 10
-    };
-  }, [searchParams]);
-
   return {
     // State
     searchQuery,
     sortBy,
     statusFilter,
     showCount,
+    editId,
+    isCreateMode,
     
     // Handlers
     handleSearchChange,
@@ -100,14 +87,6 @@ export const useNewsURL = () => {
     handleShowCountChange,
     
     // Utilities
-    updateURLParams,
-    resetToDefaults,
-    getCurrentURLState,
-    
-    // Direct setters (for programmatic updates)
-    setSearchQuery,
-    setSortBy,
-    setStatusFilter,
-    setShowCount
+    updateURLParams
   };
 };

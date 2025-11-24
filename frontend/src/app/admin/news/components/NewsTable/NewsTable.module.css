@@ -39,6 +39,19 @@
   user-select: none;
 }
 
+.archiveButton {
+  background-color: #fff;
+  color: #6b7280;
+  border-color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.archiveButton:hover {
+  background-color: #f3f4f6;
+}
+
 .deleteButton {
   background-color: #fff;
   color: #dc2626;

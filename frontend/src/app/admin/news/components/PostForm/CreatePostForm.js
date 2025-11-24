@@ -6,6 +6,7 @@ import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
 import DateTimePicker from '../DateTimePicker/DateTimePicker';
+import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import DOMPurify from 'dompurify';
 import { formatDateTimeForInput, getCurrentDateTimeISO } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';

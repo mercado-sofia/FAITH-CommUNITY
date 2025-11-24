@@ -8,6 +8,110 @@ import styles from './SubmissionModal.module.css';
 
 // Note: advocacy and competency are no longer part of the submission workflow
 
+// Helper function to parse JSON data safely
+const parseJsonData = (data) => {
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      console.error('Error parsing JSON data:', e);
+      return data;
+    }
+  }
+  return data;
+};
+
+// Helper function to extract file name from URL
+const getFileNameFromUrl = (url) => {
+  try {
+    const urlParts = url.split('/');
+    const fileNameWithParams = urlParts[urlParts.length - 1];
+    // Remove query parameters but keep extension
+    const fileName = fileNameWithParams.split('?')[0];
+    // Ensure filename has proper extension
+    if (fileName && !fileName.includes('.')) {
+      // If no extension found, try to extract from original filename in URL
+      const extension = url.split('.').pop()?.split('?')[0]?.toLowerCase();
+      if (extension && extension.length <= 5) {
+        return `Post Act Report.${extension}`;
+      }
+    }
+    return fileName || 'Post Act Report';
+  } catch {
+    return 'Post Act Report';
+  }
+};
+
+// Helper function to calculate program status from dates (for submissions)
+const calculateProgramStatusFromDates = (event_start_date, event_end_date, multiple_dates) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+  // Handle multiple dates
+  if (multiple_dates && Array.isArray(multiple_dates) && multiple_dates.length > 0) {
+    const dates = multiple_dates
+      .filter(date => date) // Filter out null/undefined
+      .map(dateStr => {
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      })
+      .sort((a, b) => a - b); // Sort chronologically
+    
+    if (dates.length === 0) {
+      return 'Upcoming'; // Default if no valid dates
+    }
+    
+    const earliestDate = dates[0];
+    const latestDate = dates[dates.length - 1];
+    
+    // If today is before the earliest date, it's upcoming
+    if (today < earliestDate) {
+      return 'Upcoming';
+    }
+    // If today is after the latest date, it's completed
+    if (today > latestDate) {
+      return 'Completed';
+    }
+    // If today is between or on any of the dates, it's active
+    return 'Active';
+  }
+
+  // Handle single date or date range
+  if (event_start_date) {
+    const startDate = new Date(event_start_date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    if (event_end_date) {
+      const endDate = new Date(event_end_date);
+      endDate.setHours(0, 0, 0, 0);
+      
+      // If today is before the start date, it's upcoming
+      if (today < startDate) {
+        return 'Upcoming';
+      }
+      // If today is after the end date, it's completed
+      if (today > endDate) {
+        return 'Completed';
+      }
+      // If today is between or on the dates, it's active
+      return 'Active';
+    } else {
+      // Only start date provided
+      // If today is before the start date, it's upcoming
+      if (today < startDate) {
+        return 'Upcoming';
+      }
+      // If today is on or after the start date, it's active
+      // (We can't determine completion without an end date)
+      return 'Active';
+    }
+  }
+
+  // Default to upcoming if no dates are set
+  return 'Upcoming';
+};
+
 export default function SubmissionModal({ data, onClose }) {
   const [programTitle, setProgramTitle] = useState(null);
   const [loadingProgram, setLoadingProgram] = useState(false);
@@ -22,20 +126,9 @@ export default function SubmissionModal({ data, onClose }) {
       }
 
       // Parse proposed_data to get program_id and program_title
-      let programId = null;
-      let existingProgramTitle = null;
-      try {
-        const proposedData = typeof data.proposed_data === 'string' 
-          ? JSON.parse(data.proposed_data) 
-          : data.proposed_data;
-        programId = proposedData?.program_id;
-        existingProgramTitle = proposedData?.program_title;
-      } catch (e) {
-        console.error('Error parsing proposed_data:', e);
-        setProgramTitle(null);
-        setLoadingProgram(false);
-        return;
-      }
+      const proposedData = parseJsonData(data.proposed_data);
+      const programId = proposedData?.program_id;
+      const existingProgramTitle = proposedData?.program_title;
 
       // If we already have a program_title, use it
       if (existingProgramTitle) {
@@ -64,12 +157,10 @@ export default function SubmissionModal({ data, onClose }) {
 
         if (response.ok) {
           const result = await response.json();
-          if (result.success && result.data?.title) {
-            setProgramTitle(result.data.title);
-          } else if (result.data?.title) {
-            setProgramTitle(result.data.title);
-          } else if (result.title) {
-            setProgramTitle(result.title);
+          // Check title in priority order: result.data?.title first, then result.title
+          const title = result.data?.title || result.title;
+          if (title) {
+            setProgramTitle(title);
           }
         } else {
           console.warn(`Failed to fetch program title: ${response.status} ${response.statusText}`);
@@ -135,12 +226,22 @@ export default function SubmissionModal({ data, onClose }) {
 
           {/* Right side - Details */}
           <div className={styles.programDetailsSection}>
-            {/* Status Badge - Top Right Corner */}
-            {dataObj.status && (
-              <span className={`${styles.statusIndicator} ${styles[dataObj.status?.toLowerCase()]}`}>
-                {dataObj.status}
-              </span>
-            )}
+            {/* Status Badge - Top Right Corner - Show Program Status (Upcoming, Active, Completed) */}
+            {(() => {
+              // Calculate program status from dates (not submission status)
+              // For submissions, we need to calculate based on event dates
+              const programStatus = calculateProgramStatusFromDates(
+                dataObj.event_start_date,
+                dataObj.event_end_date,
+                dataObj.multiple_dates
+              );
+              
+              return (
+                <span className={`${styles.statusIndicator} ${styles[programStatus.toLowerCase()]}`}>
+                  {programStatus}
+                </span>
+              );
+            })()}
             
             {/* Program Title */}
             <div className={styles.programTitle}>{dataObj.title}</div>
@@ -300,19 +401,15 @@ export default function SubmissionModal({ data, onClose }) {
         </div>
       );
     } else if (data.section === 'highlights') {
-      // Parse media_files if it's a string
+      // Parse media_files
       let mediaFiles = [];
-      try {
-        if (typeof dataObj.media_files === 'string') {
-          mediaFiles = JSON.parse(dataObj.media_files);
-        } else if (Array.isArray(dataObj.media_files)) {
-          mediaFiles = dataObj.media_files;
-        } else if (dataObj.media) {
-          mediaFiles = Array.isArray(dataObj.media) ? dataObj.media : [];
-        }
-      } catch (e) {
-        console.error('Error parsing media_files:', e);
-        mediaFiles = [];
+      if (Array.isArray(dataObj.media_files)) {
+        mediaFiles = dataObj.media_files;
+      } else if (dataObj.media_files) {
+        const parsed = parseJsonData(dataObj.media_files);
+        mediaFiles = Array.isArray(parsed) ? parsed : [];
+      } else if (dataObj.media) {
+        mediaFiles = Array.isArray(dataObj.media) ? dataObj.media : [];
       }
 
       return (
@@ -484,43 +581,18 @@ export default function SubmissionModal({ data, onClose }) {
                 <div className={styles.dataContent}>
                   {(() => {
                     try {
-                      const proposedData = typeof data.proposed_data === 'string' 
-                        ? JSON.parse(data.proposed_data) 
-                        : data.proposed_data;
+                      const proposedData = parseJsonData(data.proposed_data);
                       const fileUrl = proposedData?.file_url;
                       
                       if (!fileUrl) {
                         return <div className={styles.noData}>No file available</div>;
                       }
                       
-                      // Extract file name from URL
-                      const getFileNameFromUrl = (url) => {
-                        try {
-                          const urlParts = url.split('/');
-                          const fileNameWithParams = urlParts[urlParts.length - 1];
-                          // Remove query parameters but keep extension
-                          const fileName = fileNameWithParams.split('?')[0];
-                          // Ensure filename has proper extension
-                          if (fileName && !fileName.includes('.')) {
-                            // If no extension found, try to extract from original filename in URL
-                            const extension = url.split('.').pop()?.split('?')[0]?.toLowerCase();
-                            if (extension && extension.length <= 5) {
-                              return `Post Act Report.${extension}`;
-                            }
-                          }
-                          return fileName || 'Post Act Report';
-                        } catch {
-                          return 'Post Act Report';
-                        }
-                      };
-                      
                       const fileName = getFileNameFromUrl(fileUrl);
                       
                       // Determine if it's an image or non-image file
                       const fileExtension = fileUrl.split('.').pop()?.toLowerCase().split('?')[0];
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'].includes(fileExtension);
-                      const isPdf = fileExtension === 'pdf';
-                      const isDocument = ['doc', 'docx'].includes(fileExtension);
                       
                       // S3 URLs work directly with proper Content-Type headers - no URL conversion needed
                       // For images: open in new tab
@@ -604,19 +676,7 @@ export default function SubmissionModal({ data, onClose }) {
                     {data.section === 'programs' ? 'Proposed Program' : 'Proposed Highlight'}
                   </h3>
                   <div className={styles.dataContent}>
-                    {(() => {
-                      // Parse proposed_data if it's a string
-                      let parsedData = data.proposed_data;
-                      if (typeof data.proposed_data === 'string') {
-                        try {
-                          parsedData = JSON.parse(data.proposed_data);
-                        } catch (e) {
-                          console.error('Error parsing proposed_data:', e);
-                          parsedData = data.proposed_data;
-                        }
-                      }
-                      return formatData(parsedData);
-                    })()}
+                    {formatData(parseJsonData(data.proposed_data))}
                   </div>
                 </div>
               ) : (
@@ -626,7 +686,7 @@ export default function SubmissionModal({ data, onClose }) {
                     <h3 className={styles.sectionTitle}>Previous Data</h3>
                     <div className={styles.dataContent}>
                       {data.previous_data ? (
-                        formatData(typeof data.previous_data === 'string' ? JSON.parse(data.previous_data) : data.previous_data)
+                        formatData(parseJsonData(data.previous_data))
                       ) : (
                         <div className={styles.noData}>No previous data</div>
                       )}
@@ -637,19 +697,7 @@ export default function SubmissionModal({ data, onClose }) {
                   <div className={styles.dataSection}>
                     <h3 className={styles.sectionTitle}>Proposed Changes</h3>
                     <div className={styles.dataContent}>
-                      {(() => {
-                        // Parse proposed_data if it's a string
-                        let parsedData = data.proposed_data;
-                        if (typeof data.proposed_data === 'string') {
-                          try {
-                            parsedData = JSON.parse(data.proposed_data);
-                          } catch (e) {
-                            console.error('Error parsing proposed_data:', e);
-                            parsedData = data.proposed_data;
-                          }
-                        }
-                        return formatData(parsedData);
-                      })()}
+                      {formatData(parseJsonData(data.proposed_data))}
                     </div>
                   </div>
                 </>

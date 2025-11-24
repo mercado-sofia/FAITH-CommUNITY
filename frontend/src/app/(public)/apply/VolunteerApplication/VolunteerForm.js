@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
 import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
 import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
-import { storeRedirectUrl } from "@/utils/redirectUtils";
+import { storeRedirectUrl, isReturningFromLogin, clearReturningFromLogin } from "@/utils/redirectUtils";
 import logger from "@/utils/logger";
 
 function SubmitStatus({ status }) {
@@ -82,6 +82,56 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
   useEffect(() => {
     fetchUserApplications();
   }, []);
+
+  // Clear form data and reset program preview when returning from login
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isReturningFromLogin()) {
+      // User is returning from login - clear form data and reset preview
+      clearFormData();
+      if (onFormReset) {
+        onFormReset();
+      }
+      // Clear the flag
+      clearReturningFromLogin();
+    }
+  }, [onFormReset, clearFormData]);
+
+  // Validate and update restored program when programOptions are loaded
+  // This ensures the program object matches the latest data from the API
+  useEffect(() => {
+    if (programOptions.length > 0 && formData.program && formData.program.id) {
+      // Check if the restored program still exists in the available options
+      const matchingProgram = programOptions.find(
+        program => program.id === formData.program.id
+      );
+      
+      if (!matchingProgram) {
+        // Program no longer exists or is no longer available, clear it
+        setFormData(prev => ({
+          ...prev,
+          program: null
+        }));
+      } else if (matchingProgram.id === formData.program.id) {
+        // Only update if the program data has actually changed
+        // Compare by stringifying to avoid unnecessary updates
+        const currentProgramStr = JSON.stringify(formData.program);
+        const matchingProgramStr = JSON.stringify(matchingProgram);
+        
+        if (currentProgramStr !== matchingProgramStr) {
+          // Program exists - update to use the latest version from API
+          // This ensures any program data updates are reflected
+          setFormData(prev => ({
+            ...prev,
+            program: matchingProgram
+          }));
+          // Notify parent component about program selection
+          if (onProgramSelect) {
+            onProgramSelect(matchingProgram);
+          }
+        }
+      }
+    }
+  }, [programOptions, formData.program, onProgramSelect, setFormData]);
 
   // Auto-select program if selectedProgramId is provided
   useEffect(() => {

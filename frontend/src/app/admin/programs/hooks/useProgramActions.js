@@ -12,6 +12,8 @@ export const useProgramActions = ({
   onToggleVolunteerAcceptance,
   onAcceptCollaboration,
   onDeclineCollaboration,
+  onArchive,
+  onUnarchive,
   isCollaborationCard
 }) => {
   // State for loading states
@@ -224,6 +226,20 @@ export const useProgramActions = ({
     setShowDeclineCollaborationModal(false);
   }, []);
 
+  // Archive handlers - trigger page-level modal
+  const handleArchiveClick = useCallback(() => {
+    if (onArchive) {
+      onArchive(normalizedData);
+    }
+  }, [onArchive, normalizedData]);
+
+  // Unarchive handlers - trigger page-level modal
+  const handleUnarchiveClick = useCallback(() => {
+    if (onUnarchive) {
+      onUnarchive(normalizedData);
+    }
+  }, [onUnarchive, normalizedData]);
+
   return {
     // Loading states
     isDeleting,
@@ -250,6 +266,8 @@ export const useProgramActions = ({
     handleVolunteerAcceptanceClick,
     handleAcceptCollaborationClick,
     handleDeclineCollaborationClick,
+    handleArchiveClick,
+    handleUnarchiveClick,
     
     // Confirmation handlers
     confirmMarkCompleted,

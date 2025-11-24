@@ -364,6 +364,39 @@ export const useAdminPrograms = () => {
   };
 };
 
+// Custom hook for archived programs data
+export const useArchivedPrograms = (orgId) => {
+  const shouldFetch = typeof window !== 'undefined' && orgId;
+  
+  const { data, error, isLoading, mutate } = useSWR(
+    shouldFetch ? `${API_BASE_URL}/api/admin/programs/${orgId}/archived` : null,
+    adminFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 120000, // Cache for 2 minutes
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+      },
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/admin/programs/${orgId}/archived`, error);
+      }
+    }
+  );
+
+  // Ensure we always return an array for programs
+  const programs = data?.success && Array.isArray(data.data) ? data.data : [];
+
+  return {
+    programs,
+    isLoading,
+    error,
+    mutate
+  };
+};
+
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
   // Guard clause: only make API call if orgAcronym is valid

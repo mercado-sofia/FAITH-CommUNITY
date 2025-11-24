@@ -2114,7 +2114,7 @@ export const checkEmailUser = async (req, res) => {
   }
 }
 
-// Delete account (deactivate by setting is_active to 0)
+// Delete account (hard delete - permanently removes account and related data)
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2124,9 +2124,12 @@ export const deleteAccount = async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Get current password hash and check if user is active
+    // Get current password hash and profile photo URL
     const [users] = await db.query(
-      'SELECT password_hash, is_active FROM users WHERE id = ?',
+      `SELECT u.password_hash, u.is_active, up.profile_photo_url 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -2136,9 +2139,9 @@ export const deleteAccount = async (req, res) => {
 
     const user = users[0];
 
-    // Check if account is already deactivated
+    // Check if account is already deactivated (safety check)
     if (!user.is_active) {
-      return res.status(400).json({ error: 'Account is already deactivated' });
+      return res.status(400).json({ error: 'Account is already deactivated. Please contact support if you need assistance.' });
     }
 
     // Verify password
@@ -2147,9 +2150,36 @@ export const deleteAccount = async (req, res) => {
       return res.status(400).json({ error: 'Incorrect password, please try again' });
     }
 
-    // Deactivate account by setting is_active to 0
+    // Delete profile photo from Cloudinary if it exists
+    if (user.profile_photo_url) {
+      try {
+        const { deleteFromCloudinary, extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
+        const publicId = extractPublicIdFromUrl(user.profile_photo_url);
+        if (publicId) {
+          await deleteFromCloudinary(publicId);
+        }
+      } catch (photoError) {
+        // Log error but continue with account deletion even if photo deletion fails
+        console.error('Error deleting profile photo from Cloudinary:', photoError);
+      }
+    }
+
+    // Hard delete: Permanently delete the user record
+    // Related data will be automatically deleted via CASCADE foreign keys:
+    // - user_profiles (ON DELETE CASCADE)
+    // - user_notifications (ON DELETE CASCADE)
+    // - volunteers/applications (ON DELETE CASCADE)
+    // - submissions (ON DELETE CASCADE)
+    // - admin_notifications (ON DELETE CASCADE) if user was admin
+    // - superadmin_notifications (ON DELETE CASCADE) if user was superadmin
+    // - program_collaborations (ON DELETE CASCADE)
+    // - admin_highlights (ON DELETE CASCADE)
+    // 
+    // Tables with ON DELETE SET NULL will have user_id set to NULL:
+    // - messages (user_id)
+    // - program_post_act_reports (uploaded_by_admin_id, reviewed_by_superadmin_id)
     await db.query(
-      'UPDATE users SET is_active = 0, updated_at = NOW() WHERE id = ?',
+      'DELETE FROM users WHERE id = ? AND role = \'user\'',
       [userId]
     );
 
@@ -2159,6 +2189,7 @@ export const deleteAccount = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Error deleting account:', error);
     res.status(500).json({ error: 'An error occurred while deleting your account' });
   }
 };

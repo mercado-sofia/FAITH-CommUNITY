@@ -127,8 +127,8 @@ export const useProgramForm = (mode = 'create', program = null) => {
         additionalImages: [], // Will be handled separately for existing images
         collaborators: Array.isArray(program.collaborators) ? program.collaborators : [],
         accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
-        edited_by_name: program.edited_by_name || '',
-        edited_by_role: program.edited_by_role || ''
+        edited_by_name: '', // Always reset on each edit - new person responsible for each edit
+        edited_by_role: '' // Always reset on each edit - new person responsible for each edit
       });
     }
   }, [isEditMode, program]);
@@ -153,8 +153,37 @@ export const useProgramForm = (mode = 'create', program = null) => {
     setHasChanges(true);
   }, []);
 
+  // Helper function to check if event date is in the past
+  const isEventDateInPast = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check multiple dates
+    if (formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0) {
+      const dates = formData.multiple_dates.map(dateStr => new Date(dateStr));
+      const latestDate = dates.sort((a, b) => b - a)[0];
+      latestDate.setHours(0, 0, 0, 0);
+      return latestDate < today;
+    }
+    
+    // Check date range or single date
+    if (formData.event_end_date) {
+      const endDate = new Date(formData.event_end_date);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate < today;
+    }
+    
+    if (formData.event_start_date) {
+      const startDate = new Date(formData.event_start_date);
+      startDate.setHours(0, 0, 0, 0);
+      return startDate < today;
+    }
+    
+    return false;
+  }, [formData.event_start_date, formData.event_end_date, formData.multiple_dates]);
+
   // Validate form
-  const validateForm = useCallback((imagePreview = null) => {
+  const validateForm = useCallback((imagePreview = null, postActReportFile = null) => {
     const newErrors = {};
     
     // Validate required text fields
@@ -249,9 +278,25 @@ export const useProgramForm = (mode = 'create', program = null) => {
       });
     }
 
+    // Validate post-act report if event date is in the past (create mode only)
+    if (!isEditMode && isEventDateInPast()) {
+      if (!postActReportFile) {
+        newErrors.postActReport = ERROR_MESSAGES.postActReport.required;
+      } else {
+        // Validate file size
+        if (postActReportFile.size > VALIDATION_RULES.postActReport.maxSize) {
+          newErrors.postActReport = ERROR_MESSAGES.postActReport.maxSize;
+        }
+        // Validate file type
+        if (!VALIDATION_RULES.postActReport.allowedTypes.includes(postActReportFile.type)) {
+          newErrors.postActReport = ERROR_MESSAGES.postActReport.invalidType;
+        }
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, isEditMode]);
+  }, [formData, isEditMode, isEventDateInPast]);
 
   // Clear specific error
   const clearError = useCallback((fieldName) => {

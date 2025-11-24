@@ -111,23 +111,3 @@
   user-select: none;
   font-size: 12px;
 }
-
-@media (max-width: 768px) {
-  .paginationInfo {
-    text-align: center;
-    order: 2;
-  }
-  
-  .paginationControls {
-    justify-content: center;
-    order: 1;
-    flex-wrap: wrap;
-  }
-  
-  .paginationButton {
-    min-width: 1.75rem;
-    padding: 0.25rem 0.375rem;
-    font-size: 12px;
-    height: 1.75rem;
-  }
-}

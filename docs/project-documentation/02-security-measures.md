@@ -12,18 +12,28 @@
 - **Password Requirements**: Enforced on backend
 
 **Admin Users**
-- **Access Token**: JWT with 30-minute expiration
+- **Access Token**: JWT with 15-minute expiration (uses unified `ACCESS_TOKEN_TTL`)
+- **Refresh Token**: Long-lived (7 days), stored in httpOnly cookie
+- **Token Rotation**: Refresh tokens are rotated on each use
 - **Session Binding**: IP address and User-Agent fingerprinting
-- **Session Storage**: Database-backed sessions with security binding
+- **Session Storage**: Database-backed sessions with security binding (30-minute database record expiration)
 - **No 2FA**: Relies on strong passwords and rate limiting
 - **Organization Scoping**: Admins can only access their organization's data
 
 **Superadmin Users**
-- **Access Token**: JWT with 30-minute expiration
+- **Access Token**: JWT with 15-minute expiration (uses unified `ACCESS_TOKEN_TTL`)
+- **Refresh Token**: Long-lived (7 days), stored in httpOnly cookie
+- **Token Rotation**: Refresh tokens are rotated on each use
 - **Two-Factor Authentication (2FA)**: Optional TOTP-based 2FA
 - **Session Binding**: IP address and User-Agent fingerprinting
+- **Session Storage**: Database-backed sessions with security binding (30-minute database record expiration)
 - **Single Account**: Only one superadmin account (ID = 1) allowed
 - **Hardcoded Token Support**: Special "superadmin" token for main account
+
+**Unified Refresh Token System:**
+- All roles (user, admin, superadmin) use the same refresh token endpoint: `/api/users/refresh`
+- Refresh tokens work across all roles through the unified `users` table
+- Token refresh automatically handles role-specific payload fields (e.g., organization_id for admins)
 
 ### 2. Login Attempt Tracking & Rate Limiting
 

@@ -22,6 +22,7 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e9ecef;
+  width: 100%;
 }
 
 .sectionHeader h2 {
@@ -461,39 +462,23 @@
   text-align: center;
   padding: 3rem 1rem;
   color: #6c757d;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .emptyIcon {
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
 }
 
 .emptyState p {
-  margin: 0 0 0.25rem;
-  font-size: 15px;
+  margin: 0 0 0.5rem 0;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .emptyState span {
-  font-size: 14px;
+  font-size: 13px;
   opacity: 0.8;
-}
-
-.emptyIcon {
-  font-size: 2.5rem;
-  margin-bottom: 0.65rem;
-  opacity: 0.6;
-  color: #94a3b8;
 }
 
 /* Loading and Spinner */
@@ -611,22 +596,6 @@
     width: 100%;
   }
 
-  .emptyState {
-    padding: 3rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .emptyIcon {
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 2rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -697,27 +666,6 @@
     width: 100%;
   }
 
-  .emptyState {
-    padding: 3rem 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .emptyIcon {
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .emptyState p,
-  .emptyState span {
-    text-align: center;
-    width: 100%;
-  }
 }
 
 /* Small devices: stack content to avoid horizontal overflow */

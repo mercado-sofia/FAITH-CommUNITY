@@ -15,3 +15,7 @@
   color: #050809;
   user-select: none;
 }
+
+.tableContainer {
+  margin-top: 0;
+}

@@ -61,6 +61,20 @@ export const VALIDATION_RULES = {
     maxSize: 20 * 1024 * 1024, // 20MB in bytes
     allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     maxCount: 10
+  },
+  postActReport: {
+    required: false, // Required only if event date is in the past
+    maxSize: 50 * 1024 * 1024, // 50MB in bytes
+    allowedTypes: [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
   }
 };
 
@@ -103,6 +117,11 @@ export const ERROR_MESSAGES = {
     maxSize: 'Image size must be less than 20MB',
     invalidType: 'Only JPG, JPEG, PNG and WEBP images are allowed',
     maxCount: 'Maximum 10 additional images allowed'
+  },
+  postActReport: {
+    required: 'Post Act Report is required for completed programs',
+    maxSize: 'File size must be less than 50MB',
+    invalidType: 'Only PDF, JPG, PNG, WEBP, HEIC, DOC, and DOCX files are allowed'
   }
 };
 

@@ -55,7 +55,6 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
             disabled={pendingCount === 0}
             title={pendingCount === 0 ? 'No pending submissions selected' : `Cancel ${pendingCount} pending submission${pendingCount !== 1 ? 's' : ''}`}
           >
-            <FiX size={14} />
             <span>Cancel {pendingCount > 0 ? `(${pendingCount})` : ''}</span>
           </button>
         )}

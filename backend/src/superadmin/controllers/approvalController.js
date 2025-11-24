@@ -1097,6 +1097,85 @@ export const approveSubmission = async (req, res) => {
             }
           }
 
+          // Handle post-act report if provided (for completed programs created with post-act report)
+          if (data.postActReport && data.postActReport.file_url && programId) {
+            try {
+              // Check if program_post_act_reports table exists
+              const [tableCheckRows] = await connection.execute(
+                `SELECT COUNT(*) as cnt FROM information_schema.tables 
+                  WHERE table_schema = DATABASE() AND table_name = 'program_post_act_reports'`
+              );
+              const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
+              
+              if (hasPostActTable) {
+                // Create post-act report record with status 'pending'
+                const [reportResult] = await connection.execute(
+                  `INSERT INTO program_post_act_reports (program_id, file_public_id, file_url, status, uploaded_by_admin_id)
+                   VALUES (?, ?, ?, 'pending', ?)`,
+                  [
+                    programId,
+                    data.postActReport.file_public_id || null,
+                    data.postActReport.file_url,
+                    submission.submitted_by || null
+                  ]
+                );
+                
+                const reportId = reportResult.insertId;
+                
+                // Create a submission record for the post-act report so it appears in superadmin approvals
+                try {
+                  await connection.execute(
+                    `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
+                     VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+                    [
+                      orgId,
+                      'Post Act Report',
+                      JSON.stringify({}),
+                      JSON.stringify({
+                        program_id: programId,
+                        report_id: reportId,
+                        file_url: data.postActReport.file_url,
+                        file_public_id: data.postActReport.file_public_id || null
+                      }),
+                      submission.submitted_by || null
+                    ]
+                  );
+                } catch (submissionError) {
+                  // Non-fatal: submissions table may not exist or section not whitelisted
+                  logError('Failed to create post-act report submission record', submissionError, { context: 'approval_controller' });
+                }
+                
+                // Notify superadmin about the new post act report submission
+                try {
+                  const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
+                  const [superadminRows] = await connection.execute('SELECT id FROM users WHERE role = \'superadmin\' LIMIT 1');
+                  const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
+                  if (superadminId) {
+                    // Get organization acronym for message context
+                    const [orgRows] = await connection.execute('SELECT org, orgName FROM organizations WHERE id = ? LIMIT 1', [orgId]);
+                    const orgAcronym = orgRows.length ? orgRows[0].org : 'Unknown Org';
+                    
+                    await SuperAdminNotificationController.createNotification(
+                      superadminId,
+                      'approval_request',
+                      'Post Act Report Submitted',
+                      `${orgAcronym} submitted a Post Act Report for program "${data.title}".`,
+                      'post_act_report',
+                      null,
+                      orgId
+                    );
+                  }
+                } catch (notifErr) {
+                  // Non-fatal: notification failure should not block approval
+                  logError('Failed to send post-act report notification', notifErr, { context: 'approval_controller' });
+                }
+              }
+            } catch (postActError) {
+              // Non-fatal: post-act report handling failure should not block program approval
+              logError('Failed to handle post-act report during program approval', postActError, { context: 'approval_controller' });
+            }
+          }
+
         // Note: For collaborative programs, they are set to pending_collaboration status
         // and will only be approved by superadmin after collaborators accept
         // Collaborators are notified individually when collaboration requests are created

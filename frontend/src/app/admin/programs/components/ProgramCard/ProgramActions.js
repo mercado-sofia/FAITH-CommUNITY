@@ -1,4 +1,3 @@
-import React from 'react';
 import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked, MdOutlineCancel } from 'react-icons/md';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';

@@ -723,33 +723,3 @@
   font-family: var(--font-inter);
   font-style: italic;
 }
-
-
-@media (max-width: 768px) {
-  .formHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .headerActions {
-    width: 100%;
-  }
-
-  .draftButton,
-  .saveButton {
-    width: 100%;
-  }
-
-  .splitButtonGroup {
-    width: 100%;
-  }
-
-  .uploadArea {
-    min-height: 180px;
-  }
-  
-  .previewImage {
-    height: 150px;
-  }
-}

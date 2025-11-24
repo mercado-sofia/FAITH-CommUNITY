@@ -26,6 +26,8 @@ export const useProgramFilters = (programs, collaborations) => {
         return 'Upcoming';
       case 'completed':
         return 'Completed';
+      case 'archived':
+        return 'archived';
       case 'collaborations':
         return null; // No status filter for collaborations
       default:

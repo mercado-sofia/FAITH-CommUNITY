@@ -2,7 +2,9 @@
 
 import express from 'express';
 import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
+import { s3UploadConfigs } from '../../utils/s3Upload.js';
 import { CLOUDINARY_FOLDERS } from '../../utils/cloudinaryConfig.js';
+import { S3_FOLDERS } from '../../utils/s3Config.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -46,6 +48,9 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
   let uploadMiddleware;
   if (uploadType === 'highlight') {
     uploadMiddleware = cloudinaryUploadConfigs.highlight.single('file');
+  } else if (uploadType === 'program_post_act') {
+    // Use S3 upload config for post-act reports
+    uploadMiddleware = s3UploadConfigs.postActReport.single('file');
   } else {
     uploadMiddleware = cloudinaryUploadConfigs.programMain.single('file');
   }
@@ -66,7 +71,32 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
     // Determine upload type from request body or query params (body is now parsed)
     const uploadType = req.body.uploadType || req.query.type || 'program';
     
-    // Use appropriate folder and prefix based on upload type
+    // Handle S3 uploads for post-act reports
+    if (uploadType === 'program_post_act') {
+      try {
+        const { uploadSingleToS3 } = await import('../../utils/s3Upload.js');
+        
+        // Upload to S3
+        const uploadResult = await uploadSingleToS3(
+          req.file,
+          S3_FOLDERS.PROGRAMS.POST_ACT,
+          { prefix: 'post_act_' }
+        );
+        
+        res.json({
+          success: true,
+          filename: req.file.originalname,
+          filePath: uploadResult.public_id,
+          url: uploadResult.url,
+          public_id: uploadResult.public_id
+        });
+      } catch (uploadError) {
+        res.status(500).json({ error: 'Failed to upload file to S3: ' + uploadError.message });
+      }
+      return;
+    }
+    
+    // Use appropriate folder and prefix based on upload type (Cloudinary)
     let folder;
     let prefix;
     

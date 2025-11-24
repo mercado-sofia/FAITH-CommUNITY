@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { FiTrash2 } from 'react-icons/fi';
 import { LuUpload } from 'react-icons/lu';
 import styles from '../ProgramForm.module.css';

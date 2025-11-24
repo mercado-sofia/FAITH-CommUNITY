@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import styles from './UnsaveChangesModal.module.css';
 

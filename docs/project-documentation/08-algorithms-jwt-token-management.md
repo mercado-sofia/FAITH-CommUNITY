@@ -136,7 +136,7 @@ async function rotateRefreshToken(oldToken, userId, { userAgent, ipAddress }) {
 ## 3. Token Refresh Flow Algorithm
 
 ### Purpose
-Automatically refresh expired access tokens using valid refresh tokens.
+Automatically refresh expired access tokens using valid refresh tokens. This is a unified endpoint that works for all user roles (user, admin, superadmin).
 
 ### Algorithm Steps
 
@@ -150,9 +150,13 @@ Automatically refresh expired access tokens using valid refresh tokens.
 5. Get user from unified users table:
    - SELECT id, email, role, organization_id FROM users WHERE id = ?
 6. Rotate refresh token (see Algorithm #2)
-7. Generate new access token (see Algorithm #1)
+7. Generate new access token (see Algorithm #1):
+   - Base payload: { id, email, role }
+   - If role is 'admin' and has organization_id:
+     * Query organizations table for org details
+     * Add: organization_id, org, orgName to payload
 8. Set new tokens as httpOnly cookies:
-   - access_token: 15-minute expiration
+   - access_token: 15-minute expiration (unified for all roles)
    - refresh_token: 7-day expiration
 9. OUTPUT: New access token in response body and cookies
 ```
@@ -163,6 +167,11 @@ Automatically refresh expired access tokens using valid refresh tokens.
 **Space Complexity:** O(1) - Fixed size response
 
 **Code Location:** `backend/src/(public)/controllers/userController.js` - `refreshAccessToken()`
+
+**Unified System:**
+- Single endpoint (`/api/users/refresh`) handles token refresh for all roles
+- Automatically includes role-specific fields (e.g., organization_id for admins)
+- Works seamlessly with unified `users` table structure
 
 ### Frontend Integration
 

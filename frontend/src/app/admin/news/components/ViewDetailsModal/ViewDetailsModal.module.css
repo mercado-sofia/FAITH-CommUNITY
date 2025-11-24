@@ -232,27 +232,3 @@
   word-break: break-word;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .modal {
-    max-width: 100%;
-    max-height: 95vh;
-  }
-
-  .modalContent {
-    padding: 1rem;
-  }
-
-  .title {
-    font-size: 16px;
-  }
-
-  .metaRow {
-    gap: 1rem;
-  }
-
-  .infoGrid {
-    grid-template-columns: 1fr;
-  }
-}
-

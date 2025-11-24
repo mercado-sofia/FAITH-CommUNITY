@@ -100,14 +100,35 @@ const DateSelectionField = ({
   useEffect(() => {
     if (value) {
       if (value.event_start_date && value.event_end_date) {
-        const startDate = new Date(value.event_start_date);
-        const endDate = new Date(value.event_end_date);
+        // Parse dates properly - handle YYYY-MM-DD format by creating date in local timezone
+        const startDateStr = value.event_start_date;
+        const endDateStr = value.event_end_date;
         
-        if (startDate.getTime() === endDate.getTime()) {
+        // Parse YYYY-MM-DD format correctly (avoid timezone issues)
+        const parseDateString = (dateStr) => {
+          if (!dateStr) return null;
+          // If it's already a Date object, return it
+          if (dateStr instanceof Date) {
+            return isNaN(dateStr.getTime()) ? null : dateStr;
+          }
+          // If it's a string in YYYY-MM-DD format, parse it as local time
+          if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+          }
+          // Otherwise, try standard Date parsing
+          const date = new Date(dateStr);
+          return isNaN(date.getTime()) ? null : date;
+        };
+        
+        const startDate = parseDateString(startDateStr);
+        const endDate = parseDateString(endDateStr);
+        
+        if (startDate && endDate && startDate.getTime() === endDate.getTime()) {
           // Single day
           setScheduleType('single');
           setDateRange([startDate, null]);
-        } else {
+        } else if (startDate && endDate) {
           // Date range
           setScheduleType('range');
           setDateRange([startDate, endDate]);
@@ -115,7 +136,17 @@ const DateSelectionField = ({
       } else if (value.multiple_dates && Array.isArray(value.multiple_dates)) {
         // Multiple scattered dates
         setScheduleType('multiple');
-        setMultipleDates(value.multiple_dates.map(date => new Date(date)));
+        setMultipleDates(value.multiple_dates.map(date => {
+          if (date instanceof Date) {
+            return isNaN(date.getTime()) ? null : date;
+          }
+          if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [year, month, day] = date.split('-').map(Number);
+            return new Date(year, month - 1, day);
+          }
+          const parsed = new Date(date);
+          return isNaN(parsed.getTime()) ? null : parsed;
+        }).filter(Boolean));
       }
     }
   }, [value]);
@@ -246,8 +277,20 @@ const DateSelectionField = ({
       return 'Invalid date';
     }
     
+    // Validate the date object
+    if (!dateObj || isNaN(dateObj.getTime())) {
+      return 'Invalid date';
+    }
+    
+    // Convert Date object to YYYY-MM-DD string format for formatDateShort
+    // formatDateShort expects a string, not a Date object
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
     // Use centralized date formatting utility
-    return formatDateShort(dateObj);
+    return formatDateShort(dateString);
   };
 
   return (

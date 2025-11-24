@@ -29,7 +29,7 @@ const formatMultipleDates = (dates) => {
   return formatted.length > 0 ? formatted : null;
 };
 
-export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessModal, resetPageMode, clearDeletingProgram) => {
+export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessModal, resetPageMode, clearDeletingProgram, clearArchivingProgram = null, clearUnarchivingProgram = null) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -132,6 +132,48 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         }
       }
       
+      // Upload post-act report file if provided
+      let postActReportUrl = null;
+      let postActReportPublicId = null;
+      if (programData.postActReport && programData.postActReport instanceof File) {
+        try {
+          const reportFormData = new FormData();
+          reportFormData.append('file', programData.postActReport);
+          
+          // Upload to S3 (using the same upload endpoint, but we'll specify it's for post-act report)
+          const reportResponse = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload?type=program_post_act`, {
+            method: 'POST',
+            credentials: 'include',
+            body: reportFormData,
+          });
+          
+          if (!reportResponse.ok) {
+            const errorInfo = handleApiError({ status: reportResponse.status }, 'post_act_report_upload', {
+              redirectOnAuth: true,
+              logError: true
+            });
+            throw new Error(errorInfo.message || 'Failed to upload post-act report');
+          }
+          
+          const reportResult = await reportResponse.json();
+          if (!reportResult.url && !reportResult.public_id) {
+            throw new Error('Post-act report upload failed: No URL returned');
+          }
+          
+          postActReportUrl = reportResult.url || reportResult.public_id;
+          postActReportPublicId = reportResult.public_id || null;
+        } catch (reportError) {
+          // Post-act report upload failed - show error and stop submission
+          setSuccessModal({ 
+            isVisible: true, 
+            message: reportError.message || 'Failed to upload post-act report. Please try again.', 
+            type: 'error' 
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
       // Submit through the submissions system
       const submissionData = {
         submissions: [{
@@ -150,7 +192,14 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
             image: imageUrl, // Use uploaded image URL
             additionalImages: programData.additionalImages || [],
             submitted_by_name: programData.submitted_by_name?.trim() || '',
-            submitted_by_role: programData.submitted_by_role?.trim() || ''
+            submitted_by_role: programData.submitted_by_role?.trim() || '',
+            // Include post-act report data if provided
+            ...(postActReportUrl && {
+              postActReport: {
+                file_url: postActReportUrl,
+                file_public_id: postActReportPublicId
+              }
+            })
           },
           submitted_by: currentAdmin.id
         }]
@@ -655,6 +704,130 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     }
   }, [refreshPrograms, setSuccessModal]);
 
+  // Handle program archiving
+  const handleArchiveProgram = useCallback(async (programId) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${programId}/archive`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorInfo = handleApiError({ status: response.status }, 'program_archive', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
+      }
+
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program archived successfully!', 
+        type: 'success' 
+      });
+      
+      refreshPrograms();
+      
+      // Close the modal by clearing the archiving program
+      if (clearArchivingProgram) {
+        clearArchivingProgram();
+      }
+    } catch (error) {
+      const errorInfo = handleApiError(error, 'program_archive', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: errorInfo.message, 
+        type: 'error' 
+      });
+      // Close the modal on error as well
+      if (clearArchivingProgram) {
+        clearArchivingProgram();
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshPrograms, setSuccessModal, clearArchivingProgram]);
+
+  // Handle program unarchiving
+  const handleUnarchiveProgram = useCallback(async (programId) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${programId}/unarchive`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorInfo = handleApiError({ status: response.status }, 'program_unarchive', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
+      }
+
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program unarchived successfully!', 
+        type: 'success' 
+      });
+      
+      refreshPrograms();
+      
+      // Close the modal by clearing the unarchiving program
+      if (clearUnarchivingProgram) {
+        clearUnarchivingProgram();
+      }
+    } catch (error) {
+      const errorInfo = handleApiError(error, 'program_unarchive', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: errorInfo.message, 
+        type: 'error' 
+      });
+      // Close the modal on error as well
+      if (clearUnarchivingProgram) {
+        clearUnarchivingProgram();
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshPrograms, setSuccessModal, clearUnarchivingProgram]);
+
   return {
     isSubmitting,
     isDeleting,
@@ -663,6 +836,8 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     handleMarkCompleted,
     handleMarkActive,
     handleToggleVolunteerAcceptance,
-    confirmDeleteProgram
+    confirmDeleteProgram,
+    handleArchiveProgram,
+    handleUnarchiveProgram
   };
 };

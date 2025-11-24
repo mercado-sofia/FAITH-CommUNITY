@@ -236,14 +236,3 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
-
-/* Responsive Design */
-@media (min-width: 768px) {
-  .contentGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .infoCard:last-child {
-    grid-column: 1 / -1;
-  }
-}

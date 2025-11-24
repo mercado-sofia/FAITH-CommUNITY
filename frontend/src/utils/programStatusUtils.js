@@ -48,5 +48,5 @@ export const isProgramInStatus = (program, status) => {
  * @returns {string[]} - Array of valid status strings
  */
 export const getValidProgramStatuses = () => {
-  return ['Upcoming', 'Active', 'Completed'];
+  return ['Upcoming', 'Active', 'Completed', 'archived'];
 };

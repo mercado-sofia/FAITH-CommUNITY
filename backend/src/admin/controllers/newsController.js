@@ -1486,29 +1486,39 @@ export const getNewsBySlug = async (req, res) => {
         // But we'll verify authorization after fetching
       } else {
         // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
+        // For public requests: only show published content (published_at in the past) from active organizations
+        // For authenticated admin/superadmin: show all content (published, scheduled, drafts) - authorization checked later
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  LEFT JOIN organizations o ON n.organization_id = o.id
-                 WHERE n.slug = ? AND n.is_deleted = FALSE 
-                   AND n.published_at IS NOT NULL 
-                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
+                 WHERE n.slug = ? AND n.is_deleted = FALSE`;
         
-        // For public requests, also filter by active organization
         if (isPublicRequest) {
-          query += ` AND o.status = 'ACTIVE'`;
+          // Public requests: only published content from active organizations
+          query += ` AND n.published_at IS NOT NULL 
+                     AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                     AND o.status = 'ACTIVE'`;
         }
+        // For authenticated admin/superadmin requests, no filters here - they can see all statuses
+        // Authorization will be checked after fetching
       }
       [rows] = await db.execute(query, [slug]);
     } catch (dbError) {
       // If error is about missing status column, try fallback
       if (dbError?.message?.includes("Unknown column 'n.status'") || 
           dbError?.sqlMessage?.includes("Unknown column 'n.status'")) {
-        const fallbackQuery = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
-                               FROM news n
-                               LEFT JOIN organizations o ON n.organization_id = o.id
-                               WHERE n.slug = ? AND n.is_deleted = FALSE 
-                                 AND n.published_at IS NOT NULL 
-                                 AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
+        let fallbackQuery = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+                             FROM news n
+                             LEFT JOIN organizations o ON n.organization_id = o.id
+                             WHERE n.slug = ? AND n.is_deleted = FALSE 
+                               AND n.published_at IS NOT NULL 
+                               AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
+        
+        // For public requests, also filter by active organization
+        if (isPublicRequest) {
+          fallbackQuery += ` AND o.status = 'ACTIVE'`;
+        }
+        
         [rows] = await db.execute(fallbackQuery, [slug]);
       } else {
         throw dbError;
@@ -1522,12 +1532,29 @@ export const getNewsBySlug = async (req, res) => {
     const n = rows[0];
 
     // Authorization check for authenticated admin requests viewing non-published content
-    // Only check authorization if:
+    // Check authorization if:
     // 1. Request is authenticated (not public)
-    // 2. Status column exists
-    // 3. Status is not 'published' (null status is treated as non-published for security)
-    const isPublished = statusColumnExists && n.status === 'published';
-    const needsAuthorization = !isPublicRequest && decoded && statusColumnExists && !isPublished;
+    // 2. Content is not published (determined by status column if exists, or published_at if not)
+    // When status column exists: check if status !== 'published'
+    // When status column doesn't exist: check if published_at is null or in the future (non-published)
+    let isPublished;
+    if (statusColumnExists) {
+      // Use status column if available
+      isPublished = n.status === 'published';
+    } else {
+      // Fallback: determine if published based on published_at
+      // If published_at is null or in the future, it's not published
+      if (!n.published_at) {
+        isPublished = false; // No published_at means draft/not published
+      } else {
+        // Check if published_at is in the past (already published)
+        const publishedAt = new Date(n.published_at);
+        const now = new Date();
+        isPublished = publishedAt <= now;
+      }
+    }
+    
+    const needsAuthorization = !isPublicRequest && decoded && !isPublished;
     
     if (needsAuthorization) {
       // Superadmins can see all statuses

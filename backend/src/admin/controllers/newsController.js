@@ -569,7 +569,12 @@ export const createNews = async (req, res) => {
             input: normalizedPublishedAt,
             stored: finalPublishedAt,
             datePart,
-            timePart: `${hours}:${minutes}:${seconds}`
+            timePart: `${hours}:${minutes}:${seconds}`,
+            hours24: hours,
+            minutes: minutes,
+            seconds: seconds,
+            hourNum: parseInt(hours, 10),
+            isPM: parseInt(hours, 10) >= 12
           });
         }
         
@@ -652,6 +657,14 @@ export const createNews = async (req, res) => {
       // Prepare date value for the date column (date only, no time)
       const dateValue = finalPublishedAt ? finalPublishedAt.split(' ')[0] : null;
       
+      // Validate that for schedule action, finalPublishedAt is set
+      if (normalizedAction === 'schedule' && !finalPublishedAt) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Published date and time are required for scheduling" 
+        });
+      }
+      
       // Build INSERT query based on whether status column exists
       // For immediate publish, use NOW() for published_at to match created_at timestamp
       let insertQuery, insertParams;
@@ -662,6 +675,14 @@ export const createNews = async (req, res) => {
                          VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, status];
         } else {
+          // For schedule or other actions, use provided published_at
+          // Ensure finalPublishedAt and dateValue are properly set
+          if (normalizedAction === 'schedule' && (!finalPublishedAt || !dateValue)) {
+            return res.status(400).json({ 
+              success: false, 
+              message: "Invalid date format for scheduling" 
+            });
+          }
           insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, finalPublishedAt, dateValue, status];
@@ -680,15 +701,51 @@ export const createNews = async (req, res) => {
         }
       }
       
+      // Validate all parameters are defined (not undefined)
+      const hasUndefinedParams = insertParams.some(param => param === undefined);
+      if (hasUndefinedParams) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[createNews] Undefined parameters detected:', {
+            insertQuery,
+            insertParams: insertParams.map((p, i) => ({ index: i, value: p, type: typeof p, isUndefined: p === undefined }))
+          });
+        }
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid parameters: some required fields are missing" 
+        });
+      }
+      
+      // Count placeholders in query to verify parameter count matches
+      const placeholderCount = (insertQuery.match(/\?/g) || []).length;
+      if (placeholderCount !== insertParams.length) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[createNews] Parameter count mismatch:', {
+            placeholderCount,
+            paramCount: insertParams.length,
+            insertQuery,
+            insertParams: insertParams.map((p, i) => ({ index: i, value: typeof p === 'string' && p.length > 50 ? p.substring(0, 50) + '...' : p }))
+          });
+        }
+        return res.status(500).json({ 
+          success: false, 
+          message: "Database query error: parameter count mismatch" 
+        });
+      }
+      
       // Log what's being inserted for debugging (development only)
       if (process.env.NODE_ENV === 'development' && normalizedAction === 'schedule') {
         console.log('[createNews] Inserting scheduled news:', {
-          insertQuery: insertQuery.substring(0, 100) + '...',
+          insertQuery: insertQuery.substring(0, 150),
+          placeholderCount,
+          paramCount: insertParams.length,
           published_at: finalPublishedAt,
+          dateValue: dateValue,
           status: status,
           params: insertParams.map((p, i) => {
             // Hide sensitive data but show published_at
             if (i === 6) return `published_at=${p}`; // published_at is typically at index 6
+            if (i === 7) return `date=${p}`; // date is typically at index 7
             return typeof p === 'string' && p.length > 50 ? p.substring(0, 20) + '...' : p;
           })
         });

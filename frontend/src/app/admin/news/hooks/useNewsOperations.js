@@ -61,16 +61,15 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     }
     
     // Convert from ISO format (yyyy-MM-ddTHH:mm:ss) to MySQL format (yyyy-MM-dd HH:mm:ss)
-    return isoFormat.replace('T', ' ').slice(0, 19);
+    const mysqlFormat = isoFormat.replace('T', ' ').slice(0, 19);
+    
+    
+    return mysqlFormat;
   }, []);
 
   // Helper function to create FormData
   const createFormData = useCallback((newsData, isEditMode = false) => {
     const formData = new FormData();
-    formData.append('title', newsData.title.trim());
-    formData.append('slug', newsData.slug.trim());
-    formData.append('content', newsData.content.trim());
-    formData.append('excerpt', newsData.excerpt.trim());
     formData.append('title', (newsData.title || '').trim());
     formData.append('slug', (newsData.slug || '').trim());
     formData.append('content', (newsData.content || '').trim());
@@ -107,15 +106,6 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       // Backend will preserve the current status and published_at when no action is provided
     }
     
-    // Convert datetime-local format (YYYY-MM-DDTHH:mm) to MySQL datetime format (YYYY-MM-DD HH:mm:ss)
-    let publishedAt = newsData.publishedAt;
-    if (publishedAt && publishedAt.includes('T')) {
-      // Convert from datetime-local format to MySQL datetime format
-      const [datePart, timePart] = publishedAt.split('T');
-      publishedAt = `${datePart} ${timePart}:00`;
-    }
-    formData.append('published_at', publishedAt);
-    
     // Add featured image if provided (new file upload)
     // Note: If no new file is provided in edit mode, backend will preserve existing image
     if (newsData.featuredImage && newsData.featuredImage instanceof File) {
@@ -144,16 +134,6 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       const formData = createFormData(newsData, false);
-      
-      // Debug: Log FormData contents
-      console.log('[handleSubmitNews] FormData contents:');
-      for (let pair of formData.entries()) {
-        if (pair[1] instanceof File) {
-          console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`);
-        } else {
-          console.log(`  ${pair[0]}: ${pair[1]}`);
-        }
-      }
       
       const response = await fetch(`${API_BASE_URL || ''}/api/news/${orgId}`, {
         method: 'POST',
@@ -264,16 +244,6 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       const formData = createFormData(newsData, true);
       
-      // Debug: Log FormData contents
-      console.log('[handleUpdateNews] FormData contents:');
-      for (let pair of formData.entries()) {
-        if (pair[1] instanceof File) {
-          console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`);
-        } else {
-          console.log(`  ${pair[0]}: ${pair[1]}`);
-        }
-      }
-      
       const response = await fetch(`${API_BASE_URL || ''}/api/news/${editingNewsId}`, {
         method: 'PUT',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
@@ -380,18 +350,6 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
         formData.append('published_at', newsData.published_at || newsData.date);
       }
       formData.append('action', 'archive'); // Use a special action for archiving
-      
-      // Log FormData contents in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[handleArchiveNews] FormData contents:');
-        for (const [key, value] of formData.entries()) {
-          if (key === 'content') {
-            console.log(`  ${key}: ${value ? `${value.substring(0, 100)}...` : 'empty'} (length: ${value?.length || 0})`);
-          } else {
-            console.log(`  ${key}: ${value}`);
-          }
-        }
-      }
       
       // Update with archived status
       const response = await fetch(`${API_BASE_URL || ''}/api/news/${newsId}`, {

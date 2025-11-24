@@ -102,11 +102,6 @@ function SuperAdminLayoutContent({ children }) {
           return;
         }
         
-        console.log('[Superadmin Layout] Initializing...');
-        console.log('[Superadmin Layout] Current cookies (visible):', document.cookie);
-        console.log('[Superadmin Layout] Note: httpOnly cookies (access_token, refresh_token) are not visible in document.cookie');
-        console.log('[Superadmin Layout] Check Application > Cookies in DevTools to see all cookies');
-        
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
         const { getCurrentUser } = await import('@/utils/authService');
@@ -123,21 +118,12 @@ function SuperAdminLayoutContent({ children }) {
               await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
             
-            console.log(`[Superadmin Layout] Calling getCurrentUser (attempt ${retryCount + 1})...`);
             userData = await getCurrentUser();
-            
-            console.log(`[Superadmin Layout] Auth check attempt ${retryCount + 1}:`, { 
-              hasUserData: !!userData, 
-              role: userData?.role,
-              userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
-            });
             
             // If no user data but we have retries left, try refreshing token
             if (!userData && retryCount < maxRetries - 1) {
-              console.log('[Superadmin Layout] No user data, attempting token refresh...');
               const refreshed = await getValidAccessToken(true); // Force refresh
               if (refreshed) {
-                console.log('[Superadmin Layout] Token refreshed, retrying auth check...');
                 // Wait a bit for cookies to be set
                 await new Promise(resolve => setTimeout(resolve, 200));
                 continue; // Retry auth check
@@ -157,7 +143,6 @@ function SuperAdminLayoutContent({ children }) {
             // Try token refresh on error if we have retries left
             if (retryCount < maxRetries - 1) {
               try {
-                console.log('[Superadmin Layout] Error occurred, attempting token refresh...');
                 const refreshed = await getValidAccessToken(true);
                 if (refreshed) {
                   await new Promise(resolve => setTimeout(resolve, 200));
@@ -198,8 +183,6 @@ function SuperAdminLayoutContent({ children }) {
         if (typeof document !== 'undefined' && !document.cookie.includes('userRole=superadmin')) {
           document.cookie = "userRole=superadmin; path=/; max-age=86400; SameSite=Lax";
         }
-        
-        console.log('[Superadmin Layout] Auth check successful, superadmin authenticated');
         
         setIsInitialLoading(false);
       } catch (error) {

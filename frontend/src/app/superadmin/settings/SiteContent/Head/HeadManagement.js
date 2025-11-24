@@ -105,8 +105,6 @@ export default function HeadManagement({ showSuccessModal }) {
       // No need to check token - cookies handle authentication
 
       const uploadUrl = `${baseUrl}/api/superadmin/heads-faces/upload-image`;
-      console.log('Uploading to:', uploadUrl);
-      console.log('File size:', file.size, 'bytes');
 
       const response = await fetch(uploadUrl, {
         method: 'POST',

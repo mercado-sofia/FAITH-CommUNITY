@@ -17,11 +17,12 @@ export default function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Fetch hero section data
-  const { heroData } = usePublicHeroSection();
+  const { heroData, isLoading } = usePublicHeroSection();
 
   // Filter images to only include those with valid URLs
   const validImages = useMemo(() => {
-    return heroData?.images?.filter(image => image.url) || [];
+    if (!heroData?.images) return [];
+    return heroData.images.filter(image => image && image.url && image.url.trim() !== '');
   }, [heroData?.images]);
 
   // Helper function to convert YouTube URLs to embed format
@@ -170,40 +171,49 @@ export default function HeroSection() {
           <div className={styles.rightColumn}>
             {/* Desktop Card Layout */}
             <div className={styles.desktopCards}>
-              {validImages.map((image, index) => {
-                const isFirst = index === 0;
-                
-                return (
-                  <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
-                    <Image
-                      src={image.url}
-                      alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
-                      width={isFirst ? 880 : 360}
-                      height={1120}
-                      className={styles.cardImage}
-                      quality={100}
-                      sizes={isFirst ? "(max-width: 1300px) 720px, 880px" : "(max-width: 1300px) 360px, 360px"}
-                      priority
-                    />
-                    {isFirst ? (
-                      <div className={styles.cardText}>
-                        <h2>{image.heading}</h2>
-                        <p>{image.subheading}</p>
-                      </div>
-                    ) : (
-                      <div className={styles.cardOverlayText}>
-                        <h3>{image.heading}</h3>
-                        <p>{image.subheading}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {validImages.length > 0 ? (
+                validImages.map((image, index) => {
+                  const isFirst = index === 0;
+                  
+                  return (
+                    <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
+                      <Image
+                        src={image.url}
+                        alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
+                        width={isFirst ? 880 : 360}
+                        height={1120}
+                        className={styles.cardImage}
+                        quality={100}
+                        sizes={isFirst ? "(max-width: 1300px) 720px, 880px" : "(max-width: 1300px) 360px, 360px"}
+                        priority
+                      />
+                      {isFirst ? (
+                        <div className={styles.cardText}>
+                          <h2>{image.heading}</h2>
+                          <p>{image.subheading}</p>
+                        </div>
+                      ) : (
+                        <div className={styles.cardOverlayText}>
+                          <h3>{image.heading}</h3>
+                          <p>{image.subheading}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                // Loading/Empty state placeholders that maintain the same height
+                <>
+                  <div className={`${styles.card} ${styles.first} ${styles.cardPlaceholder}`}></div>
+                  <div className={`${styles.card} ${styles.cardVertical} ${styles.cardPlaceholder}`}></div>
+                  <div className={`${styles.card} ${styles.cardVertical} ${styles.cardPlaceholder}`}></div>
+                </>
+              )}
             </div>
 
             {/* Mobile Carousel */}
             <div className={styles.mobileCarousel}>
-              {validImages.length > 0 && validImages[currentImageIndex] && (
+              {validImages.length > 0 && validImages[currentImageIndex] ? (
                 <div className={styles.carouselContainer}>
                   <Image
                     src={validImages[currentImageIndex].url}
@@ -232,6 +242,9 @@ export default function HeroSection() {
                     ))}
                   </div>
                 </div>
+              ) : (
+                // Loading/Empty state placeholder that maintains the same height
+                <div className={`${styles.carouselContainer} ${styles.carouselPlaceholder}`}></div>
               )}
             </div>
           </div>

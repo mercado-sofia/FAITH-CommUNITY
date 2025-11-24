@@ -187,8 +187,22 @@ export default function DatePickerPopover({
       // Format as datetime: yyyy-MM-ddTHH:mm
       // Use date components from original draft and time from draftTime string
       // This ensures no timezone conversion happens
-      const formattedTime = `${hours}:${minutes}`;
-      onChange?.(`${year}-${month}-${day}T${formattedTime}`);
+      const hour24 = parseInt(hours, 10);
+      const minute = parseInt(minutes, 10);
+      
+      // Validate hour is 0-23 (24-hour format)
+      if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
+        console.error('[DatePickerPopover] Invalid time values in handleConfirm:', { hour24, minute, draftTime });
+        return;
+      }
+      
+      // Ensure hours and minutes are zero-padded
+      const formattedHours = String(hour24).padStart(2, '0');
+      const formattedMinutes = String(minute).padStart(2, '0');
+      const formattedTime = `${formattedHours}:${formattedMinutes}`;
+      const finalDateTime = `${year}-${month}-${day}T${formattedTime}`;
+      
+      onChange?.(finalDateTime);
     } else {
       // Date only
       onChange?.(format(draft, "yyyy-MM-dd"));
@@ -319,13 +333,23 @@ export default function DatePickerPopover({
                 type="time"
                 value={draftTime}
                 onChange={(e) => {
-                  setDraftTime(e.target.value);
+                  const newTimeValue = e.target.value; // Always in 24-hour format (HH:mm)
+                  setDraftTime(newTimeValue);
+                  
                   // Update draft to include new time
                   if (draft) {
-                    const [hours, minutes] = e.target.value.split(':');
+                    const [hours, minutes] = newTimeValue.split(':');
+                    const hour24 = parseInt(hours, 10);
+                    const minute = parseInt(minutes, 10);
+                    
+                    // Validate hour is 0-23
+                    if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
+                      console.error('[DatePickerPopover] Invalid time values:', { hour24, minute });
+                      return;
+                    }
+                    
                     const newDraft = new Date(draft);
-                    newDraft.setHours(parseInt(hours, 10));
-                    newDraft.setMinutes(parseInt(minutes, 10));
+                    newDraft.setHours(hour24, minute, 0, 0); // Use setHours with all parameters to avoid timezone issues
                     setDraft(newDraft);
                   }
                 }}

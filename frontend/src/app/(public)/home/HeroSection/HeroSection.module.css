@@ -83,6 +83,17 @@
   transition: transform 0.3s ease;
 }
 
+/* Placeholder styles for loading/empty state */
+.cardPlaceholder {
+  background-color: #f0f0f0;
+  background-image: none;
+}
+
+.carouselPlaceholder {
+  background-color: #f0f0f0;
+  background-image: none;
+}
+
 /* Text for first card */
 .cardText {
   position: absolute;

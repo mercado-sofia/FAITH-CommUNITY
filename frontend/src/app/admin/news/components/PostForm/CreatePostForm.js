@@ -5,14 +5,13 @@ import { FiUpload } from 'react-icons/fi';
 import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
-import DateTimePicker from '../DateTimePicker/DateTimePicker';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import DOMPurify from 'dompurify';
 import { formatDateTimeForInput, getCurrentDateTimeISO } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
-const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
+const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [], headerTitle }) => {
   const getCurrentLocalDateTime = () => {
     return getCurrentDateTimeISO();
   };
@@ -23,7 +22,6 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     content: '',
     excerpt: '',
     featuredImage: null,
-    publishedAt: getCurrentLocalDateTime(),
     publishedAt: null, // Don't initialize with date - let user choose when scheduling
     status: 'draft',
   });
@@ -135,8 +133,6 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
         featuredImage: null, // Don't pre-populate file input
-        publishedAt: formatDateTimeForInput(initialData.published_at || initialData.date) || getCurrentLocalDateTime(),
-        featuredImage: null,
         publishedAt: publishedAtValue,
         status: 'draft',
       });
@@ -1025,21 +1021,6 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {errors.featuredImage && <span className={styles.errorText}>{errors.featuredImage}</span>}
           </div>
 
-          {/* Published At Container */}
-          <div className={styles.container}>
-            <h3 className={styles.containerTitle}>
-              Schedule Publication
-            </h3>
-            <p className={styles.helperText} style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-              Select date and time when this post should be published. The post will only appear on the public portal at the scheduled time.
-            </p>
-            <DateTimePicker
-              value={formData.publishedAt}
-              onChange={(value) => handleInputChange('publishedAt', value)}
-              placeholder="Select date and time"
-            />
-            {errors.publishedAt && <span className={styles.errorText}>{errors.publishedAt}</span>}
-          </div>
           {/* History/Activity Log - Show in edit mode only for published or archived news */}
           {isEditMode && readOnlyFields.status && (readOnlyFields.status === 'published' || readOnlyFields.status === 'archived') && (
             <div className={styles.container}>

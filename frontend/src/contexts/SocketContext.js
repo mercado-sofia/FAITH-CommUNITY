@@ -60,7 +60,6 @@ export function SocketProvider({ children }) {
     }
 
     // Create socket connection
-    console.log('🔌 Attempting to connect to Socket.io server at:', socketUrl);
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       withCredentials: true, // Required for cross-domain cookies (Vercel -> Railway)
@@ -79,13 +78,11 @@ export function SocketProvider({ children }) {
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('✅ Socket.io connected:', newSocket.id, 'to', socketUrl);
       setIsConnected(true);
       setConnectionError(null);
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
       setIsConnected(false);
       
       // If disconnected due to authentication error, don't try to reconnect

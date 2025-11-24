@@ -139,7 +139,6 @@ export default function Sidebar({
         }
       } catch (error) {
         // Handle error silently - branding is optional
-        console.debug('Failed to load branding data:', error);
       }
     };
 

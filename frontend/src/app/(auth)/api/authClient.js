@@ -12,12 +12,6 @@ export async function postJson(path, body, options = {}) {
 		const baseUrl = getBaseUrl();
 		const url = baseUrl ? `${baseUrl}${path}` : path;
 		
-		// Log request for debugging (but not sensitive data)
-		if (process.env.NODE_ENV === 'development') {
-			console.log('[postJson] Making request to:', url);
-			console.log('[postJson] Method: POST, Has body:', !!body);
-		}
-		
 		const res = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -28,12 +22,6 @@ export async function postJson(path, body, options = {}) {
 			credentials: options.credentials || 'include', // CRITICAL: Include httpOnly cookies
 			cache: 'no-store',
 		})
-		
-		// Log response status for debugging
-		if (process.env.NODE_ENV === 'development') {
-			console.log('[postJson] Response status:', res.status, res.statusText);
-			console.log('[postJson] Response headers:', Object.fromEntries(res.headers.entries()));
-		}
 		
 		// Get response text first to handle both JSON and non-JSON responses
 		let responseText = '';

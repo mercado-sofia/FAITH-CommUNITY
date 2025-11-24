@@ -118,8 +118,41 @@ export default function FooterContentManagement({ showSuccessModal }) {
             setTempSocialMedia(data.data.socialMedia);
           }
           
-          // Set copyright
-          const copyrightData = data.data.copyright?.content || '';
+          // Set copyright with fallback to default text (matching public footer)
+          const defaultCopyright = '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.';
+          let copyrightData = data.data.copyright?.content || '';
+          
+          // Auto-insert copyright if it doesn't exist in database
+          if (!copyrightData && (!data.data.copyright || Object.keys(data.data.copyright).length === 0)) {
+            try {
+              const insertResponse = await makeAuthenticatedRequest(
+                `${baseUrl}/api/superadmin/footer/copyright`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ content: defaultCopyright }),
+                },
+                'superadmin'
+              );
+              
+              if (insertResponse && insertResponse.ok) {
+                copyrightData = defaultCopyright;
+              } else {
+                // If auto-insert fails, use default for display
+                copyrightData = defaultCopyright;
+              }
+            } catch (error) {
+              console.error('Auto-insert copyright error:', error);
+              // Use default for display even if auto-insert fails
+              copyrightData = defaultCopyright;
+            }
+          } else if (!copyrightData) {
+            // If copyright object exists but content is empty, use default
+            copyrightData = defaultCopyright;
+          }
+          
           setCopyright(copyrightData);
           setTempCopyright(copyrightData);
           
@@ -444,7 +477,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
                   email: reloadData.data.contact?.email?.url || ''
                 });
                 setSocialMedia(reloadData.data.socialMedia || []);
-                setCopyright(reloadData.data.copyright?.content || '');
+                const defaultCopyright = '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.';
+                setCopyright(reloadData.data.copyright?.content || defaultCopyright);
                 setServices(reloadData.data.services || []);
               }
             }
@@ -1124,7 +1158,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
                 />
               ) : (
                 <div className={styles.displayValue}>
-                  {copyright ? copyright : <span className={styles.emptyPlaceholder}>No copyright text added yet</span>}
+                  {copyright || <span className={styles.emptyPlaceholder}>No copyright text added yet</span>}
                 </div>
               )}
             </div>

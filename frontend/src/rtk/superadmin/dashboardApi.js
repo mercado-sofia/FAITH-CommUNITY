@@ -193,26 +193,12 @@ export const dashboardApi = createApi({
       query: (limit = 10) => `/projects/superadmin/top-organizations?limit=${limit}`,
       providesTags: ["Dashboard"],
       transformResponse: (response, meta, arg) => {
-        // Log the raw response for debugging
-        console.log('[getTopOrganizationsByProgramCount] Raw API response:', {
-          response,
-          responseType: typeof response,
-          isArray: Array.isArray(response),
-          hasSuccess: response?.success,
-          hasData: !!response?.data,
-          dataType: typeof response?.data,
-          dataIsArray: Array.isArray(response?.data),
-          dataLength: response?.data?.length
-        });
-
         // Handle both direct data array and wrapped response
         if (Array.isArray(response)) {
-          console.log('[getTopOrganizationsByProgramCount] Returning direct array, length:', response.length);
           return response;
         }
         if (response && response.success && response.data) {
           const data = Array.isArray(response.data) ? response.data : [];
-          console.log('[getTopOrganizationsByProgramCount] Returning wrapped response data, length:', data.length);
           return data;
         }
         // Log unexpected response format

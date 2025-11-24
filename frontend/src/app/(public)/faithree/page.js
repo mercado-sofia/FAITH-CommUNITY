@@ -107,7 +107,6 @@ function FAITHreePage() {
       try {
         // Check if we're in browser environment
         if (typeof window === 'undefined') {
-          console.warn('[FAITHree] Server-side render: Skipping featured highlights fetch');
           setFeaturedHighlights([]);
           return;
         }
@@ -115,13 +114,6 @@ function FAITHreePage() {
         // Dynamically import API_BASE_URL to ensure it's available
         const { API_BASE_URL: dynamicApiUrl } = await import('@/config/api');
         const baseUrl = dynamicApiUrl || '';
-        
-        // Log API configuration for debugging
-        console.log('[FAITHree] Fetching featured highlights:', {
-          API_BASE_URL: baseUrl || '(empty - using relative path)',
-          endpoint: `${baseUrl}/api/highlights/public/featured`,
-          isProduction: process.env.NODE_ENV === 'production'
-        });
         
         const response = await fetch(`${baseUrl}/api/highlights/public/featured`, {
           credentials: 'include', // CRITICAL: Include httpOnly cookies
@@ -148,20 +140,6 @@ function FAITHreePage() {
         // API already returns highlights in order (by display_order)
         // Limit to 12 just in case
         const orderedFeaturedHighlights = highlights.slice(0, 12);
-        
-        console.log('[FAITHree] Featured highlights loaded successfully:', {
-          count: orderedFeaturedHighlights.length,
-          totalFromApi: highlights.length,
-          highlights: orderedFeaturedHighlights.map(h => ({ 
-            id: h.id, 
-            title: h.title, 
-            displayOrder: h.display_order 
-          }))
-        });
-        
-        if (orderedFeaturedHighlights.length === 0) {
-          console.warn('[FAITHree] No featured highlights found. Stars will not be displayed. Make sure highlights are marked as featured in the superadmin panel.');
-        }
         
         setFeaturedHighlights(orderedFeaturedHighlights);
       } catch (error) {
@@ -230,16 +208,6 @@ function FAITHreePage() {
         const data = await response.json();
         const highlights = data.highlights || [];
         
-        console.log('Fetched highlights for org extraction:', highlights.length);
-        if (highlights.length > 0) {
-          console.log('Sample highlight:', {
-            id: highlights[0].id,
-            organization_id: highlights[0].organization_id,
-            organization_name: highlights[0].organization_name,
-            organization_acronym: highlights[0].organization_acronym
-          });
-        }
-        
         // Extract unique organizations
         const orgMap = new Map();
         highlights.forEach(highlight => {
@@ -264,7 +232,6 @@ function FAITHreePage() {
           a.acronym.localeCompare(b.acronym)
         );
         
-        console.log('Extracted organizations:', uniqueOrgs);
         setOrganizations(uniqueOrgs);
       } catch (error) {
         console.error('Error fetching organizations:', error);

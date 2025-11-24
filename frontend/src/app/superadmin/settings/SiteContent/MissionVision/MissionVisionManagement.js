@@ -33,7 +33,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
 
         if (response && response.ok) {
           const data = await response.json();
-          console.log('Loaded mission/vision data:', data); // Debug log
           setMissionVisionData(data);
           
           // Populate form fields with current data from database
@@ -321,7 +320,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
             );
             if (response && response.ok) {
               const data = await response.json();
-              console.log('Reloaded mission/vision data:', data); // Debug log
               setMissionVisionData(data);
               
               // Update form state with fresh data from database
@@ -329,8 +327,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               const visionItem = data.find(item => item.type === 'Vision');
               const freshMission = missionItem?.content || '';
               const freshVision = visionItem?.content || '';
-              
-              console.log('Fresh mission:', freshMission, 'Fresh vision:', freshVision); // Debug log
               
               // Only update if we got valid data
               if (missionItem || visionItem) {

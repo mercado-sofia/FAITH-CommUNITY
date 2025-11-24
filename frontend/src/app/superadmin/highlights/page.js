@@ -79,30 +79,6 @@ const SuperadminHighlightsPage = () => {
     refetch: refetchHighlights 
   } = useGetAllHighlightsQuery(statusFilter)
 
-  // Debug: Log highlights data to check for program_title
-  useEffect(() => {
-    if (highlights.length > 0) {
-      console.log('📊 Highlights data loaded:', {
-        count: highlights.length,
-        sample: highlights[0] ? {
-          id: highlights[0].id,
-          title: highlights[0].title,
-          program_id: highlights[0].program_id,
-          program_title: highlights[0].program_title,
-          hasProgramTitle: highlights[0].program_title !== null && highlights[0].program_title !== undefined,
-          allKeys: Object.keys(highlights[0])
-        } : null,
-        // Check how many have program_title
-        withProgramTitle: highlights.filter(h => h.program_title).length,
-        withoutProgramTitle: highlights.filter(h => !h.program_title).length,
-        // Sample of highlights with program titles
-        programTitles: highlights
-          .filter(h => h.program_title)
-          .slice(0, 5)
-          .map(h => ({ id: h.id, program_title: h.program_title }))
-      });
-    }
-  }, [highlights])
 
   const { 
     data: statistics = {}, 
@@ -171,28 +147,6 @@ const SuperadminHighlightsPage = () => {
     // Split search term into individual words for more flexible matching
     const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0)
     
-    // Debug: Log search parameters and verify program_title exists in data
-    console.log('🔍 Search initiated:', {
-      query,
-      searchTerm,
-      searchWords,
-      highlightsCount: highlights.length,
-      highlightsWithProgramTitle: highlights.filter(h => h.program_title).length,
-      highlightsWithoutProgramTitle: highlights.filter(h => !h.program_title).length,
-      sampleHighlight: highlights[0] ? {
-        id: highlights[0].id,
-        title: highlights[0].title,
-        program_title: highlights[0].program_title,
-        program_id: highlights[0].program_id,
-        hasProgramTitle: !!highlights[0].program_title
-      } : null,
-      // Show all program titles in the dataset
-      allProgramTitles: highlights
-        .filter(h => h.program_title)
-        .map(h => ({ id: h.id, program_title: h.program_title }))
-        .slice(0, 10)
-    })
-    
     // Calculate relevance score for each highlight
     const highlightsWithScores = highlights.map(highlight => {
       let score = 0
@@ -202,24 +156,12 @@ const SuperadminHighlightsPage = () => {
       const checkMatch = (value, priorityScore, exactBonus = 0, wordMatchBonus = 0, fieldName = '') => {
         // Handle null, undefined, or non-string values
         if (value === null || value === undefined) {
-          if (fieldName === 'program_title') {
-            console.log(`⚠️ No program_title for highlight ${highlight.id}`, {
-              highlightId: highlight.id,
-              highlightTitle: highlight.title,
-              program_id: highlight.program_id,
-              hasProgramTitle: 'program_title' in highlight,
-              allFields: Object.keys(highlight)
-            })
-          }
           return false
         }
         
         // Convert to string if not already and trim whitespace
         const valueStr = typeof value === 'string' ? value.trim() : String(value).trim()
         if (!valueStr || valueStr === '') {
-          if (fieldName === 'program_title') {
-            console.log(`⚠️ Empty program_title string for highlight ${highlight.id}`)
-          }
           return false
         }
         
@@ -237,16 +179,6 @@ const SuperadminHighlightsPage = () => {
             score += exactBonus * 2
           } else if (valueLower.startsWith(normalizedSearchTerm)) {
             score += exactBonus
-          }
-          if (fieldName === 'program_title') {
-            console.log(`✅ Program title FULL match: "${valueStr}" contains "${searchTerm}"`, {
-              highlightId: highlight.id,
-              program_title: valueStr,
-              normalizedValue: normalizedValue,
-              searchTerm: searchTerm,
-              normalizedSearchTerm: normalizedSearchTerm,
-              score: score
-            })
           }
           return true
         }
@@ -319,29 +251,7 @@ const SuperadminHighlightsPage = () => {
               : priorityScore * (0.7 + matchRatio * 0.2) // Scale from 70% to 90% based on match ratio
             score += matchScore
             score += wordMatchBonus * totalWordScore
-            if (fieldName === 'program_title') {
-              console.log(`✅ Program title SEQUENCE match: "${valueStr}" matches sequences`, {
-                highlightId: highlight.id,
-                program_title: valueStr,
-                wordMatches: wordMatches,
-                requiredMatches: requiredMatches,
-                searchWords: searchWords,
-                matchedWords: matchedWords,
-                matchRatio: matchRatio,
-                totalWordScore: totalWordScore,
-                score: score
-              })
-            }
             return true
-          } else if (fieldName === 'program_title') {
-            console.log(`❌ Program title NO match: "${valueStr}" - sequences not matching`, {
-              highlightId: highlight.id,
-              program_title: valueStr,
-              wordMatches: wordMatches,
-              requiredMatches: requiredMatches,
-              searchWords: searchWords,
-              matchedWords: matchedWords
-            })
           }
         }
         
@@ -360,26 +270,6 @@ const SuperadminHighlightsPage = () => {
       // Also check alternative field names that might contain program title
       const programTitle = highlight.program_title || highlight.programTitle || highlight.associated_program || highlight.associatedProgram || null
       
-      // Log program_title value for debugging
-      if (process.env.NODE_ENV === 'development' && query.trim()) {
-        console.log(`🔍 Checking program_title for highlight ${highlight.id}:`, {
-          highlightId: highlight.id,
-          highlightTitle: highlight.title,
-          program_title: highlight.program_title,
-          programTitle: programTitle,
-          program_id: highlight.program_id,
-          searchQuery: query,
-          searchTerm: searchTerm,
-          hasProgramTitle: programTitle !== null && programTitle !== undefined,
-          allProgramFields: {
-            program_title: highlight.program_title,
-            programTitle: highlight.programTitle,
-            associated_program: highlight.associated_program,
-            associatedProgram: highlight.associatedProgram
-          }
-        })
-      }
-      
       if (checkMatch(programTitle, 70, 15, 5, 'program_title')) {}
       
       // Also search program_id if it's a number that matches
@@ -390,12 +280,6 @@ const SuperadminHighlightsPage = () => {
           score += 50 // Lower score for ID match vs title match
           if (programIdStr === searchTermExact) {
             score += 10
-          }
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Program ID match: ${programIdStr}`, {
-              highlightId: highlight.id,
-              score
-            })
           }
         }
       }
@@ -443,33 +327,6 @@ const SuperadminHighlightsPage = () => {
       
       return { highlight, score }
     }).filter(item => item !== null)
-    
-    // Debug: Log search results
-    console.log('🔍 Search results:', {
-      query,
-      searchTerm,
-      searchWords,
-      totalHighlights: highlights.length,
-      totalMatches: highlightsWithScores.length,
-      results: highlightsWithScores.map(item => ({
-        id: item.highlight.id,
-        title: item.highlight.title,
-        program_title: item.highlight.program_title,
-        program_id: item.highlight.program_id,
-        score: item.score
-      })),
-      // Also log highlights that didn't match to see why
-      noMatchHighlights: highlights
-        .filter(h => !highlightsWithScores.find(m => m.highlight.id === h.id))
-        .slice(0, 3)
-        .map(h => ({
-          id: h.id,
-          title: h.title,
-          program_title: h.program_title,
-          program_id: h.program_id,
-          organization_name: h.organization_name
-        }))
-    })
     
     // Sort by score (descending) and return only highlights
     return highlightsWithScores
@@ -562,67 +419,24 @@ const SuperadminHighlightsPage = () => {
     return highlight
   })
 
-  // Debug: Log before search
-  if (searchQuery.trim()) {
-    console.log('🔎 Before search filter:', {
-      searchQuery,
-      approvedHighlights: processedHighlights.length,
-      sampleProgramTitles: processedHighlights
-        .filter(h => h.program_title)
-        .slice(0, 3)
-        .map(h => ({ id: h.id, program_title: h.program_title }))
-    })
-  }
-
   // Apply search filter
   if (searchQuery.trim()) {
-    const beforeSearchCount = processedHighlights.length
     processedHighlights = searchHighlights(processedHighlights, searchQuery)
-    console.log('🔎 After search filter:', {
-      searchQuery,
-      beforeCount: beforeSearchCount,
-      afterCount: processedHighlights.length,
-      results: processedHighlights.slice(0, 3).map(h => ({
-        id: h.id,
-        title: h.title,
-        program_title: h.program_title,
-        impact_level: h.impact_level
-      }))
-    })
   }
 
   // Apply organization filter
   if (selectedOrganization !== 'all') {
-    const beforeOrgCount = processedHighlights.length
     processedHighlights = filterByOrganization(processedHighlights, selectedOrganization)
-    console.log('🔎 After organization filter:', {
-      selectedOrganization,
-      beforeCount: beforeOrgCount,
-      afterCount: processedHighlights.length
-    })
   }
 
   // Apply tab-specific filtering
   if (activeTab === 'featured') {
     // Featured tab: only show starred/featured highlights
-    const beforeTabCount = processedHighlights.length
     processedHighlights = getFeaturedHighlights(processedHighlights)
-    console.log('🔎 After featured filter:', {
-      beforeCount: beforeTabCount,
-      afterCount: processedHighlights.length
-    })
   } else if (activeTab === 'all') {
     // All tab: show all approved highlights (both featured and non-featured combined)
     // No additional filtering needed - already filtered to approved above
   }
-  
-  // Final debug log
-  console.log('🔎 Final processed highlights:', {
-    total: processedHighlights.length,
-    searchQuery,
-    activeTab,
-    selectedOrganization
-  })
 
   // Use organizations from API for filter dropdown
   // Include all organizations, including "Collab Admin" as it's a real organization in the database

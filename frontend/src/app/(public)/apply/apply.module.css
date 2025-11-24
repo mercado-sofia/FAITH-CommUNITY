@@ -18,7 +18,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-  align-items: start;
+  align-items: stretch;
   position: relative;
 }
 
@@ -30,7 +30,10 @@
   width: 100%;
   position: relative;
   top: 0;
-  align-self: start;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .loginPrompt {
@@ -108,7 +111,10 @@
   }
   
   .rightPanel {
-    align-self: start;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   
   .loginPrompt {
@@ -141,7 +147,10 @@
   
   .rightPanel {
     position: relative;
-    align-self: start;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   
   .loginPrompt {

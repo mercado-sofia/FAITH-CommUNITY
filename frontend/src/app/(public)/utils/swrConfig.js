@@ -96,6 +96,7 @@ export const swrConfig = {
         }
         
         // Handle wrapped responses (e.g., { success: true, data: [...] })
+        // Check if it's a wrapped API response with success and data properties
         if (data && typeof data === 'object' && 'data' in data && 'success' in data) {
           return data.data;
         }

@@ -121,12 +121,6 @@ function AdminLayoutContent({ children }) {
             
             userData = await getCurrentUser();
             
-            console.log(`[Admin Layout] Auth check attempt ${retryCount + 1}:`, { 
-              hasUserData: !!userData, 
-              role: userData?.role,
-              userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
-            });
-            
             if (userData && userData.role === 'admin') {
               break; // Success, exit retry loop
             }
@@ -163,8 +157,6 @@ function AdminLayoutContent({ children }) {
         if (typeof document !== 'undefined' && !document.cookie.includes('userRole=admin')) {
           document.cookie = "userRole=admin; path=/; max-age=86400; SameSite=Lax";
         }
-        
-        console.log('[Admin Layout] Auth check successful, admin authenticated');
         
         // Initialize auth from localStorage (no parameters needed)
         dispatch(initializeAuth());

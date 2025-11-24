@@ -300,15 +300,18 @@ export const usePublicFAQs = () => {
 };
 
 // Custom hook for approved upcoming programs (for apply form)
+// This endpoint is public and does not require authentication
 export const usePublicApprovedPrograms = () => {
-  // Custom fetcher with authentication and automatic token refresh
-  const authenticatedFetcher = async (url) => {
+  // Public fetcher (no authentication required)
+  const publicFetcher = async (url) => {
     try {
-      // Use authenticatedFetch for automatic token refresh
-      const { authenticatedFetch } = await import('@/utils/apiClient');
-      const response = await authenticatedFetch(url, {
+      const response = await fetch(url, {
         method: 'GET',
-      }, 'user');
+        credentials: 'include', // Include cookies for CORS
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -365,7 +368,7 @@ export const usePublicApprovedPrograms = () => {
 
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL || ''}/api/programs/approved/upcoming`,
-    authenticatedFetcher,
+    publicFetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
@@ -385,7 +388,7 @@ export const usePublicApprovedPrograms = () => {
     }
   );
 
-  // Note: fetcher already unwraps { success: true, data: [...] } to just the array
+  // Note: fetcher already unwraps { success: true, data: [...] } to just the data array
   return {
     programs: Array.isArray(data) ? data : [],
     isLoading,

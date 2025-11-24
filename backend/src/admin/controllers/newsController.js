@@ -1622,6 +1622,14 @@ export const getNewsBySlug = async (req, res) => {
             message: "Access denied. You do not have permission to access this resource." 
           });
         }
+      } else {
+        // Security guard: If authorization is needed but user is neither superadmin nor admin,
+        // deny access to non-published content. This prevents unauthorized access even if
+        // the earlier token parsing logic fails or is bypassed.
+        return res.status(403).json({ 
+          success: false, 
+          message: "Access denied. You do not have permission to access this resource." 
+        });
       }
     }
 

@@ -44,12 +44,6 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Log API configuration in development for debugging
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('[API Config] API_BASE_URL:', API_BASE_URL || '(empty - using relative paths with Next.js rewrites)');
-  console.log('[API Config] This ensures cookies work properly by making requests same-origin');
-}
-
 /**
  * Helper function to log errors in production
  * Replace with your error monitoring service (e.g., Sentry)

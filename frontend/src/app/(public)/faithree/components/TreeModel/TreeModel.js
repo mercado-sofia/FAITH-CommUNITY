@@ -408,20 +408,7 @@ export default function TreeModel({
 }) {
   // Debug: Log when featuredHighlights changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log('[TreeModel] Featured highlights received:', {
-        count: featuredHighlights.length,
-        highlights: featuredHighlights.map(h => ({ 
-          id: h.id, 
-          title: h.title, 
-          displayOrder: h.display_order 
-        }))
-      });
-      
-      if (featuredHighlights.length === 0) {
-        console.warn('[TreeModel] No featured highlights provided. Stars will not be displayed.');
-      }
-    }
+    // Featured highlights are loaded from parent component
   }, [featuredHighlights]);
   
   // Load saved camera position from localStorage
@@ -623,14 +610,6 @@ export default function TreeModel({
                 [-0.7, 2.1, 0.85]   // Star 8
               ]
               
-              // Debug logging for featured highlights
-              if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-                console.log('[TreeModel] Rendering stars:', {
-                  featuredHighlightsCount: featuredHighlights.length,
-                  featuredHighlights: featuredHighlights.map(h => ({ id: h.id, title: h.title }))
-                });
-              }
-              
               // Render stars only for featured highlights (1 to featuredHighlights.length)
               const starsToRender = starPositions.map((position, index) => {
                 const starId = index + 1 // 1-8
@@ -650,11 +629,6 @@ export default function TreeModel({
                 }
                 return null
               }).filter(Boolean); // Remove null entries
-              
-              // Log warning if no stars are rendered
-              if (starsToRender.length === 0 && typeof window !== 'undefined') {
-                console.warn('[TreeModel] No stars rendered. Featured highlights count:', featuredHighlights.length);
-              }
               
               return starsToRender;
             })()}

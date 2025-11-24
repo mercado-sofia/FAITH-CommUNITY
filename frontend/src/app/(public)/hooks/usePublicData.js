@@ -418,12 +418,29 @@ export const usePublicBranding = () => {
     }
   );
 
-  // Transform data for public consumption with fallbacks
-  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
-  const brandingData = data ? {
-    logo_url: data.logo_url,
-    name_url: data.name_url,
-    favicon_url: data.favicon_url,
+  // Transform data for public consumption
+  // Note: fetcher should unwrap { success: true, data: {...} } to just the data object
+  // Fallback: If fetcher didn't unwrap the data, unwrap it here
+  let unwrappedData = data;
+  if (data && typeof data === 'object' && 'data' in data && 'success' in data) {
+    unwrappedData = data.data;
+  }
+
+  // Handle the case where fetcher returns null (when backend returns { success: true, data: null })
+  if (unwrappedData === null) {
+    return {
+      brandingData: null,
+      isLoading,
+      error,
+    };
+  }
+
+  // Transform data object using unwrapped data
+  // Preserve non-empty strings, convert empty strings and undefined to null
+  const brandingData = unwrappedData && typeof unwrappedData === 'object' ? {
+    logo_url: (unwrappedData.logo_url && typeof unwrappedData.logo_url === 'string' && unwrappedData.logo_url.trim() !== '') ? unwrappedData.logo_url : null,
+    name_url: (unwrappedData.name_url && typeof unwrappedData.name_url === 'string' && unwrappedData.name_url.trim() !== '') ? unwrappedData.name_url : null,
+    favicon_url: (unwrappedData.favicon_url && typeof unwrappedData.favicon_url === 'string' && unwrappedData.favicon_url.trim() !== '') ? unwrappedData.favicon_url : null,
   } : null;
 
   return {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2 } from "react-icons/fi"
-import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
+import { formatDateLong } from '@/utils/dateUtils.js';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import styles from "./NewsTable.module.css"
@@ -23,27 +23,6 @@ const validateNewsData = (news) => {
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   return formatDateLong(dateString);
-};
-
-const formatPublishedDate = (publishedAt, createdAt) => {
-  if (!publishedAt) return formatDate(createdAt);
-  
-  const publishedDate = new Date(publishedAt);
-  const now = new Date();
-  const isScheduled = publishedDate > now;
-  
-  if (isScheduled) {
-    return formatDateTime(publishedAt);
-  }
-  
-  return formatDateLong(publishedAt);
-};
-
-const isScheduled = (publishedAt) => {
-  if (!publishedAt) return false;
-  const publishedDate = new Date(publishedAt);
-  const now = new Date();
-  return publishedDate > now;
 };
 
 const formatStatus = (status) => {
@@ -286,7 +265,7 @@ export default function NewsTable({
                 <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />
               </th>
               <th>Title</th>
-                  <th>Date</th>
+                  <th>Date Published</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -335,28 +314,16 @@ export default function NewsTable({
                     </div>
                   </td>
                   <td style={{ color: "#8a919c", fontWeight: "400" }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span>{formatPublishedDate(newsItem.published_at, newsItem.date || newsItem.created_at)}</span>
-                      {isScheduled(newsItem.published_at) && (
-                        <span style={{ fontSize: '11px', color: '#1CBFA4', fontWeight: '600' }}>
-                          Scheduled
-                        </span>
-                      )}
-                    </div>
                     {(() => {
                       const status = (newsItem.status || 'draft').toLowerCase();
-                      // Always use published_at (not date field) - published_at is the source of truth
                       const publishedAt = newsItem.published_at;
                       
-                      if (status === 'published' || (status === 'archived' && publishedAt)) {
-                        // Published or archived (was published before) - show published date
-                        return formatDate(publishedAt);
-                      } else if (status === 'scheduled' && publishedAt) {
-                        // Scheduled - show scheduled date
+                      // Only show date if news is published or archived (was published before)
+                      if ((status === 'published' || status === 'archived') && publishedAt) {
                         return formatDate(publishedAt);
                       } else {
-                        // Draft - show created date
-                        return formatDate(newsItem.created_at);
+                        // Draft or scheduled - show "-" since not published yet
+                        return '-';
                       }
                     })()}
                   </td>

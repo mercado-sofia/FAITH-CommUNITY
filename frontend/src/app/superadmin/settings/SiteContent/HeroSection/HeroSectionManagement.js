@@ -63,7 +63,38 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         if (response && response.ok) {
           const data = await response.json();
           if (data.data) {
-            setHeroData(data.data);
+            // Use defaults if data is missing or empty (matching auto-insert values)
+            const defaultHeroData = {
+              tag: 'Welcome to FAITH CommUNITY',
+              heading: 'A Unified Platform for Community Extension Programs',
+              video_url: null,
+              video_link: null,
+              video_type: 'upload',
+              images: [
+                { id: 1, url: null, heading: 'Inside the Initiative', subheading: 'Where Ideas Take Root' },
+                { id: 2, url: null, heading: 'Collaboration', subheading: 'Working Together' },
+                { id: 3, url: null, heading: 'Innovation', subheading: 'Building the Future' }
+              ]
+            };
+            
+            // Merge API data with defaults to ensure all fields have values
+            const mergedHeroData = {
+              tag: data.data.tag || defaultHeroData.tag,
+              heading: data.data.heading || defaultHeroData.heading,
+              video_url: data.data.video_url || defaultHeroData.video_url,
+              video_link: data.data.video_link || defaultHeroData.video_link,
+              video_type: data.data.video_type || defaultHeroData.video_type,
+              images: data.data.images && data.data.images.length > 0 
+                ? data.data.images.map((img, index) => ({
+                    id: img.id || (index + 1),
+                    url: img.url || null,
+                    heading: img.heading || (defaultHeroData.images[index]?.heading || ''),
+                    subheading: img.subheading || (defaultHeroData.images[index]?.subheading || '')
+                  }))
+                : defaultHeroData.images
+            };
+            
+            setHeroData(mergedHeroData);
             // Reset iframe error when new data is loaded
             setIframeError(false);
           }

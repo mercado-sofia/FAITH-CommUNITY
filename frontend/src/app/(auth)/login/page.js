@@ -184,14 +184,6 @@ export default function LoginPage() {
   const attempt = async (system) => {
     setLastAttemptedSystem(system)
     
-    // Log attempt for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Login] Attempting login for system:', system);
-      console.log('[Login] Email:', email);
-      console.log('[Login] Has password:', !!password);
-      console.log('[Login] Needs OTP:', needsOtp);
-    }
-    
     switch (system) {
       case "superadmin":
         return await postJson('/api/superadmin/auth/login', { email, password, otp: needsOtp ? otp : undefined })
@@ -331,12 +323,6 @@ export default function LoginPage() {
 
         setIsLoading(false)
         
-        // Log successful login for debugging
-        console.log('[Login] Login successful for:', successfulSystem);
-        console.log('[Login] User data:', data);
-        console.log('[Login] Cookies before redirect:', document.cookie);
-        console.log('[Login] Response headers:', 'Check Network tab for Set-Cookie headers');
-        
         // IMPORTANT: With Next.js rewrites, cookies are set by backend and forwarded through Next.js
         // Use a longer delay and verify cookies are set before redirecting
         // This ensures cookies are fully processed by the browser
@@ -354,8 +340,6 @@ export default function LoginPage() {
           if (elapsed >= redirectDelay) {
             const redirectPath = getRedirectPath(successfulSystem);
             
-            console.log('[Login] Redirecting to:', redirectPath);
-            console.log('[Login] After redirect, check if access_token and refresh_token cookies exist');
             // Use window.location.replace to avoid adding to history (prevents back button issues)
             window.location.replace(redirectPath);
             return;
@@ -465,9 +449,6 @@ export default function LoginPage() {
       // 3. The current system is "admin" (default)
       if (!result.ok && systemToTry === "admin" && !systemsTried.includes("user")) {
         // If admin failed, try user system
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Login] Admin login failed, trying user system as fallback');
-        }
         setLastAttemptedSystem("admin") // Mark that we tried admin
         systemsTried.push("user")
         const userResult = await attempt("user")
@@ -491,9 +472,6 @@ export default function LoginPage() {
           
           // Use same redirect logic as main success handler
           const redirectPath = getRedirectPath('user');
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[Login] User login successful via fallback, redirecting to:', redirectPath);
-          }
           // Use window.location.replace to avoid adding to history
           setTimeout(() => {
             window.location.replace(redirectPath)
@@ -521,9 +499,6 @@ export default function LoginPage() {
         
         // If user also failed and email is superadmin, try superadmin
         if (isSuperadminEmail && !systemsTried.includes("superadmin")) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[Login] User login also failed, trying superadmin as final fallback');
-          }
           setLastAttemptedSystem("user") // Mark that we tried user
           systemsTried.push("superadmin")
           const superadminResult = await attempt("superadmin")

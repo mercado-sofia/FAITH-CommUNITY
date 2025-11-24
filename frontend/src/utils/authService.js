@@ -240,9 +240,6 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
   try {
     // Build URL - use relative path if API_BASE_URL is empty (rewrites enabled)
     const authCheckUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/auth/check` : '/api/users/auth/check';
-    console.log('[getCurrentUser] Checking auth status at:', authCheckUrl);
-    console.log('[getCurrentUser] API_BASE_URL:', API_BASE_URL);
-    console.log('[getCurrentUser] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A');
     
     const response = await fetch(authCheckUrl, {
       method: 'GET',
@@ -253,8 +250,6 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
       // Add cache control to prevent stale responses
       cache: 'no-store',
     });
-
-    console.log('[getCurrentUser] Response status:', response.status, response.statusText);
 
     if (!response.ok) {
       // If we get a 401, it might mean cookies aren't available yet (race condition)
@@ -268,12 +263,6 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     }
 
     const data = await response.json();
-    console.log('[getCurrentUser] Response data:', { 
-      authenticated: data.authenticated, 
-      hasUser: !!data.user,
-      userRole: data.user?.role,
-      needsRefresh: data.needsRefresh
-    });
     
     // If authenticated, return user data
     if (data.authenticated && data.user) {
@@ -282,12 +271,10 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     
     // If not authenticated but can refresh, try refreshing
     if (data.needsRefresh) {
-      console.log('[getCurrentUser] Token needs refresh, attempting refresh...');
       const { refreshAccessToken } = await import('@/utils/tokenRefresh');
       const refreshed = await refreshAccessToken();
       
       if (refreshed) {
-        console.log('[getCurrentUser] Token refreshed, retrying auth check...');
         // Retry the auth check after refresh - use same URL building logic
         const retryUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/auth/check` : '/api/users/auth/check';
         const retryResponse = await fetch(retryUrl, {
@@ -301,11 +288,6 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
         
         if (retryResponse.ok) {
           const retryData = await retryResponse.json();
-          console.log('[getCurrentUser] Retry response:', { 
-            authenticated: retryData.authenticated, 
-            hasUser: !!retryData.user,
-            userRole: retryData.user?.role
-          });
           if (retryData.authenticated && retryData.user) {
             return retryData.user;
           }

@@ -42,8 +42,6 @@ export const useNotifications = (isAuthenticated) => {
     }
 
     const handleNotification = (notification) => {
-      console.log('🔔 Real-time notification received:', notification);
-      
       // Refetch notifications to get the latest data from the server
       // This ensures we have the actual notification ID and all fields
       refetchNotifications();

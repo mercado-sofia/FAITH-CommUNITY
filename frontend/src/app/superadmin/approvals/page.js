@@ -151,14 +151,12 @@ const matchesOrganization = (approval, orgAcronym) => {
   if (mainOrgAcronym && mainOrgAcronym === normalizedOrgAcronym) {
     // Debug: Log successful match (remove in production)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Filter Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
     }
     return true;
   }
   
   // Main org doesn't match - exclude this approval
   if (process.env.NODE_ENV === 'development' && mainOrgAcronym) {
-    console.log(`[Filter No Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
   }
   return false;
 };
@@ -531,7 +529,6 @@ export default function PendingApprovalsPage() {
       });
       // Debug: Log filter results (remove in production)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Filter] Organization: "${selectedOrganization}", Before: ${beforeFilterCount}, After: ${filtered.length}`);
       }
     }
 

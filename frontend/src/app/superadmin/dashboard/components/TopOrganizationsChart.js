@@ -29,13 +29,6 @@ export default function TopOrganizationsChart() {
         debugInfo,
         fullErrorStructure: JSON.stringify(error, null, 2)
       });
-    } else if (isSuccess) {
-      console.log('[TopOrganizationsChart] API call successful. Data received:', {
-        dataLength: organizationsData?.length || 0,
-        data: organizationsData,
-        isEmpty: !organizationsData || organizationsData.length === 0,
-        debugInfo
-      });
     }
   }
 

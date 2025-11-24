@@ -225,24 +225,8 @@ export default function FloatingMessage() {
         user_id: isLoggedIn && userData ? userData.id : null // Include user_id if authenticated
       };
 
-      // Log for debugging in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[FloatingMessage] Submitting message:', {
-          organization_id: messageData.organization_id,
-          sender_email: messageData.sender_email,
-          hasMessage: !!messageData.message,
-          user_id: messageData.user_id,
-          isLoggedIn
-        });
-      }
-
       // Submit message with the numeric organization ID
       const result = await submitMessage(messageData).unwrap();
-
-      // Log success in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[FloatingMessage] Message sent successfully:', result);
-      }
 
       // Show success message
       if (typeof window !== 'undefined' && window.showToast) {

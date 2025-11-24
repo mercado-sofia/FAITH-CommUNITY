@@ -30,9 +30,40 @@ export default function SiteNameManagement({ showSuccessModal }) {
 
         if (response && response.ok) {
           const data = await response.json();
-          setSiteNameData(data.data);
-          setSiteName(data.data.site_name || '');
-          setTempSiteName(data.data.site_name || '');
+          const defaultSiteName = 'FAITH CommUNITY';
+          let siteNameValue = data.data?.site_name || '';
+          
+          // Auto-insert site name if it doesn't exist in database
+          if (!siteNameValue) {
+            try {
+              const insertResponse = await makeAuthenticatedRequest(
+                `${baseUrl}/api/superadmin/branding/site-name`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ site_name: defaultSiteName }),
+                },
+                'superadmin'
+              );
+              
+              if (insertResponse && insertResponse.ok) {
+                siteNameValue = defaultSiteName;
+              } else {
+                // If auto-insert fails, use default for display
+                siteNameValue = defaultSiteName;
+              }
+            } catch (error) {
+              console.error('Auto-insert site name error:', error);
+              // Use default for display even if auto-insert fails
+              siteNameValue = defaultSiteName;
+            }
+          }
+          
+          setSiteNameData(data.data || { site_name: siteNameValue });
+          setSiteName(siteNameValue);
+          setTempSiteName(siteNameValue);
         }
       } catch (error) {
         console.error('Load error:', error);

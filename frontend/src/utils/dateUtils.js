@@ -792,7 +792,9 @@ export const formatDateTime = (dateString) => {
     const monthName = monthNames[monthNum - 1]; // month is 1-indexed in the string
     
     // Convert to 12-hour format
-    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    // IMPORTANT: Store original hour for AM/PM determination BEFORE modulo operation
+    const originalHour = hourNum;
+    const ampm = originalHour >= 12 ? 'PM' : 'AM';
     hourNum = hourNum % 12;
     hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
     

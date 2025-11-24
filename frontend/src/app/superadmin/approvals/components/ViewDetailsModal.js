@@ -48,8 +48,6 @@ const VideoPlayer = ({ videoUrl, media, index }) => {
       return;
     }
 
-    console.log('Attempting to play video:', videoUrl);
-    console.log('Media info:', media);
 
     // Set shouldLoad to true to render the video element
     setShouldLoad(true);
@@ -58,11 +56,9 @@ const VideoPlayer = ({ videoUrl, media, index }) => {
     // Use useEffect-like approach with setTimeout to ensure the video element is rendered
     setTimeout(() => {
       if (videoRef.current) {
-        console.log('Video element found, loading video...');
         videoRef.current.load();
         videoRef.current.play()
           .then(() => {
-            console.log('Video started playing successfully');
             setIsLoading(false);
             setIsPlaying(true);
           })

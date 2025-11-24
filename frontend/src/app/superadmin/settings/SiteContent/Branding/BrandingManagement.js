@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
+import { mutate } from 'swr';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
 import { getBrandingImageUrl } from '@/utils/uploadPaths';
+import { API_BASE_URL } from '@/config/api';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {
   const [brandingData, setBrandingData] = useState(null);
@@ -61,8 +63,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
       // No need to check token - cookies handle authentication
 
       const uploadUrl = `${baseUrl}/api/superadmin/branding/upload-${type}`;
-      console.log('Uploading to:', uploadUrl);
-      console.log('File type:', type, 'File size:', file.size, 'bytes');
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -80,6 +80,16 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           ...prev,
           [`${type}_url`]: fileUrl
         }));
+        
+        // Invalidate SWR cache for public branding to force immediate refresh
+        // This ensures the Navbar logo updates immediately after individual uploads
+        // Use the same API_BASE_URL format as usePublicBranding hook for cache key matching
+        try {
+          const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
+          await mutate(cacheKey);
+        } catch (cacheError) {
+          console.warn('Failed to invalidate branding cache:', cacheError);
+        }
         
         // Return the URL for batch uploads
         return fileUrl;
@@ -149,6 +159,15 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           ...prev,
           [`${deleteType}_url`]: null
         }));
+        
+        // Invalidate SWR cache for public branding to force immediate refresh
+        // Use the same API_BASE_URL format as usePublicBranding hook for cache key matching
+        try {
+          const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
+          await mutate(cacheKey);
+        } catch (cacheError) {
+          console.warn('Failed to invalidate branding cache:', cacheError);
+        }
         
         // Show correct success message based on delete type
         let successMessage;
@@ -264,6 +283,14 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           const data = await response.json();
           setBrandingData(data.data);
           setIsEditingBranding(false);
+          
+          // Invalidate SWR cache for public branding to force immediate refresh
+          try {
+            await mutate(`${baseUrl}/api/superadmin/branding/public`);
+          } catch (cacheError) {
+            console.warn('Failed to invalidate branding cache:', cacheError);
+          }
+          
           showSuccessModal('Branding updated successfully! The changes will be visible on the public site immediately.');
         } else {
           const errorData = await response.json();

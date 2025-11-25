@@ -646,14 +646,16 @@ export const createNews = async (req, res) => {
       
       status = 'scheduled';
     } else {
-      // No action specified - this should not happen in normal flow
-      // Frontend always sends an action, but if it's missing, default to draft for safety
+      // No action specified or invalid action - require explicit action
+      // Frontend should always send an action, but if it's missing or invalid, return error
       // IMPORTANT: Only explicit "publish" action should result in published status
       // We do NOT auto-publish based on published_at date - user must explicitly choose "publish"
       if (!normalizedAction) {
-        // No action provided - default to draft (safest option)
-        status = 'draft';
-        finalPublishedAt = null;
+        // No action provided - return error for stricter validation
+        return res.status(400).json({ 
+          success: false, 
+          message: "Action is required. Action must be 'draft', 'publish', or 'schedule'." 
+        });
       } else {
         // Invalid action - return error
         return res.status(400).json({ 
@@ -672,14 +674,6 @@ export const createNews = async (req, res) => {
       // Prepare date value for the date column (date only, no time)
       const dateValue = finalPublishedAt ? finalPublishedAt.split(' ')[0] : null;
       
-      // Validate that for schedule action, finalPublishedAt is set
-      if (normalizedAction === 'schedule' && !finalPublishedAt) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Published date and time are required for scheduling" 
-        });
-      }
-      
       // Build INSERT query based on whether status column exists
       // For immediate publish, use NOW() for published_at to match created_at timestamp
       let insertQuery, insertParams;
@@ -691,13 +685,7 @@ export const createNews = async (req, res) => {
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, status];
         } else {
           // For schedule or other actions, use provided published_at
-          // Ensure finalPublishedAt and dateValue are properly set
-          if (normalizedAction === 'schedule' && (!finalPublishedAt || !dateValue)) {
-            return res.status(400).json({ 
-              success: false, 
-              message: "Invalid date format for scheduling" 
-            });
-          }
+          // Note: finalPublishedAt is already validated above for schedule action
           insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, finalPublishedAt, dateValue, status];
@@ -1536,19 +1524,28 @@ export const getNewsBySlug = async (req, res) => {
 
     // If token exists, verify authentication and authorization
     if (!isPublicRequest) {
-      const authResult = await getOrRefreshAccessToken(req, res);
-      if (authResult.decoded) {
-        decoded = authResult.decoded;
-        isAdmin = decoded.role === 'admin';
-        isSuperadmin = decoded.role === 'superadmin';
-        // If token is invalid or user is not admin/superadmin, treat as public request
-        if (!isAdmin && !isSuperadmin) {
+      try {
+        const authResult = await getOrRefreshAccessToken(req, res);
+        // Verify authResult structure before accessing properties
+        if (authResult && authResult.decoded) {
+          decoded = authResult.decoded;
+          isAdmin = decoded.role === 'admin';
+          isSuperadmin = decoded.role === 'superadmin';
+          // If token is invalid or user is not admin/superadmin, treat as public request
+          if (!isAdmin && !isSuperadmin) {
+            isPublicRequest = true;
+            decoded = null;
+          }
+        } else {
+          // Invalid token or unexpected response structure, treat as public request
           isPublicRequest = true;
           decoded = null;
         }
-      } else {
-        // Invalid token, treat as public request
+      } catch (authError) {
+        // If getOrRefreshAccessToken throws an error, treat as public request
+        console.error('[getNewsBySlug] Error during authentication:', authError);
         isPublicRequest = true;
+        decoded = null;
       }
     }
 

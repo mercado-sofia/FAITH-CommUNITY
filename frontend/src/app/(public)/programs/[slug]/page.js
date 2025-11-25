@@ -13,31 +13,27 @@ import CollaborationDisplay from '../components/CollaborationDisplay/Collaborati
 import { RelatedPrograms } from '../components';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { formatDateLong, formatDateShort } from '@/utils/dateUtils';
 
 // Custom functions to preserve exact date formatting for program details
 const formatEventDateWithWeekday = (dateString) => {
   if (!dateString) return 'Not specified';
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  } catch (error) {
-    return 'Invalid date';
-  }
+  return formatDateLong(dateString);
 };
 
 const formatEventDateShort = (dateString) => {
   if (!dateString) return 'Not specified';
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch (error) {
-    return 'Invalid date';
+  // Use formatDateShort but extract just month and day
+  const formatted = formatDateShort(dateString);
+  if (formatted === 'Invalid date' || formatted === 'Not specified') {
+    return formatted;
   }
+  // Extract month and day from formatDateShort output (e.g., "Sep 18, 2004" -> "Sep 18")
+  const parts = formatted.split(',');
+  if (parts.length > 0) {
+    return parts[0].trim();
+  }
+  return formatted;
 };
 
 export default function ProgramDetailsPage() {

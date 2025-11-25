@@ -1,5 +1,6 @@
 import { LuCalendarCheck2 } from "react-icons/lu";
 import { FiCalendar } from "react-icons/fi";
+import { formatDateShort } from '@/utils/dateUtils';
 
 /**
  * Processes project dates to determine display date, status, and styling
@@ -20,31 +21,29 @@ export const processProjectDates = (project) => {
   // Check for multiple dates first
   if (project.multiple_dates && Array.isArray(project.multiple_dates) && project.multiple_dates.length > 0) {
     // For multiple dates, show the soonest upcoming date
-    const upcomingDates = project.multiple_dates
-      .map(date => new Date(date))
-      .filter(date => date >= now)
-      .sort((a, b) => a - b);
+    const upcomingDatesWithStrings = project.multiple_dates
+      .map(dateString => ({ dateString, date: new Date(dateString) }))
+      .filter(({ date }) => !isNaN(date.getTime()) && date >= now)
+      .sort((a, b) => a.date - b.date);
     
-    if (upcomingDates.length > 0) {
+    if (upcomingDatesWithStrings.length > 0) {
       status = 'upcoming';
-      displayDate = upcomingDates[0].toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      displayDate = formatDateShort(upcomingDatesWithStrings[0].dateString);
       dateColor = '#15803d';
       CalendarIcon = FiCalendar;
     } else {
       // All dates are in the past
       status = 'completed';
-      const lastDate = project.multiple_dates
-        .map(date => new Date(date))
-        .sort((a, b) => b - a)[0];
-      displayDate = lastDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      const pastDatesWithStrings = project.multiple_dates
+        .map(dateString => ({ dateString, date: new Date(dateString) }))
+        .filter(({ date }) => !isNaN(date.getTime()))
+        .sort((a, b) => b.date - a.date);
+      
+      if (pastDatesWithStrings.length > 0) {
+        displayDate = formatDateShort(pastDatesWithStrings[0].dateString);
+      } else {
+        displayDate = 'Invalid date';
+      }
       dateColor = '#475569';
       CalendarIcon = LuCalendarCheck2;
     }
@@ -56,11 +55,7 @@ export const processProjectDates = (project) => {
       // Single-day event - show only one date
       if (now > endDate) {
         status = 'completed';
-        displayDate = startDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        });
+        displayDate = formatDateShort(project.eventStartDate);
         dateColor = '#475569';
         CalendarIcon = LuCalendarCheck2;
       } else if (now >= startDate && now <= endDate) {
@@ -70,11 +65,7 @@ export const processProjectDates = (project) => {
         CalendarIcon = FiCalendar;
       } else {
         status = 'upcoming';
-        displayDate = startDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        });
+        displayDate = formatDateShort(project.eventStartDate);
         dateColor = '#15803d';
         CalendarIcon = FiCalendar;
       }
@@ -82,15 +73,7 @@ export const processProjectDates = (project) => {
       // Multi-day event - show date range
       if (now > endDate) {
         status = 'completed';
-        displayDate = `${startDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        })} - ${endDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        })}`;
+        displayDate = `${formatDateShort(project.eventStartDate)} - ${formatDateShort(project.eventEndDate)}`;
         dateColor = '#475569';
         CalendarIcon = LuCalendarCheck2;
       } else if (now >= startDate && now <= endDate) {
@@ -100,15 +83,7 @@ export const processProjectDates = (project) => {
         CalendarIcon = FiCalendar;
       } else {
         status = 'upcoming';
-        displayDate = `${startDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        })} - ${endDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        })}`;
+        displayDate = `${formatDateShort(project.eventStartDate)} - ${formatDateShort(project.eventEndDate)}`;
         dateColor = '#15803d';
         CalendarIcon = FiCalendar;
       }
@@ -122,11 +97,7 @@ export const processProjectDates = (project) => {
       CalendarIcon = FiCalendar;
     } else {
       status = 'upcoming';
-      displayDate = startDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      displayDate = formatDateShort(project.eventStartDate);
       dateColor = '#15803d';
       CalendarIcon = FiCalendar;
     }
@@ -134,20 +105,12 @@ export const processProjectDates = (project) => {
     // Single end date
     if (now > endDate) {
       status = 'completed';
-      displayDate = endDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      displayDate = formatDateShort(project.eventEndDate);
       dateColor = '#475569';
       CalendarIcon = LuCalendarCheck2;
     } else {
       status = 'upcoming';
-      displayDate = endDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      displayDate = formatDateShort(project.eventEndDate);
       dateColor = '#15803d';
       CalendarIcon = FiCalendar;
     }

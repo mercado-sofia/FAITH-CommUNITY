@@ -81,19 +81,19 @@
 }
 
 .dateColumn {
-  width: 15%;
+  width: 10%;
   text-align: left !important;
 }
 
 .statusColumn {
-  width: 12%;
+  width: 15%;
   text-align: center !important;
 }
 
 .actionsColumn {
-  width: 4%;
+  width: 5%;
   text-align: center !important;
-  padding: 14px 0 !important;
+  padding: 14px 20px 14px 0 !important;
 }
 
 /* Table Cells */
@@ -178,7 +178,7 @@
 
 .dateCell {
   text-align: left !important;
-  padding: 12px 14px !important;
+  padding: 12px 4px 12px 14px !important;
   color: #414143;
   font-size: 13px;
   white-space: nowrap;
@@ -186,12 +186,12 @@
 
 .statusCell {
   text-align: center;
-  padding: 12px 14px !important;
+  padding: 12px 4px !important;
 }
 
 .actionsCell {
   text-align: center;
-  padding: 12px 0 !important;
+  padding: 12px 20px 12px 0 !important;
 }
 
 /* Checkbox styling - matching dashboard table */

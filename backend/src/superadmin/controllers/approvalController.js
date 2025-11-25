@@ -78,6 +78,7 @@ const cleanupUnapprovedProgram = async (programId, submissionId) => {
 };
 
 export const getPendingSubmissions = async (req, res) => {
+  // Note: previous_data is not used in submission flow - all submissions are new
   try {
     // Optimized query: get IDs first to reduce sort memory, then fetch full data
     const [idRows] = await db.execute(`
@@ -133,10 +134,9 @@ export const getPendingSubmissions = async (req, res) => {
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
         // Note: advocacy and competency are no longer part of the approval workflow
-        // Parse JSON data for all sections
-        let previousData, proposedData;
+        // Parse JSON data for proposed_data only
+        let proposedData;
         
-        previousData = safeParseJSON(submission.previous_data, {});
         proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
@@ -169,13 +169,11 @@ export const getPendingSubmissions = async (req, res) => {
         
         return {
           ...submission,
-          previous_data: previousData,
           proposed_data: proposedData
         };
       } catch (parseError) {
         return {
           ...submission,
-          previous_data: {},
           proposed_data: {}
         };
       }
@@ -307,10 +305,9 @@ export const getAllSubmissions = async (req, res) => {
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
         // Note: advocacy and competency are no longer part of the approval workflow
-        // Parse JSON data for all sections
-        let previousData, proposedData;
+        // Parse JSON data for proposed_data only
+        let proposedData;
         
-        previousData = safeParseJSON(submission.previous_data, {});
         proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
@@ -343,13 +340,11 @@ export const getAllSubmissions = async (req, res) => {
         
         return {
           ...submission,
-          previous_data: previousData,
           proposed_data: proposedData
         };
       } catch (parseError) {
         return {
           ...submission,
-          previous_data: {},
           proposed_data: {}
         };
       }
@@ -441,7 +436,13 @@ export const approveSubmission = async (req, res) => {
        throw new Error(`Transaction start failed: ${transactionError.message}`);
      }
     
-    const [rows] = await connection.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+    // Note: previous_data is not used in submission flow - only fetch columns we need
+    const [rows] = await connection.execute(
+      `SELECT id, organization_id, section, proposed_data, submitted_by, 
+              status, rejection_reason, submitted_at, updated_at 
+       FROM submissions WHERE id = ?`, 
+      [id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Submission not found' });
     }
@@ -466,20 +467,9 @@ export const approveSubmission = async (req, res) => {
       throw new Error(`Invalid submission data: ${parseError.message}`);
     }
     
-    // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
-    // If proposed_data is empty and previous_data exists, parse it to get the deletion info
-    let previousData = null;
-    if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
-      try {
-        previousData = safeParseJSON(submission.previous_data, {});
-        // If previous_data has an action field, use it to determine if this is a deletion
-        if (previousData && previousData.action === 'delete') {
-          data = previousData; // Use previous_data for deletion approvals
-        }
-      } catch (prevParseError) {
-        // If parsing previous_data fails, continue with empty data
-        logError('Failed to parse previous_data for deletion', prevParseError, { context: 'approval_controller' });
-      }
+    // If proposed_data is empty, this is an invalid submission
+    if (!data || Object.keys(data).length === 0) {
+      throw new Error('Invalid submission: proposed_data is empty');
     }
     
     const section = submission.section;
@@ -497,58 +487,20 @@ export const approveSubmission = async (req, res) => {
     }
 
     // Apply changes based on section
-    if (section === 'organization') {
-      // Update organizations table with all organization data including org/orgName
-      await connection.execute(
-        `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
-        [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
-      );
-    }
-
+    // Note: organization and org_heads are not part of the submission flow
+    // They are updated directly via their respective endpoints (/api/organization and /api/heads)
     // Note: advocacy and competency are no longer part of the approval workflow
     // They are saved directly by admins via their respective endpoints
-
-    if (section === 'org_heads') {
-      await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
-      for (let head of data) {
-        // Handle head photo upload to Cloudinary
-        let cloudinaryPhotoUrl = head.photo;
-        if (head.photo && head.photo.startsWith('data:image/')) {
-          try {
-            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
-            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
-            
-            // Convert base64 to buffer
-            const base64Data = head.photo.replace(/^data:image\/\w+;base64,/, '');
-            const buffer = Buffer.from(base64Data, 'base64');
-            
-            // Create a file-like object for Cloudinary upload
-            const file = {
-              buffer: buffer,
-              originalname: `org-head-${Date.now()}.jpg`,
-              mimetype: head.photo.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
-              size: buffer.length
-            };
-            
-            // Upload to Cloudinary
-            const uploadResult = await uploadSingleToCloudinary(
-              file, 
-              CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
-              { prefix: 'org_head_' }
-            );
-            
-            cloudinaryPhotoUrl = uploadResult.url;
-          } catch (uploadError) {
-            // Continue with base64 as fallback
-          }
-        }
-        
-        await connection.execute(
-          `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
-        );
-      }
+    
+    // Safety check: Reject legacy submissions for unsupported sections
+    if (section === 'organization' || section === 'org_heads' || section === 'advocacy' || section === 'competency') {
+      await connection.rollback();
+      connection.release();
+      return res.status(400).json({
+        success: false,
+        message: `Submissions for "${section}" are no longer supported through the approval workflow. Please use the direct API endpoints.`,
+        error: `Section "${section}" is not part of the submission flow`
+      });
     }
 
     if (section === 'programs') {
@@ -1123,14 +1075,14 @@ export const approveSubmission = async (req, res) => {
                 const reportId = reportResult.insertId;
                 
                 // Create a submission record for the post-act report so it appears in superadmin approvals
+                let postActSubmissionId = null;
                 try {
-                  await connection.execute(
-                    `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-                     VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+                  const [submissionResult] = await connection.execute(
+                    `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+                     VALUES (?, ?, ?, ?, 'pending', NOW())`,
                     [
                       orgId,
                       'Post Act Report',
-                      JSON.stringify({}),
                       JSON.stringify({
                         program_id: programId,
                         report_id: reportId,
@@ -1140,6 +1092,7 @@ export const approveSubmission = async (req, res) => {
                       submission.submitted_by || null
                     ]
                   );
+                  postActSubmissionId = submissionResult.insertId;
                 } catch (submissionError) {
                   // Non-fatal: submissions table may not exist or section not whitelisted
                   logError('Failed to create post-act report submission record', submissionError, { context: 'approval_controller' });
@@ -1161,7 +1114,7 @@ export const approveSubmission = async (req, res) => {
                       'Post Act Report Submitted',
                       `${orgAcronym} submitted a Post Act Report for program "${data.title}".`,
                       'post_act_report',
-                      null,
+                      postActSubmissionId, // Link notification to submission
                       orgId
                     );
                   }
@@ -1424,11 +1377,6 @@ export const approveSubmission = async (req, res) => {
         notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
       }
     }
-    // Add specific details for organization
-    else if (section === 'organization' && data.orgName) {
-      notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
-    }
-    
     // Create notification for the admin
     try {
       const notificationResult = await NotificationController.createNotification(
@@ -1500,7 +1448,13 @@ export const rejectSubmission = async (req, res) => {
 
   try {
     // Check if submission exists and is pending
-    const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ? AND status = "pending"', [id]);
+    // Note: previous_data is not used in submission flow - only fetch columns we need
+    const [rows] = await db.execute(
+      `SELECT id, organization_id, section, proposed_data, submitted_by, 
+              status, rejection_reason, submitted_at, updated_at 
+       FROM submissions WHERE id = ? AND status = "pending"`, 
+      [id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
@@ -1517,14 +1471,8 @@ export const rejectSubmission = async (req, res) => {
         try {
           data = safeParseJSON(submission.proposed_data, {});
         } catch (parseError) {
-          // For deletions, proposed_data is empty {}, so check previous_data
-          if (submission.previous_data) {
-            try {
-              data = safeParseJSON(submission.previous_data, {});
-            } catch (prevParseError) {
-              // Continue if parsing fails
-            }
-          }
+          // If proposed_data cannot be parsed, this is an invalid submission
+          data = {};
         }
         
         // If this is a deletion rejection, ensure the highlight stays approved (don't delete)
@@ -1622,14 +1570,8 @@ export const rejectSubmission = async (req, res) => {
       try {
         data = safeParseJSON(submission.proposed_data, {});
       } catch (parseError) {
-        // For deletions, proposed_data is empty {}, so check previous_data
-        if (submission.previous_data) {
-          try {
-            data = safeParseJSON(submission.previous_data, {});
-          } catch (prevParseError) {
-            // Keep the generic message if parsing fails
-          }
-        }
+        // If proposed_data cannot be parsed, use empty object
+        data = {};
       }
       
       // Add specific details for Post Act Report
@@ -1648,10 +1590,6 @@ export const rejectSubmission = async (req, res) => {
       // Add specific details for programs
       else if (submission.section === 'programs' && data.title) {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
-      }
-      // Add specific details for organization
-      else if (submission.section === 'organization' && data && data.orgName) {
-        notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
       }
       // Add specific details for highlights
       else if (submission.section === 'highlights' && data) {
@@ -1721,7 +1659,13 @@ export const bulkApproveSubmissions = async (req, res) => {
 
     for (const id of ids) {
       try {
-        const [rows] = await connection.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+        // Note: previous_data is not used in submission flow - only fetch columns we need
+    const [rows] = await connection.execute(
+      `SELECT id, organization_id, section, proposed_data, submitted_by, 
+              status, rejection_reason, submitted_at, updated_at 
+       FROM submissions WHERE id = ?`, 
+      [id]
+    );
         
         if (rows.length === 0) {
           errors.push(`Submission ${id} not found`);
@@ -1746,80 +1690,22 @@ export const bulkApproveSubmissions = async (req, res) => {
           continue;
         }
         
-        // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
-        // If proposed_data is empty and previous_data exists, parse it to get the deletion info
-        let previousData = null;
-        if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
-          try {
-            previousData = safeParseJSON(submission.previous_data, {});
-            // If previous_data has an action field, use it to determine if this is a deletion
-            if (previousData && previousData.action === 'delete') {
-              data = previousData; // Use previous_data for deletion approvals
-            }
-          } catch (prevParseError) {
-            // If parsing previous_data fails, continue with empty data
-            errors.push(`Submission ${id} has invalid previous_data for deletion`);
-            errorCount++;
-            continue;
-          }
-        }
+        // All submission data is in proposed_data - no need to check previous_data
         
         const section = submission.section;
         const orgId = submission.organization_id;
 
         // Apply changes based on section - same logic as individual approveSubmission
-        if (section === 'organization') {
-          // Update organizations table with all organization data including org/orgName
-          await connection.execute(
-            `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
-            [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
-          );
-        }
-
+        // Note: organization and org_heads are not part of the submission flow
+        // They are updated directly via their respective endpoints (/api/organization and /api/heads)
         // Note: advocacy and competency are no longer part of the approval workflow
         // They are saved directly by admins via their respective endpoints
-
-        if (section === 'org_heads') {
-          await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
-          for (let head of data) {
-            // Handle head photo upload to Cloudinary
-            let cloudinaryPhotoUrl = head.photo;
-            if (head.photo && head.photo.startsWith('data:image/')) {
-              try {
-                const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
-                const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
-                
-                // Convert base64 to buffer
-                const base64Data = head.photo.replace(/^data:image\/\w+;base64,/, '');
-                const buffer = Buffer.from(base64Data, 'base64');
-                
-                // Create a file-like object for Cloudinary upload
-                const file = {
-                  buffer: buffer,
-                  originalname: `org-head-${Date.now()}.jpg`,
-                  mimetype: head.photo.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
-                  size: buffer.length
-                };
-                
-                // Upload to Cloudinary
-                const uploadResult = await uploadSingleToCloudinary(
-                  file, 
-                  CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
-                  { prefix: 'org_head_' }
-                );
-                
-                cloudinaryPhotoUrl = uploadResult.url;
-              } catch (uploadError) {
-                // Continue with base64 as fallback
-              }
-            }
-            
-            await connection.execute(
-              `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
-               VALUES (?, ?, ?, ?, ?, ?)`,
-              [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
-            );
-          }
+        
+        // Safety check: Skip legacy submissions for unsupported sections
+        if (section === 'organization' || section === 'org_heads' || section === 'advocacy' || section === 'competency') {
+          errors.push(`Submission ${id}: Section "${section}" is no longer supported. Please use direct API endpoints.`);
+          errorCount++;
+          continue;
         }
 
         if (section === 'programs') {
@@ -2401,10 +2287,6 @@ export const bulkApproveSubmissions = async (req, res) => {
         else if (section === 'news' && data.title) {
           notificationMessage = `Your news "${data.title}" has been approved by SuperAdmin`;
         }
-        // Add specific details for organization
-        else if (section === 'organization' && data.orgName) {
-          notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
-        }
         // Add specific details for highlights
         else if (section === 'highlights' && data) {
           if (data.action === 'delete' && data.title) {
@@ -2484,7 +2366,13 @@ export const bulkRejectSubmissions = async (req, res) => {
 
     for (const id of ids) {
       try {
-        const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+        // Note: previous_data is not used in submission flow - only fetch columns we need
+        const [rows] = await db.execute(
+          `SELECT id, organization_id, section, proposed_data, submitted_by, 
+                  status, rejection_reason, submitted_at, updated_at 
+           FROM submissions WHERE id = ?`, 
+          [id]
+        );
         
         if (rows.length === 0) {
           errors.push(`Submission ${id} not found`);
@@ -2594,10 +2482,6 @@ export const bulkRejectSubmissions = async (req, res) => {
           else if (submission.section === 'programs' && data.title) {
             notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
           }
-          // Add specific details for organization
-          else if (submission.section === 'organization' && data.orgName) {
-            notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
-          }
           // Add specific details for highlights
           else if (submission.section === 'highlights' && data.title) {
             notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
@@ -2652,7 +2536,7 @@ export const deleteSubmission = async (req, res) => {
   try {
     // First, get the submission to check if it's a highlight submission
     const [submissionRows] = await db.execute(
-      'SELECT section, proposed_data, previous_data FROM submissions WHERE id = ?',
+      'SELECT section, proposed_data FROM submissions WHERE id = ?',
       [id]
     );
     
@@ -2670,11 +2554,6 @@ export const deleteSubmission = async (req, res) => {
     if (submission.section === 'highlights') {
       try {
         let data = safeParseJSON(submission.proposed_data, {});
-        
-        // If proposed_data is empty (for deletions), check previous_data
-        if (!data || Object.keys(data).length === 0) {
-          data = safeParseJSON(submission.previous_data, {});
-        }
         
         // Extract highlight_id
         if (data && data.highlight_id !== undefined && data.highlight_id !== null) {
@@ -2712,7 +2591,6 @@ export const deleteSubmission = async (req, res) => {
             context: 'approval_controller',
             submissionId: id,
             proposedData: submission.proposed_data,
-            previousData: submission.previous_data
           });
         }
       } catch (parseError) {
@@ -2770,7 +2648,7 @@ export const bulkDeleteSubmissions = async (req, res) => {
       try {
         // First, get the submission to check if it's a highlight submission
         const [submissionRows] = await db.execute(
-          'SELECT section, proposed_data, previous_data FROM submissions WHERE id = ?',
+          'SELECT section, proposed_data FROM submissions WHERE id = ?',
           [id]
         );
         
@@ -2788,10 +2666,6 @@ export const bulkDeleteSubmissions = async (req, res) => {
           try {
             let data = safeParseJSON(submission.proposed_data, {});
             
-            // If proposed_data is empty (for deletions), check previous_data
-            if (!data || Object.keys(data).length === 0) {
-              data = safeParseJSON(submission.previous_data, {});
-            }
             
             // Extract highlight_id
             if (data && data.highlight_id !== undefined && data.highlight_id !== null) {

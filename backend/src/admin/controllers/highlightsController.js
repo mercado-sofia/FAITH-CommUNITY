@@ -193,8 +193,8 @@ export const createHighlight = async (req, res) => {
     
     // Create a submission record for the highlight
     const submissionQuery = `
-      INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-      VALUES (?, 'highlights', '{}', ?, ?, 'pending', NOW())
+      INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+      VALUES (?, 'highlights', ?, ?, 'pending', NOW())
     `;
     
     const proposedData = JSON.stringify({
@@ -303,18 +303,9 @@ export const updateHighlight = async (req, res) => {
     
     // Create a submission record for the highlight update
     const submissionQuery = `
-      INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-      VALUES (?, 'highlights', ?, ?, ?, 'pending', NOW())
+      INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+      VALUES (?, 'highlights', ?, ?, 'pending', NOW())
     `;
-    
-    const previousData = JSON.stringify({
-      highlight_id: id,
-      title: currentHighlight.title,
-      description: currentHighlight.description,
-      media_files: currentHighlight.media_files,
-      program_id: currentHighlight.program_id || null,
-      action: 'update'
-    });
     
     const proposedData = JSON.stringify({
       highlight_id: id,
@@ -327,7 +318,6 @@ export const updateHighlight = async (req, res) => {
     
     await connection.execute(submissionQuery, [
       orgId,
-      previousData,
       proposedData,
       req.admin.id
     ]);
@@ -382,11 +372,11 @@ export const deleteHighlight = async (req, res) => {
     
     // Create a submission record for the highlight deletion
     const submissionQuery = `
-      INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-      VALUES (?, 'highlights', ?, '{}', ?, 'pending', NOW())
+      INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+      VALUES (?, 'highlights', ?, ?, 'pending', NOW())
     `;
     
-    const previousData = JSON.stringify({
+    const proposedData = JSON.stringify({
       highlight_id: id,
       title: currentHighlight.title,
       description: currentHighlight.description,
@@ -396,7 +386,7 @@ export const deleteHighlight = async (req, res) => {
     
     await connection.execute(submissionQuery, [
       orgId,
-      previousData,
+      proposedData,
       req.admin.id
     ]);
     

@@ -1853,8 +1853,8 @@ export const addProgramProject = async (req, res) => {
     });
 
     const [submissionResult] = await db.execute(`
-      INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-      VALUES (?, 'programs', '{}', ?, ?, 'pending', NOW())
+      INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+      VALUES (?, 'programs', ?, ?, 'pending', NOW())
     `, [adminOrgId, proposedData, currentAdminId]);
 
     const submissionId = submissionResult.insertId;

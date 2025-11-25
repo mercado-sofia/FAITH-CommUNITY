@@ -64,20 +64,22 @@ export const uploadPostActReport = async (req, res) => {
     const reportId = reportResult.insertId;
 
     // Also record in submissions so admins can track/cancel/delete from Submissions page
+    let submissionId = null;
     try {
-      await db.execute(
-        `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-         VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+      const [submissionResult] = await db.execute(
+        `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+         VALUES (?, ?, ?, ?, 'pending', NOW())`,
         [
           rows[0].organization_id,
           'Post Act Report',
-          JSON.stringify({}),
           JSON.stringify({ program_id: Number(id), report_id: reportId, file_url: uploadResult.url, file_public_id: uploadResult.public_id }),
           req.admin?.id || null
         ]
       );
+      submissionId = submissionResult.insertId;
     } catch (e) {
       // Non-fatal: submissions table may not exist or section not whitelisted
+      logError('Failed to create submission record for Post Act Report', e, { context: 'postActReportController', reportId });
     }
 
     // Notify superadmin about the new post act report submission
@@ -95,12 +97,13 @@ export const uploadPostActReport = async (req, res) => {
           'Post Act Report Submitted',
           `${orgAcronym} submitted a Post Act Report for program "${rows[0].title}".`,
           'post_act_report',
-          null,
+          submissionId, // Link notification to submission
           rows[0].organization_id
         );
       }
     } catch (notifErr) {
       // Non-fatal: notification failure should not block upload
+      logError('Failed to send superadmin notification for Post Act Report', notifErr, { context: 'postActReportController', submissionId });
     }
 
     return res.json({

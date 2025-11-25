@@ -230,7 +230,7 @@ const ViewDetailsModal = ({
                     <div className={styles.detailItem}>
                       <FaCalendar className={styles.detailIcon} />
                       <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Event Date(s)</span>
+                        <span className={styles.detailLabel}>Date</span>
                         <span className={styles.detailValue}>
                           {mode === 'collaboration' ? (
                             data.event_start_date ? formatDateShort(data.event_start_date) : 'N/A'
@@ -240,21 +240,6 @@ const ViewDetailsModal = ({
                         </span>
                       </div>
                     </div>
-
-                    {(mode === 'collaboration' ? data.program_created_at : data.created_at) && (
-                      <div className={styles.detailItem}>
-                        <FaCalendar className={styles.detailIcon} />
-                        <div className={styles.detailContent}>
-                          <span className={styles.detailLabel}>Created</span>
-                          <span className={styles.detailValue}>
-                            {mode === 'collaboration' 
-                              ? formatDateTime(data.program_created_at)
-                              : formatDateTime(data.created_at)
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Program Status - show in both modes */}
                     {(mode === 'collaboration' ? data.program_status : data.status) && (

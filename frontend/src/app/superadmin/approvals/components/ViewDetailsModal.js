@@ -1004,20 +1004,13 @@ const ViewDetailsModal = ({
               </div>
             </div>
           ) : (
-            // For other non-program/highlights approvals, show data comparison
+            // All submissions in the submission flow are new - show only proposed data
             <div className={styles.contentSections}>
               <div className={styles.contentSection}>
-                <h4 className={styles.sectionTitle}>DATA CHANGES:</h4>
-                {/* Note: advocacy and competency are no longer part of the approval workflow */}
+                <h4 className={styles.sectionTitle}>SUBMISSION DETAILS:</h4>
                 <div className={styles.jsonDataContainer}>
                     <div className={styles.dataBlock}>
-                      <h5>Previous Data:</h5>
-                      <pre className={styles.jsonData}>
-                        {JSON.stringify(submissionData.previous_data || submissionData.old_data, null, 2)}
-                      </pre>
-                    </div>
-                    <div className={styles.dataBlock}>
-                      <h5>Proposed Data:</h5>
+                      <h5>Submission Data:</h5>
                       <pre className={styles.jsonData}>
                         {JSON.stringify(submissionData.proposed_data || submissionData.data || submissionData.new_data, null, 2)}
                       </pre>

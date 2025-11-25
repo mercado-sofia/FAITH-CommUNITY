@@ -16,6 +16,64 @@ const safeParseJSON = (value, defaultValue = null) => {
   return value;
 };
 
+// Helper function to extract minimal metadata from submission data for list views
+// This prevents large payloads when fetching all submissions
+const extractMinimalSubmissionData = (data, section) => {
+  if (!data || typeof data !== 'object') {
+    return { _hasData: !!data };
+  }
+
+  const minimal = {};
+
+  // For programs section, keep only essential fields
+  if (section === 'programs') {
+    if (data.title) minimal.title = data.title;
+    if (data.category) minimal.category = data.category;
+    if (data.event_start_date) minimal.event_start_date = data.event_start_date;
+    if (data.event_end_date) minimal.event_end_date = data.event_end_date;
+    if (data.multiple_dates) minimal.multiple_dates = data.multiple_dates;
+    // Keep collaborator count only, not full data
+    if (Array.isArray(data.collaborators)) {
+      minimal.collaborators_count = data.collaborators.length;
+    }
+    // Indicate if post-act report exists without including the full data
+    if (data.postActReport) {
+      minimal.has_post_act_report = true;
+    }
+    // Indicate if images exist without including URLs
+    if (data.image) minimal.has_image = true;
+    if (Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+      minimal.additional_images_count = data.additionalImages.length;
+    }
+  }
+  // For highlights section, keep only essential fields
+  else if (section === 'highlights') {
+    if (data.title) minimal.title = data.title;
+    if (data.program_id) minimal.program_id = data.program_id;
+    if (data.program_title) minimal.program_title = data.program_title;
+    // Keep media count only, not full data
+    if (Array.isArray(data.media_files)) {
+      minimal.media_files_count = data.media_files.length;
+    } else if (Array.isArray(data.media)) {
+      minimal.media_files_count = data.media.length;
+    }
+  }
+  // For Post Act Report section, keep only essential fields
+  else if (section === 'Post Act Report') {
+    if (data.program_id) minimal.program_id = data.program_id;
+    if (data.report_id) minimal.report_id = data.report_id;
+    // Indicate file exists without including URL
+    if (data.file_url) minimal.has_file = true;
+  }
+  // For other sections, keep a minimal representation
+  else {
+    // Just indicate that data exists
+    minimal._hasData = true;
+  }
+
+  return minimal;
+};
+
 // Validation helper for submission data
 const validateSubmissionItem = (item) => {
   const errors = []
@@ -28,11 +86,7 @@ const validateSubmissionItem = (item) => {
     errors.push("section is required")
   }
 
-  // previous_data and proposed_data can be empty objects/strings, but must be present
-  if (item.previous_data === undefined || item.previous_data === null) {
-    errors.push("previous_data is required")
-  }
-
+  // proposed_data is always required
   if (item.proposed_data === undefined || item.proposed_data === null) {
     errors.push("proposed_data is required")
   }
@@ -44,14 +98,15 @@ const validateSubmissionItem = (item) => {
   // Validate section types
   // Note: advocacy and competency are no longer submitted through this workflow
   // They are saved directly via their respective endpoints
-  const validSections = ["organization", "org_heads", "programs"]
+  // Note: organization and org_heads are not part of the admin-to-superadmin submission flow
+  const validSections = ["programs", "highlights", "Post Act Report"]
   if (item.section && !validSections.includes(item.section)) {
     errors.push(`Invalid section. Must be one of: ${validSections.join(", ")}`)
   }
   
-  // Reject advocacy and competency submissions - they should be saved directly
-  if (item.section === 'advocacy' || item.section === 'competency') {
-    errors.push(`${item.section} should be saved directly, not through submissions. Please use the direct API endpoints.`)
+  // Reject advocacy, competency, organization, and org_heads submissions
+  if (item.section === 'advocacy' || item.section === 'competency' || item.section === 'organization' || item.section === 'org_heads') {
+    errors.push(`${item.section} should not be submitted through this workflow. Please use the appropriate endpoints.`)
   }
 
   return errors
@@ -140,20 +195,7 @@ export const submitChanges = async (req, res) => {
       const numericOrgId = orgIdMap.get(item.organization_id.toString())
       
       // Validate and stringify JSON data
-      let previousDataStr, proposedDataStr;
-      
-      try {
-        // Validate previous_data is valid JSON
-        if (item.previous_data !== undefined && item.previous_data !== null) {
-          previousDataStr = JSON.stringify(item.previous_data);
-          // Verify it can be parsed back
-          JSON.parse(previousDataStr);
-        } else {
-          previousDataStr = JSON.stringify({});
-        }
-      } catch (jsonError) {
-        throw new Error(`Invalid previous_data JSON for submission: ${jsonError.message}`);
-      }
+      let proposedDataStr;
       
       try {
         // Validate proposed_data is valid JSON
@@ -169,15 +211,13 @@ export const submitChanges = async (req, res) => {
       }
       
       const [result] = await db.execute(
-        `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+         VALUES (?, ?, ?, ?, 'pending', NOW())`,
         [
           numericOrgId,
           item.section,
-          previousDataStr,
           proposedDataStr,
           item.submitted_by,
-          "pending",
         ]
       )
       
@@ -360,8 +400,11 @@ export const getSubmissionsByOrg = async (req, res) => {
     const organization = orgRows[0]
 
     // Get submissions with additional info
+    // Note: previous_data is not used in submission flow - only fetch columns we need
     const [rows] = await db.execute(
-      `SELECT s.*, o.orgName as submitted_by_name 
+      `SELECT s.id, s.organization_id, s.section, s.proposed_data, s.submitted_by, 
+              s.status, s.rejection_reason, s.submitted_at, s.updated_at,
+              o.orgName as submitted_by_name 
        FROM submissions s 
        LEFT JOIN users a ON s.submitted_by = a.id AND a.role = 'admin' 
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -371,55 +414,34 @@ export const getSubmissionsByOrg = async (req, res) => {
     )
 
     // Parse JSON data and add metadata
+    // For list view, extract minimal data to prevent large payloads
     const parsedRows = await Promise.all(rows.map(async (row) => {
-      let previous_data_parsed = {}
       let proposed_data_parsed = {}
       let parse_error = false
 
       // Note: advocacy and competency are no longer part of the submission workflow
-      // Parse JSON data for all sections
-      previous_data_parsed = safeParseJSON(row.previous_data, {});
+      // Parse JSON data for proposed_data only
       proposed_data_parsed = safeParseJSON(row.proposed_data, {});
       
       // Check if parsing failed (only if it was a string and couldn't be parsed)
-      if (typeof row.previous_data === 'string' && !previous_data_parsed) {
-        previous_data_parsed = { error: "Invalid JSON data" };
-        parse_error = true;
-      }
       if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
         proposed_data_parsed = { error: "Invalid JSON data" };
         parse_error = true;
       }
 
-      // For program submissions, fetch collaborator details
-      if (row.section === 'programs' && proposed_data_parsed.collaborators && Array.isArray(proposed_data_parsed.collaborators)) {
-        try {
-          const collaboratorIds = proposed_data_parsed.collaborators;
-          if (collaboratorIds.length > 0) {
-            const placeholders = collaboratorIds.map(() => '?').join(',');
-            const [collaboratorRows] = await db.execute(`
-              SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-              FROM users a
-              LEFT JOIN organizations o ON a.organization_id = o.id
-              WHERE a.id IN (${placeholders})
-            `, collaboratorIds);
-            
-            // Replace collaborator IDs with full collaborator objects
-            proposed_data_parsed.collaborators = collaboratorRows;
-          }
-        } catch (collabError) {
-          // Keep original collaborator IDs if fetch fails
-        }
-      }
+      // Extract minimal data for list view to prevent large payloads
+      // Full data will be available via getSubmissionById when viewing individual submission
+      const minimal_proposed_data = extractMinimalSubmissionData(proposed_data_parsed, row.section);
 
       return {
         ...row,
-        previous_data: previous_data_parsed,
-        proposed_data: proposed_data_parsed,
+        proposed_data: minimal_proposed_data,
         organization_name: organization.orgName,
         can_edit: row.status === "pending",
         can_cancel: row.status === "pending",
         parse_error: parse_error, // Indicate if any parsing error occurred for this row
+        // Add flag to indicate this is minimal data
+        _isMinimalData: true,
       }
     }))
 
@@ -529,23 +551,25 @@ export const updateSubmission = async (req, res) => {
     }
 
     // Reject advocacy and competency submissions - they should be edited directly
+    // Note: organization and org_heads are not part of the submission flow
     const section = existing[0].section
-    if (section === 'advocacy' || section === 'competency') {
+    if (section === 'advocacy' || section === 'competency' || section === 'organization' || section === 'org_heads') {
       return res.status(400).json({
         success: false,
-        message: `${section} should be edited directly, not through submissions. Please use the direct API endpoints.`,
+        message: `${section} should not be edited through submissions. Please use the appropriate endpoints.`,
       })
     }
 
     // Validate proposed_data structure based on section
+    // Only programs, highlights, and Post Act Report are in the submission flow
     let isValidData = true
 
     try {
-      if (section === "org_heads" && !Array.isArray(proposed_data)) {
+      if (section === "programs" && typeof proposed_data !== "object") {
         isValidData = false
-      } else if (section === "organization" && typeof proposed_data !== "object") {
+      } else if (section === "highlights" && typeof proposed_data !== "object") {
         isValidData = false
-      } else if (section === "programs" && typeof proposed_data !== "object") {
+      } else if (section === "Post Act Report" && typeof proposed_data !== "object") {
         isValidData = false
       }
     } catch (validationError) {
@@ -641,8 +665,11 @@ export const getSubmissionById = async (req, res) => {
   }
 
   try {
+    // Note: previous_data is not used in submission flow - only fetch columns we need
     const [rows] = await db.execute(
-      `SELECT s.*, o.orgName, o.org 
+      `SELECT s.id, s.organization_id, s.section, s.proposed_data, s.submitted_by, 
+              s.status, s.rejection_reason, s.submitted_at, s.updated_at,
+              o.orgName, o.org 
        FROM submissions s
        LEFT JOIN organizations o ON o.id = s.organization_id
        WHERE s.id = ?`,
@@ -661,10 +688,6 @@ export const getSubmissionById = async (req, res) => {
     // Parse JSON data
     // Note: advocacy and competency are no longer part of the submission workflow
     try {
-      // Parse JSON data for all sections
-      if (submission.previous_data) {
-        submission.previous_data = safeParseJSON(submission.previous_data, {});
-      }
       if (submission.proposed_data) {
         submission.proposed_data = safeParseJSON(submission.proposed_data, {});
         

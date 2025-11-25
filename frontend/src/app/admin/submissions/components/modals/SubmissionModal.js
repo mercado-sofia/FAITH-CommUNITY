@@ -188,20 +188,76 @@ const calculateProgramStatusFromDates = (event_start_date, event_end_date, multi
 };
 
 export default function SubmissionModal({ data, onClose }) {
+  const [fullSubmissionData, setFullSubmissionData] = useState(null);
+  const [loadingFullData, setLoadingFullData] = useState(false);
   const [programTitle, setProgramTitle] = useState(null);
   const [loadingProgram, setLoadingProgram] = useState(false);
+
+  // Fetch full submission data if we have minimal data
+  useEffect(() => {
+    const fetchFullSubmissionData = async () => {
+      // Check if we have minimal data or if we need to fetch full details
+      const isMinimalData = data._isMinimalData || 
+                           (data.proposed_data && typeof data.proposed_data === 'object' && 
+                            (data.proposed_data._hasData === true || 
+                             data.proposed_data.has_post_act_report === true ||
+                             data.proposed_data.has_file === true));
+      
+      // Always fetch full data to ensure we have complete information
+      // This is especially important for post-act reports and large data
+      if (data.id) {
+        setLoadingFullData(true);
+        try {
+          const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/details/${data.id}`, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setFullSubmissionData(result.data);
+            }
+          } else {
+            console.warn(`Failed to fetch full submission data: ${response.status}`);
+            // Fall back to provided data if fetch fails
+            setFullSubmissionData(data);
+          }
+        } catch (error) {
+          console.error('Error fetching full submission data:', error);
+          // Fall back to provided data if fetch fails
+          setFullSubmissionData(data);
+        } finally {
+          setLoadingFullData(false);
+        }
+      } else {
+        // No ID available, use provided data
+        setFullSubmissionData(data);
+      }
+    };
+
+    fetchFullSubmissionData();
+  }, [data]);
+
+  // Use full data if available, otherwise use provided data
+  const submissionData = fullSubmissionData || data;
 
   // Fetch program title when program_id is available but program_title is not
   useEffect(() => {
     const fetchProgramTitle = async () => {
-      if (data.section !== 'highlights') {
+      // Use full submission data if available
+      const currentData = submissionData || data;
+      
+      if (currentData.section !== 'highlights') {
         setProgramTitle(null);
         setLoadingProgram(false);
         return;
       }
-
+      
       // Parse proposed_data to get program_id and program_title
-      const proposedData = parseJsonData(data.proposed_data);
+      const proposedData = parseJsonData(currentData.proposed_data);
       const programId = proposedData?.program_id;
       const existingProgramTitle = proposedData?.program_title;
 
@@ -248,22 +304,15 @@ export default function SubmissionModal({ data, onClose }) {
     };
 
     fetchProgramTitle();
-  }, [data]);
+  }, [submissionData]);
 
   const formatData = (dataObj) => {
+    // Use full submission data if available
+    const currentData = submissionData || data;
+    
     // Handle different data types based on section
-    if (data.section === 'organization') {
-      if (!dataObj || typeof dataObj !== 'object') {
-        return dataObj?.toString() || 'No data';
-      }
-      return (
-        <div className={styles.orgData}>
-          {dataObj.email && <div className={styles.dataField}><span className={styles.fieldLabel}>Email:</span> {dataObj.email}</div>}
-          {dataObj.facebook && <div className={styles.dataField}><span className={styles.fieldLabel}>Facebook:</span> {dataObj.facebook}</div>}
-          {dataObj.description && <div className={styles.dataField}><span className={styles.fieldLabel}>Description:</span> {dataObj.description}</div>}
-        </div>
-      );
-    } else if (data.section === 'programs') {
+    // Note: organization and org_heads are not part of the submission flow
+    if (currentData.section === 'programs') {
       return (
         <>
         <div className={styles.programLayout}>
@@ -465,11 +514,11 @@ export default function SubmissionModal({ data, onClose }) {
             )}
 
             {/* Rejection Comment for Programs */}
-            {data.status === 'rejected' && data.rejection_reason && (
+            {submissionData.status === 'rejected' && submissionData.rejection_reason && (
               <div className={styles.rejectionSection}>
                 <div className={styles.rejectionLabel}>Rejection Reason</div>
                 <div className={styles.rejectionComment}>
-                  {data.rejection_reason}
+                  {submissionData.rejection_reason}
                 </div>
               </div>
             )}
@@ -498,7 +547,7 @@ export default function SubmissionModal({ data, onClose }) {
         )}
         </>
       );
-    } else if (data.section === 'highlights') {
+    } else if (currentData.section === 'highlights') {
       // Parse media_files
       let mediaFiles = [];
       if (Array.isArray(dataObj.media_files)) {
@@ -622,7 +671,7 @@ export default function SubmissionModal({ data, onClose }) {
         <div className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <h2 className={styles.modalTitle}>
-              {data.section.charAt(0).toUpperCase() + data.section.slice(1)} Submission Details
+              {submissionData?.section ? submissionData.section.charAt(0).toUpperCase() + submissionData.section.slice(1) : 'Submission'} Submission Details
             </h2>
             <p className={styles.modalSubtitle}>
               Review the submission information and changes
@@ -635,43 +684,52 @@ export default function SubmissionModal({ data, onClose }) {
 
         {/* Content */}
         <div className={styles.modalContent}>
+          {/* Loading state */}
+          {loadingFullData && (
+            <div className={styles.loadingContainer}>
+              <p>Loading submission details...</p>
+            </div>
+          )}
+
           {/* Submission Meta */}
+          {!loadingFullData && (
+            <>
           <div className={styles.submissionMeta}>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Status</span>
-              <span className={`${styles.statusBadge} ${styles[data.status]}`}>
-                {data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+              <span className={`${styles.statusBadge} ${styles[submissionData.status]}`}>
+                {submissionData.status.charAt(0).toUpperCase() + submissionData.status.slice(1)}
               </span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Submitted</span>
               <span className={styles.metaValue}>
-                {formatDateShort(data.submitted_at)}
+                {formatDateShort(submissionData.submitted_at)}
               </span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Time</span>
               <span className={styles.metaValue}>
-                {formatTimeOnly(data.submitted_at)}
+                {formatTimeOnly(submissionData.submitted_at)}
               </span>
             </div>
           </div>
 
           {/* Rejection Feedback */}
-          {data.status === 'rejected' && data.rejection_reason && (
+          {submissionData.status === 'rejected' && submissionData.rejection_reason && (
             <div className={styles.rejectionAlert}>
               <div className={styles.alertIcon}>
                 <FaExclamationTriangle />
               </div>
               <div className={styles.alertContent}>
                 <h4 className={styles.alertTitle}>Rejection Feedback</h4>
-                <p className={styles.alertMessage}>{data.rejection_reason}</p>
+                <p className={styles.alertMessage}>{submissionData.rejection_reason}</p>
               </div>
             </div>
           )}
 
           {/* Data Comparison */}
-          {data.section === 'Post Act Report' ? (
+          {submissionData.section === 'Post Act Report' ? (
             // For Post Act Report, show only the uploaded file
             <div className={styles.dataComparisonSingle}>
               <div className={styles.dataSection}>
@@ -679,7 +737,7 @@ export default function SubmissionModal({ data, onClose }) {
                 <div className={styles.dataContent}>
                   {(() => {
                     try {
-                      const proposedData = parseJsonData(data.proposed_data);
+                      const proposedData = parseJsonData(submissionData.proposed_data);
                       const fileUrl = proposedData?.file_url;
                       
                       if (!fileUrl) {
@@ -766,41 +824,29 @@ export default function SubmissionModal({ data, onClose }) {
               </div>
             </div>
           ) : (
-            <div className={data.section === 'programs' || data.section === 'highlights' ? styles.dataComparisonSingle : styles.dataComparison}>
-              {/* For programs and highlights sections, show only proposed data without previous data */}
-              {data.section === 'programs' || data.section === 'highlights' ? (
-                <div className={styles.dataSection}>
-                  <h3 className={styles.sectionTitle}>
-                    {data.section === 'programs' ? 'Proposed Program' : 'Proposed Highlight'}
-                  </h3>
-                  <div className={styles.dataContent}>
-                    {formatData(parseJsonData(data.proposed_data))}
+            // All submissions in the submission flow are new - no previous data comparison
+            (() => {
+              const sectionTitles = {
+                'programs': 'Program Details',
+                'highlights': 'Highlight Details',
+                'Post Act Report': 'Post Act Report'
+              };
+              
+              return (
+                <div className={styles.dataComparisonSingle}>
+                  <div className={styles.dataSection}>
+                    <h3 className={styles.sectionTitle}>
+                      {sectionTitles[submissionData.section] || 'Submission Details'}
+                    </h3>
+                    <div className={styles.dataContent}>
+                      {formatData(parseJsonData(submissionData.proposed_data))}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <>
-                  {/* Previous Data */}
-                  <div className={styles.dataSection}>
-                    <h3 className={styles.sectionTitle}>Previous Data</h3>
-                    <div className={styles.dataContent}>
-                      {data.previous_data ? (
-                        formatData(parseJsonData(data.previous_data))
-                      ) : (
-                        <div className={styles.noData}>No previous data</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Proposed Data */}
-                  <div className={styles.dataSection}>
-                    <h3 className={styles.sectionTitle}>Proposed Changes</h3>
-                    <div className={styles.dataContent}>
-                      {formatData(parseJsonData(data.proposed_data))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+              );
+            })()
+          )}
+            </>
           )}
         </div>
 

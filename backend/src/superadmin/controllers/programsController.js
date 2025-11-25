@@ -612,7 +612,6 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
         samplePrograms: samplePrograms
       };
       
-      console.log('[getTopOrganizationsByProgramCount] Diagnostic data:', JSON.stringify(diagnosticData, null, 2));
       debugInfo.diagnosticData = diagnosticData;
     } catch (diagError) {
       console.error('[getTopOrganizationsByProgramCount] Error gathering diagnostics:', diagError);
@@ -655,15 +654,6 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     debugInfo.resultsCount = results.length;
     debugInfo.step = 'query_executed';
     
-    // Log results for debugging
-    console.log(`[getTopOrganizationsByProgramCount] Query executed. Found ${results.length} organizations with programs`);
-    if (results.length > 0) {
-      console.log('[getTopOrganizationsByProgramCount] Sample result:', JSON.stringify(results[0], null, 2));
-      console.log('[getTopOrganizationsByProgramCount] All results:', JSON.stringify(results, null, 2));
-    } else {
-      console.warn('[getTopOrganizationsByProgramCount] No results found. Diagnostic data:', diagnosticData);
-    }
-    
     // Format the data for frontend consumption
     const organizations = results.map(row => {
       const formatted = {
@@ -674,14 +664,13 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       };
       // Validate data
       if (!formatted.id || formatted.programCount <= 0) {
-        console.warn('[getTopOrganizationsByProgramCount] Invalid row data:', row);
+        // Invalid row data - skip silently
       }
       return formatted;
     });
     
     debugInfo.step = 'data_formatted';
     debugInfo.formattedCount = organizations.length;
-    console.log('[getTopOrganizationsByProgramCount] Formatted organizations:', JSON.stringify(organizations, null, 2));
     
     const responseTime = Date.now() - startTime;
     debugInfo.responseTime = responseTime;
@@ -709,11 +698,6 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     
     // Extract the most specific error message
     const specificError = error.sqlMessage || error.message || 'Unknown error occurred';
-    
-    console.error('[getTopOrganizationsByProgramCount] Error:', error);
-    console.error('[getTopOrganizationsByProgramCount] Error message:', specificError);
-    console.error('[getTopOrganizationsByProgramCount] Error stack:', error.stack);
-    console.error('[getTopOrganizationsByProgramCount] Debug info:', JSON.stringify(debugInfo, null, 2));
     
     const responseTime = Date.now() - startTime;
     res.status(500).json({

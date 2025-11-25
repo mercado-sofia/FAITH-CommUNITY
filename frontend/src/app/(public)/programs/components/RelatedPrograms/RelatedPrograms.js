@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import DOMPurify from 'dompurify';
 import styles from './RelatedPrograms.module.css';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
@@ -75,10 +76,21 @@ export default function OtherPrograms({ otherPrograms, organizationName, organiz
                 <div className={styles.otherProgramContent}>
                   <h4 className={styles.otherProgramTitle}>{otherProgram.title}</h4>
                   <p className={styles.otherProgramDescription}>
-                    {otherProgram.description?.length > 100 
-                      ? `${otherProgram.description.substring(0, 100)}...` 
-                      : otherProgram.description
-                    }
+                    {(() => {
+                      if (!otherProgram.description) return '';
+                      // Strip HTML tags for card preview
+                      if (typeof document !== 'undefined') {
+                        const textContent = document.createElement('div');
+                        textContent.innerHTML = DOMPurify.sanitize(otherProgram.description);
+                        const plainText = (textContent.textContent || textContent.innerText || '').trim();
+                        return plainText.length > 100 
+                          ? `${plainText.substring(0, 100)}...` 
+                          : plainText;
+                      }
+                      return otherProgram.description?.length > 100 
+                        ? `${otherProgram.description.substring(0, 100)}...` 
+                        : otherProgram.description;
+                    })()}
                   </p>
                   
                   <div className={styles.otherProgramMeta}>

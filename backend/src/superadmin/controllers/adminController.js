@@ -112,37 +112,10 @@ export const loginAdmin = async (req, res) => {
     const accessCookieOptions = getAccessTokenCookieOptions(req);
     const refreshCookieOptions = getRefreshCookieOptions(req);
     
-    // Debug logging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[loginAdmin] Setting cookies:', {
-        accessTokenLength: accessToken.length,
-        refreshTokenLength: refreshToken.length,
-        accessCookieOptions,
-        refreshCookieOptions,
-        host: req.headers.host,
-        origin: req.headers.origin,
-        'x-forwarded-host': req.headers['x-forwarded-host']
-      });
-      
-      // Log cookie options BEFORE setting to verify maxAge
-      console.log('[loginAdmin] Cookie options BEFORE setting cookies:', {
-        accessCookieOptions,
-        refreshCookieOptions,
-        accessTokenLength: accessToken.length,
-        refreshTokenLength: refreshToken.length
-      });
-    }
-    
     // Set both tokens as httpOnly cookies
     // Express will automatically overwrite existing cookies with the same name
     res.cookie('access_token', accessToken, accessCookieOptions)
     res.cookie('refresh_token', refreshToken, refreshCookieOptions)
-    
-    // Log the actual Set-Cookie headers being sent (development only)
-    if (process.env.NODE_ENV === 'development') {
-      const setCookieHeaders = res.getHeader('Set-Cookie');
-      console.log('[loginAdmin] Set-Cookie headers being sent:', setCookieHeaders);
-    }
     
     res.json({
       message: "Login successful",

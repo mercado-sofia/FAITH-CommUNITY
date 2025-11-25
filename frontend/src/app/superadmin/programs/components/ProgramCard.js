@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { formatProgramDatesForCard } from '@/utils/dateUtils.js'
 import { getProgramStatusByDates } from '@/utils/programStatusUtils'
+import DOMPurify from 'dompurify'
 import StarButton from './StarButton'
 import CollaborationBadge from '@/app/admin/programs/components/CollaborationBadge/CollaborationBadge'
 import styles from './styles/ProgramCard.module.css'
@@ -97,9 +98,21 @@ const ProgramCard = ({
         })()}
         
         <p className={styles.cardDescription}>
-          {program.description?.length > 120 
+          {(() => {
+            if (!program.description) return 'No description provided';
+            // Strip HTML tags for card preview
+            if (typeof document !== 'undefined') {
+              const textContent = document.createElement('div');
+              textContent.innerHTML = DOMPurify.sanitize(program.description);
+              const plainText = (textContent.textContent || textContent.innerText || '').trim();
+              return plainText.length > 120 
+                ? `${plainText.substring(0, 120)}...` 
+                : plainText;
+            }
+            return program.description?.length > 120 
             ? `${program.description.substring(0, 120)}...` 
-            : program.description || 'No description provided'}
+              : program.description || 'No description provided';
+          })()}
         </p>
         
         <div className={styles.cardFooter}>

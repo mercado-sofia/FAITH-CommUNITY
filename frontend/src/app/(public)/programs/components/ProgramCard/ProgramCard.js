@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { formatDateLong } from '@/utils/dateUtils';
 import { UnavailableImagePlaceholder } from '@/components';
+import DOMPurify from 'dompurify';
 import styles from './ProgramCard.module.css';
 import logger from '@/utils/logger';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
@@ -428,7 +429,18 @@ export default function ProgramCard({ project }) {
           <span>{project.orgName}</span>
         </Link>
 
-        <p className={styles.cardDesc}>{project.description}</p>
+        <p className={styles.cardDesc}>
+          {(() => {
+            if (!project.description) return '';
+            // Strip HTML tags for card preview
+            if (typeof document !== 'undefined') {
+              const textContent = document.createElement('div');
+              textContent.innerHTML = DOMPurify.sanitize(project.description);
+              return (textContent.textContent || textContent.innerText || '').trim();
+            }
+            return project.description;
+          })()}
+        </p>
 
         <p className={styles.cardDate}>
           Posted on {formatDateLong(project.date)}

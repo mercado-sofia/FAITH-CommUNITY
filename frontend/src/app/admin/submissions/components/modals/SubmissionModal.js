@@ -4,6 +4,7 @@ import { FaTimes, FaTag, FaCalendar, FaEye, FaExclamationTriangle, FaUsers, FaFi
 import { formatDateShort } from '@/utils/dateUtils.js';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { API_CONFIG } from '../../../utils';
+import DOMPurify from 'dompurify';
 import styles from './SubmissionModal.module.css';
 
 // Note: advocacy and competency are no longer part of the submission workflow
@@ -452,7 +453,12 @@ export default function SubmissionModal({ data, onClose }) {
             {dataObj.description && (
               <div className={styles.programDescription}>
                 <div className={styles.descriptionLabel}>Description</div>
-                <div className={styles.descriptionText}>{dataObj.description}</div>
+                <div 
+                  className={styles.descriptionText}
+                  dangerouslySetInnerHTML={{ 
+                    __html: DOMPurify.sanitize(dataObj.description) 
+                  }} 
+                />
               </div>
             )}
 
@@ -570,7 +576,12 @@ export default function SubmissionModal({ data, onClose }) {
             {dataObj.description && (
               <div className={styles.highlightDetailItem}>
                 <div className={styles.detailLabel}>Description</div>
-                <div className={styles.detailValue}>{dataObj.description}</div>
+                <div 
+                  className={styles.detailValue}
+                  dangerouslySetInnerHTML={{ 
+                    __html: DOMPurify.sanitize(dataObj.description) 
+                  }} 
+                />
               </div>
             )}
 

@@ -102,6 +102,10 @@
   overflow-y: auto;
 }
 
+.editorCompact {
+  min-height: 220px;
+}
+
 .editor:empty:before {
   content: attr(data-placeholder);
   color: #9ca3af;
@@ -229,3 +233,4 @@
   font-size: 20px !important;
   font-weight: 600 !important;
 }
+

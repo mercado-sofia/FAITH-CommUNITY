@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
+import DOMPurify from 'dompurify'
 import StarButton from './StarButton'
 import styles from './styles/HighlightCard.module.css'
 
@@ -20,6 +21,13 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
 
   const truncateText = (text, maxLength = 120) => {
     if (!text) return ''
+    // Strip HTML tags for preview
+    if (typeof document !== 'undefined') {
+      const textContent = document.createElement('div')
+      textContent.innerHTML = DOMPurify.sanitize(text)
+      const plainText = (textContent.textContent || textContent.innerText || '').trim()
+      return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText
+    }
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
   }
 
@@ -277,6 +285,14 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
               ? highlightText(highlight.program_title, searchQuery)
               : (highlight.program_title || `Program ID: ${highlight.program_id}`)
             }
+          </p>
+        )}
+
+        {/* Year - Display if available */}
+        {highlight.year && (
+          <p className={styles.cardProgram} style={{ marginTop: '4px' }}>
+            <span className={styles.programLabel}>Year:</span>{' '}
+            {highlight.year}
           </p>
         )}
         

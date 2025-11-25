@@ -58,16 +58,6 @@ export const loginSuperadmin = async (req, res) => {
       [trimmedEmail],
     )
 
-    // Detailed logging for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[loginSuperadmin] Database query result:', {
-        trimmedEmail,
-        foundRows: superadminRows.length,
-        hasPassword: superadminRows.length > 0 ? !!superadminRows[0].password : false,
-        passwordLength: superadminRows.length > 0 && superadminRows[0].password ? superadminRows[0].password.length : 0,
-        inputPasswordLength: password ? password.length : 0
-      });
-    }
 
     if (superadminRows.length === 0) {
       logInfo('Superadmin login failed - not found', { 
@@ -106,14 +96,6 @@ export const loginSuperadmin = async (req, res) => {
     }
     
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[loginSuperadmin] Password comparison result:', {
-        isValid: isPasswordValid,
-        inputPasswordLength: password ? password.length : 0,
-        hashLength: superadmin.password ? superadmin.password.length : 0
-      });
-    }
     
       if (!isPasswordValid) {
         logInfo('Superadmin login failed - invalid password', { 
@@ -207,13 +189,6 @@ export const loginSuperadmin = async (req, res) => {
     })
   } catch (err) {
     logError('Superadmin login error', err, { context: 'superadmin_auth', email: req.body?.email });
-    console.error('Superadmin login error details:', {
-      message: err.message,
-      code: err.code,
-      sqlState: err.sqlState,
-      sqlMessage: err.sqlMessage,
-      stack: err.stack
-    });
     res.status(500).json({ 
       error: "Internal server error during login",
       message: process.env.NODE_ENV === 'development' ? err.message : undefined

@@ -12,7 +12,6 @@ import pinoHttp from "pino-http"
 import path from "path"
 import { fileURLToPath } from "url"
 import { createServer } from "http"
-import { initializeSocket, getSocketIO } from "./src/utils/socket.js"
 
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
@@ -28,7 +27,7 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 8080
 
-// Create HTTP server for Socket.io
+// Create HTTP server
 const httpServer = createServer(app)
 
 // Trust proxy - Required when behind a reverse proxy (Railway, Heroku, etc.)
@@ -357,9 +356,6 @@ let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
 let initialScheduledNewsTimeout = null;
 
-// Initialize Socket.io
-initializeSocket(httpServer);
-
 httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
     console.log(`Server running at http://localhost:${PORT}`)
@@ -543,7 +539,7 @@ httpServer.listen(PORT, async () => {
 })
 
 // Graceful shutdown handler
-// Clean up intervals, timeouts, HTTP server, and Socket.io on server shutdown
+// Clean up intervals, timeouts, and HTTP server on server shutdown
 const gracefulShutdown = (signal) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
   
@@ -592,27 +588,8 @@ const gracefulShutdown = (signal) => {
     });
   };
   
-  // Close Socket.io server first (disconnect all clients gracefully)
-  // Socket.io v4.8.1 close() returns a Promise, not accepting a callback
-  const io = getSocketIO();
-  if (io) {
-    console.log('Closing Socket.io server...');
-    // Use Promise-based API for Socket.io v4
-    io.close()
-      .then(() => {
-        console.log('Socket.io server closed.');
-        // After Socket.io is closed, close HTTP server
-        closeHttpServer();
-      })
-      .catch((error) => {
-        console.error('Error closing Socket.io server:', error);
-        // Continue with HTTP server closure even if Socket.io fails
-        closeHttpServer();
-      });
-  } else {
-    // If Socket.io is not initialized, close HTTP server directly
-    closeHttpServer();
-  }
+  // Close HTTP server
+  closeHttpServer();
 };
 
 // Handle graceful shutdown signals

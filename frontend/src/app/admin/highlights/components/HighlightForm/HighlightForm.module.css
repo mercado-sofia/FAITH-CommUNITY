@@ -1,6 +1,74 @@
 /* Form */
 .form {
   width: 100%;
+  padding-bottom: 3rem;
+}
+
+/* Form Header */
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  flex: 1;
+}
+
+.headerLeft h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 28px;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: #1CBFA4;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease;
+  width: fit-content;
+}
+
+.backLink:hover:not(:disabled) {
+  color: #1D9782;
+  text-decoration: underline;
+}
+
+.backLink:active {
+  color: #1a8b7a;
+}
+
+.backLink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .formLayout {
@@ -55,6 +123,10 @@
   gap: 0.5rem;
 }
 
+.fieldGroup + .fieldGroup {
+  margin-top: 24px;
+}
+
 .label {
   font-size: 14px;
   font-weight: 600;
@@ -102,6 +174,11 @@
 .inputError:focus {
   border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.editorError {
+  border: 1px solid #dc2626;
+  border-radius: 8px;
 }
 
 .textarea {
@@ -568,37 +645,6 @@
 
 .previewSize {
   font-weight: 500;
-}
-
-/* Form Actions */
-.formActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-  justify-content: flex-end;
-}
-
-.cancelButton {
-  padding: 12px 24px;
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: var(--font-inter);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.cancelButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .submitButton {

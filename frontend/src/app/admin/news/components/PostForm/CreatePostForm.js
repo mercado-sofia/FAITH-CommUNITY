@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { FiUpload } from 'react-icons/fi';
 import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
-import ContentEditor from '../ContentEditor/ContentEditor';
+import { ContentEditor } from '@/app/admin/components';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import UnsaveChangesModal from '../UnsaveChangesModal/UnsaveChangesModal';
 import DOMPurify from 'dompurify';

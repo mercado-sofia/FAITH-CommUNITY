@@ -7,6 +7,7 @@ import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveColla
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
 import { getStatusDisplayText } from '@/utils/collaborationStatusUtils';
+import DOMPurify from 'dompurify';
 import styles from './ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -267,9 +268,14 @@ const ViewDetailsModal = ({
             {/* Description - Full Width Below */}
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Description</h4>
-              <p className={styles.description}>
-                {mode === 'collaboration' ? (data.program_description || 'No description provided') : (data.description || 'No description provided')}
-              </p>
+              <div 
+                className={styles.description}
+                dangerouslySetInnerHTML={{ 
+                  __html: (mode === 'collaboration' ? data.program_description : data.description)
+                    ? DOMPurify.sanitize(mode === 'collaboration' ? data.program_description : data.description)
+                    : '<p>No description provided</p>' 
+                }} 
+              />
             </div>
 
             {/* Collaboration Section - only show in view mode */}

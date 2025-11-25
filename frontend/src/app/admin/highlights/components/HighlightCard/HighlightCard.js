@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
+import DOMPurify from 'dompurify';
 import styles from './HighlightCard.module.css';
 
 export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
@@ -20,6 +21,13 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
 
   const truncateText = (text, maxLength = 120) => {
     if (!text) return '';
+    // Strip HTML tags for preview
+    if (typeof document !== 'undefined') {
+      const textContent = document.createElement('div');
+      textContent.innerHTML = DOMPurify.sanitize(text);
+      const plainText = (textContent.textContent || textContent.innerText || '').trim();
+      return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText;
+    }
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
@@ -104,6 +112,16 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
             <div className={styles.metaItem} style={{ fontSize: '0.875rem', color: '#6b7280' }}>
               <span style={{ fontWeight: '600', color: '#4b5563' }}>Associated Program:</span>{' '}
               {highlight.program_title || `Program ID: ${highlight.program_id}`}
+            </div>
+          </div>
+        )}
+
+        {/* Year - Display if available */}
+        {highlight.year && (
+          <div className={styles.meta} style={{ marginTop: '4px', marginBottom: '8px' }}>
+            <div className={styles.metaItem} style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+              <span style={{ fontWeight: '600', color: '#4b5563' }}>Year:</span>{' '}
+              {highlight.year}
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { formatDateShort } from '@/utils/dateUtils'
+import DOMPurify from 'dompurify'
 import styles from './StarModal.module.css'
 
 // Star Modal Component
@@ -257,9 +258,12 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
             {highlight.description && (
               <div className={styles.modalSection}>
                 <div className={styles.descriptionContainer}>
-                  <p className={styles.descriptionText}>
-                    {highlight.description}
-                  </p>
+                  <div 
+                    className={styles.descriptionText}
+                    dangerouslySetInnerHTML={{ 
+                      __html: DOMPurify.sanitize(highlight.description) 
+                    }} 
+                  />
                 </div>
               </div>
             )}
@@ -395,6 +399,15 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                       {highlight.organization_name}
                       {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
                     </span>
+                  </div>
+                )}
+                {highlight.year && (
+                  <div className={styles.metaItem}>
+                    <svg className={styles.metaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className={styles.metaLabel}>Year:</span>
+                    <span className={styles.metaValue}>{highlight.year}</span>
                   </div>
                 )}
                 {formattedDate && (

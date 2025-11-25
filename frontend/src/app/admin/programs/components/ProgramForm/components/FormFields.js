@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import DateSelectionField from '../../DatePicker/DateSelectionField';
+import { ContentEditor } from '@/app/admin/components';
+import DOMPurify from 'dompurify';
 import styles from '../ProgramForm.module.css';
 
 const FormFields = ({
@@ -79,16 +81,21 @@ const FormFields = ({
         <label className={styles.label}>
           Description
         </label>
-        <textarea
-          className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
+        <div className={errors.description ? styles.editorError : ''}>
+          <ContentEditor
           value={formData.description}
-          onChange={(e) => {
-            onFormDataChange({ description: e.target.value });
+            onChange={(value) => {
+              onFormDataChange({ description: value });
             if (errors.description) onClearError('description');
           }}
           placeholder="Enter program description"
-          rows={4}
+            showHeadings={false}
+            showAlignment={false}
+            showLink={false}
+            showQuote={false}
+            compact={true}
         />
+        </div>
         {errors.description && <span className={styles.errorText}>{errors.description}</span>}
       </div>
 

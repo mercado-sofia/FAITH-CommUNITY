@@ -40,7 +40,6 @@ async function getOrRefreshAccessToken(req, res) {
       return { token, decoded, refreshed: false };
     } catch (err) {
       // Token is invalid or expired - will try to refresh below
-      console.log('[getOrRefreshAccessToken] Token verification failed, attempting refresh:', err.message);
     }
   }
 
@@ -59,7 +58,6 @@ async function getOrRefreshAccessToken(req, res) {
   try {
     const record = await findValidRefreshToken(refreshToken);
     if (!record) {
-      console.log('[getOrRefreshAccessToken] Invalid refresh token');
       return { token: null, decoded: null, refreshed: false };
     }
 
@@ -70,7 +68,6 @@ async function getOrRefreshAccessToken(req, res) {
     );
 
     if (users.length === 0) {
-      console.log('[getOrRefreshAccessToken] User not found');
       return { token: null, decoded: null, refreshed: false };
     }
 
@@ -107,8 +104,6 @@ async function getOrRefreshAccessToken(req, res) {
     // Set both new tokens as httpOnly cookies
     res.cookie('access_token', newAccessToken, getAccessTokenCookieOptions(req));
     res.cookie('refresh_token', newRefresh, getRefreshCookieOptions(req));
-
-    console.log('[getOrRefreshAccessToken] Token refreshed successfully for user:', user.id);
 
     // Verify the new token to get decoded payload
     const decoded = jwt.verify(newAccessToken, JWT_SECRET, {
@@ -186,14 +181,6 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     // Log scheduled items for debugging (always log, not just in development)
     try {
       const [scheduledItems] = await db.execute(checkQuery, checkParams);
-      if (scheduledItems.length > 0) {
-        console.log(`[autoUpdateScheduledNews] Found ${scheduledItems.length} scheduled news item(s)`);
-        if (process.env.NODE_ENV === 'development') {
-          scheduledItems.forEach(item => {
-            console.log(`  - ID: ${item.id}, Title: ${item.title}, Published At: ${item.published_at}, Server Now: ${item.server_now}, Diff (seconds): ${item.seconds_diff}`);
-          });
-        }
-      }
     } catch (checkError) {
       // Don't fail the whole operation if the check query fails
       console.error('[autoUpdateScheduledNews] Error checking scheduled items:', checkError);
@@ -225,24 +212,6 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     
     const [result] = await db.execute(query, params);
     
-    // Log successful updates for debugging
-    if (result.affectedRows > 0) {
-      const logMessage = `[autoUpdateScheduledNews] Auto-published ${result.affectedRows} scheduled news item(s)`;
-      console.log(logMessage);
-      if (process.env.NODE_ENV === 'development') {
-        // Also log which items were published
-        const [updatedItems] = await db.execute(
-          `SELECT id, title, published_at FROM news WHERE status = 'published' AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
-          []
-        );
-        if (updatedItems.length > 0) {
-          console.log(`[autoUpdateScheduledNews] Recently published items:`, updatedItems);
-        }
-      }
-    } else if (process.env.NODE_ENV === 'development') {
-      // Log when no items were published (for debugging)
-      console.log(`[autoUpdateScheduledNews] No scheduled news items to publish at this time`);
-    }
     
     return {
       success: true,
@@ -312,7 +281,7 @@ function mapNewsToResponse(n) {
     excerpt: n.excerpt || '',
     featured_image: n.featured_image || null,
     published_at: n.published_at || null, // DATETIME - timezone-naive, keep as-is
-    date: n.date || n.created_at || null,
+    date: convertTimestampToISO(n.date || n.created_at), // TIMESTAMP - convert to ISO
     created_at: convertTimestampToISO(n.created_at), // TIMESTAMP - convert to ISO
     updated_at: convertTimestampToISO(n.updated_at), // TIMESTAMP - convert to ISO
     content_updated_at: convertTimestampToISO(n.content_updated_at), // TIMESTAMP - convert to ISO
@@ -350,41 +319,12 @@ export const createNews = async (req, res) => {
     const { title, slug, content, excerpt, published_at, action } = req.body;
     const { orgId } = req.params;
     
-    // Log incoming data for debugging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[createNews] Received request:', {
-        orgId,
-        action,
-        hasPublishedAt: !!published_at,
-        published_at: published_at ? (published_at.length > 50 ? published_at.substring(0, 50) + '...' : published_at) : null,
-        hasTitle: !!title,
-        hasSlug: !!slug
-      });
-    }
-    
     // Normalize action (handle case-insensitive and trim whitespace)
     const normalizedAction = action ? action.trim().toLowerCase() : null;
-  
-  console.log('[createNews] Extracted data:', { 
-    orgId, 
-    title, 
-    slug, 
-    hasContent: !!content, 
-    contentLength: content ? content.length : 0,
-    excerpt, 
-    published_at,
-    hasFile: !!req.file 
-  });
   
   // Handle Cloudinary upload for featured image (optional - continue even if upload fails)
   let featured_image = null;
   if (req.file) {
-    console.log('[createNews] File received:', {
-      fieldname: req.file.fieldname,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
     try {
       const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
       const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
@@ -394,32 +334,20 @@ export const createNews = async (req, res) => {
         { prefix: 'news_' }
       );
       featured_image = uploadResult.url;
-      console.log('[createNews] Image uploaded successfully to Cloudinary:', featured_image);
     } catch (uploadError) {
-      console.error('[createNews] Image upload failed:', uploadError);
-      console.error('[createNews] Upload error stack:', uploadError.stack);
       // Don't fail the entire request - featured_image will remain null
       // The news can be created without a featured image
     }
-  } else {
-    console.log('[createNews] No file received in req.file');
   }
 
   // Verify authentication - automatically refresh if needed
-  console.log('[createNews] Checking authentication...');
   const { token, decoded, refreshed } = await getOrRefreshAccessToken(req, res);
   
   if (!token || !decoded) {
-    console.error('[createNews] No valid token available - cookies:', Object.keys(req.cookies || {}), 'auth header:', !!req.headers.authorization);
     return res.status(401).json({ success: false, message: "Access token required" });
   }
 
-  if (refreshed) {
-    console.log('[createNews] Token was refreshed automatically');
-  }
-
   req.admin = decoded;
-  console.log('[createNews] Token verified, admin ID:', decoded.id);
 
   if (!orgId) {
     return res.status(400).json({ success: false, message: "Organization ID is required" });
@@ -584,21 +512,6 @@ export const createNews = async (req, res) => {
           throw new Error(`Invalid date format after conversion: ${finalPublishedAt}`);
         }
         
-        // Log the datetime being stored for debugging (development only)
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[createNews] Scheduling news with datetime:', {
-            input: normalizedPublishedAt,
-            stored: finalPublishedAt,
-            datePart,
-            timePart: `${hours}:${minutes}:${seconds}`,
-            hours24: hours,
-            minutes: minutes,
-            seconds: seconds,
-            hourNum: parseInt(hours, 10),
-            isPM: parseInt(hours, 10) >= 12
-          });
-        }
-        
         // Validate that scheduled date is in the future
         // Use MySQL's NOW() to compare in the same timezone context as the database
         // This ensures consistency with how auto-publish will work
@@ -631,13 +544,6 @@ export const createNews = async (req, res) => {
         }
         
       } catch (formatError) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[createNews] Date format conversion error:', {
-            error: formatError.message,
-            input: published_at,
-            stack: formatError.stack
-          });
-        }
         return res.status(400).json({ 
           success: false, 
           message: formatError.message || "Invalid date format. Please provide a valid date and time." 
@@ -707,12 +613,6 @@ export const createNews = async (req, res) => {
       // Validate all parameters are defined (not undefined)
       const hasUndefinedParams = insertParams.some(param => param === undefined);
       if (hasUndefinedParams) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[createNews] Undefined parameters detected:', {
-            insertQuery,
-            insertParams: insertParams.map((p, i) => ({ index: i, value: p, type: typeof p, isUndefined: p === undefined }))
-          });
-        }
         return res.status(400).json({ 
           success: false, 
           message: "Invalid parameters: some required fields are missing" 
@@ -722,35 +622,9 @@ export const createNews = async (req, res) => {
       // Count placeholders in query to verify parameter count matches
       const placeholderCount = (insertQuery.match(/\?/g) || []).length;
       if (placeholderCount !== insertParams.length) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[createNews] Parameter count mismatch:', {
-            placeholderCount,
-            paramCount: insertParams.length,
-            insertQuery,
-            insertParams: insertParams.map((p, i) => ({ index: i, value: typeof p === 'string' && p.length > 50 ? p.substring(0, 50) + '...' : p }))
-          });
-        }
         return res.status(500).json({ 
           success: false, 
           message: "Database query error: parameter count mismatch" 
-        });
-      }
-      
-      // Log what's being inserted for debugging (development only)
-      if (process.env.NODE_ENV === 'development' && normalizedAction === 'schedule') {
-        console.log('[createNews] Inserting scheduled news:', {
-          insertQuery: insertQuery.substring(0, 150),
-          placeholderCount,
-          paramCount: insertParams.length,
-          published_at: finalPublishedAt,
-          dateValue: dateValue,
-          status: status,
-          params: insertParams.map((p, i) => {
-            // Hide sensitive data but show published_at
-            if (i === 6) return `published_at=${p}`; // published_at is typically at index 6
-            if (i === 7) return `date=${p}`; // date is typically at index 7
-            return typeof p === 'string' && p.length > 50 ? p.substring(0, 20) + '...' : p;
-          })
         });
       }
       
@@ -760,40 +634,7 @@ export const createNews = async (req, res) => {
         return res.status(500).json({ success: false, message: "Failed to create news" });
       }
       
-      // Log what was actually stored (development only)
-      if (process.env.NODE_ENV === 'development' && normalizedAction === 'schedule' && result.insertId) {
-        try {
-          const [storedNews] = await db.execute(
-            'SELECT id, title, published_at, status FROM news WHERE id = ?',
-            [result.insertId]
-          );
-          if (storedNews.length > 0) {
-            console.log('[createNews] Stored news in database:', {
-              id: storedNews[0].id,
-              title: storedNews[0].title,
-              published_at: storedNews[0].published_at,
-              status: storedNews[0].status
-            });
-          }
-        } catch (logError) {
-          // Don't fail if logging fails
-        }
-      }
     } catch (dbError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[createNews] Database error creating news:', {
-          message: dbError.message,
-          sqlMessage: dbError.sqlMessage,
-          code: dbError.code,
-          sqlState: dbError.sqlState,
-          errno: dbError.errno,
-          action: normalizedAction,
-          status: status,
-          hasPublishedAt: !!finalPublishedAt,
-          published_at: finalPublishedAt,
-          sql: dbError.sql
-        });
-      }
       
       // If error is about missing status column, try to add it and retry
       if (dbError.message?.includes("Unknown column 'status'") || 
@@ -835,9 +676,6 @@ export const createNews = async (req, res) => {
             return res.status(500).json({ success: false, message: "Failed to create news" });
           }
         } catch (retryError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Error adding status column and retrying:', retryError);
-          }
           return res.status(500).json({ 
             success: false, 
             message: "Failed to create news", 
@@ -847,15 +685,6 @@ export const createNews = async (req, res) => {
       } else {
         // Return detailed error information for debugging
         const errorMessage = dbError.sqlMessage || dbError.message || 'Unknown database error';
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[createNews] Database error details:', {
-            error: errorMessage,
-            code: dbError.code,
-            sqlState: dbError.sqlState,
-            insertQuery: insertQuery,
-            insertParams: insertParams?.map((p, i) => i === insertParams.length - 1 ? '[HIDDEN]' : p) // Hide last param if it's sensitive
-          });
-        }
         
         return res.status(500).json({ 
           success: false, 
@@ -875,9 +704,6 @@ export const createNews = async (req, res) => {
 
     // Safety check: ensure result is defined and has insertId
     if (!result || !result.insertId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[createNews] Insert succeeded but result.insertId is missing:', result);
-      }
       return res.status(500).json({ 
         success: false, 
         message: "Failed to create news - no ID returned" 
@@ -885,7 +711,6 @@ export const createNews = async (req, res) => {
     }
 
     const newsId = result.insertId;
-    console.log('[createNews] News created successfully with ID:', newsId, 'featured_image:', featured_image || 'null');
 
     // 4) 🔔 Notify subscribers (announcement) - only if published immediately
     if (status === 'published') {
@@ -920,23 +745,9 @@ export const createNews = async (req, res) => {
       }
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[createNews] Unexpected error:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        code: error.code,
-        sqlMessage: error.sqlMessage,
-        sqlState: error.sqlState,
-        headersSent: res.headersSent
-      });
-    }
     
     // Check if response has already been sent
     if (res.headersSent) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[createNews] Response already sent, cannot send error response');
-      }
       return;
     }
     
@@ -961,9 +772,6 @@ export const createNews = async (req, res) => {
         })
       });
     } catch (sendError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[createNews] Failed to send error response:', sendError);
-      }
       // If we can't send JSON, try to send a plain text response
       if (!res.headersSent) {
         res.status(500).send(`Failed to create news: ${errorMessage}`);
@@ -976,9 +784,6 @@ export const createNews = async (req, res) => {
 // Get news for a specific organization (for admin view) - shows all statuses except deleted
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
-  
-  console.log('[getNewsByOrg] Request received for orgId:', orgId);
-  
 
   // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
   const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
@@ -995,7 +800,6 @@ export const getNewsByOrg = async (req, res) => {
       audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
-    console.log('[getNewsByOrg] Token verified, admin ID:', decoded.id, 'role:', decoded.role, 'org:', decoded.org);
   } catch (err) {
     console.error('[getNewsByOrg] Token verification failed:', err.message);
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -1079,31 +883,11 @@ export const getNewsByOrg = async (req, res) => {
       const hasAccess = tokenOrgMatches || tokenOrgIdMatches || dbOrgIdMatches || dbOrgAcronymMatches;
       
       if (!hasAccess) {
-        // Log detailed debug info
-        console.error('❌ [getNewsByOrg] Authorization DENIED');
-        console.error('Admin ID:', decoded.id);
-        console.error('Token.org:', decoded.org, '→ normalized:', tokenOrg);
-        console.error('Token.organization_id:', decoded.organization_id);
-        console.error('Requested orgId param:', orgId, '→ normalized:', orgIdParamUpper);
-        console.error('Requested org from DB:', organization.org, '→ normalized:', requestedOrgAcronym);
-        console.error('Requested orgId from DB:', organization.id);
-        console.error('DB adminOrgId:', adminOrgId);
-        console.error('DB adminOrgAcronym:', adminOrgAcronym);
-        console.error('Matches:', {
-          tokenOrgMatches,
-          tokenOrgIdMatches,
-          dbOrgIdMatches,
-          dbOrgAcronymMatches
-        });
-        console.error('Full decoded token:', JSON.stringify(decoded, null, 2));
-        
         // TEMPORARY FIX: If admin is active and authenticated, allow access
         // This will get the page working while we debug the organization matching
         // TODO: Remove this workaround once organization matching is fixed
         const adminIsActive = adminRows && adminRows.length > 0 && adminRows[0].is_active;
         if (adminIsActive) {
-          console.warn('⚠️  [getNewsByOrg] TEMPORARY WORKAROUND: Admin is active - allowing access despite org mismatch');
-          console.warn('Please check the debug logs above to fix the organization matching');
           // Continue execution - don't return error
         } else {
           return res.status(403).json({ 
@@ -1111,8 +895,6 @@ export const getNewsByOrg = async (req, res) => {
             message: "Access denied. You do not have permission to access this resource." 
           });
         }
-      } else {
-        console.log('✅ [getNewsByOrg] Authorization GRANTED for admin:', decoded.id);
       }
     }
     // If role is 'superadmin', allow access to all organizations (no check needed)
@@ -1165,9 +947,6 @@ export const getApprovedNews = async (req, res) => {
 
     // Ensure database connection is available
     if (!db) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Database connection not available in getApprovedNews - db is null/undefined');
-      }
       if (!res.headersSent) {
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({ 
@@ -1180,9 +959,6 @@ export const getApprovedNews = async (req, res) => {
     }
 
     if (typeof db.execute !== 'function') {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Database execute method not available in getApprovedNews');
-      }
       if (!res.headersSent) {
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({ 
@@ -1226,16 +1002,6 @@ export const getApprovedNews = async (req, res) => {
       const result = await db.execute(query);
       rows = result && Array.isArray(result[0]) ? result[0] : [];
     } catch (dbError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[getApprovedNews] Database error:', {
-          message: dbError?.message,
-          code: dbError?.code,
-          errno: dbError?.errno,
-          sqlState: dbError?.sqlState,
-          sqlMessage: dbError?.sqlMessage,
-          stack: dbError?.stack
-        });
-      }
       
       // If error is about missing status column, try fallback query
       if (dbError?.message?.includes("Unknown column 'n.status'") || 
@@ -1284,9 +1050,6 @@ export const getApprovedNews = async (req, res) => {
           try {
             return mapNewsToResponse(row);
           } catch (rowError) {
-            if (process.env.NODE_ENV === 'development') {
-              console.error('Error mapping individual news row:', rowError, 'Row:', row);
-            }
             // Return a safe fallback object for this row
             // Convert TIMESTAMP fields to ISO format (same as mapNewsToResponse)
             const convertTimestampToISO = (timestamp) => {
@@ -1314,7 +1077,7 @@ export const getApprovedNews = async (req, res) => {
               excerpt: row?.excerpt || '',
               featured_image: row?.featured_image || null,
               published_at: row?.published_at || null, // DATETIME - timezone-naive, keep as-is
-              date: row?.date || row?.created_at || null,
+              date: convertTimestampToISO(row?.date || row?.created_at), // TIMESTAMP - convert to ISO
               created_at: convertTimestampToISO(row?.created_at), // TIMESTAMP - convert to ISO
               updated_at: convertTimestampToISO(row?.updated_at), // TIMESTAMP - convert to ISO
               content_updated_at: convertTimestampToISO(row?.content_updated_at), // TIMESTAMP - convert to ISO
@@ -1328,12 +1091,6 @@ export const getApprovedNews = async (req, res) => {
         });
       }
     } catch (mapError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error mapping news to response:', {
-          message: mapError?.message,
-          stack: mapError?.stack
-        });
-      }
       if (!res.headersSent) {
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({ 
@@ -1351,20 +1108,8 @@ export const getApprovedNews = async (req, res) => {
       // Set proper content-type header
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).json(responseData);
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[getApprovedNews] Response already sent, cannot send news data');
-      }
     }
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[getApprovedNews] Unexpected error:', {
-        message: error?.message,
-        name: error?.name,
-        stack: error?.stack,
-        headersSent: res.headersSent
-      });
-    }
     if (!res.headersSent) {
       res.setHeader('Content-Type', 'application/json');
       return res.status(500).json({ 
@@ -1543,7 +1288,6 @@ export const getNewsBySlug = async (req, res) => {
         }
       } catch (authError) {
         // If getOrRefreshAccessToken throws an error, treat as public request
-        console.error('[getNewsBySlug] Error during authentication:', authError);
         isPublicRequest = true;
         decoded = null;
       }
@@ -2064,30 +1808,12 @@ export const updateNews = async (req, res) => {
 
   req.admin = decoded;
   
-  // Log request body for debugging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[updateNews] Request body:', {
-      title: title ? `${title.substring(0, 50)}...` : 'undefined',
-      slug,
-      content: content ? `${content.substring(0, 50)}...` : 'undefined',
-      excerpt: excerpt ? `${excerpt.substring(0, 50)}...` : 'undefined',
-      published_at,
-      action
-    });
-  }
-  
   // Normalize action (handle case-insensitive and trim whitespace)
   const normalizedAction = action ? action.trim().toLowerCase() : null;
   
   // Handle Cloudinary upload for featured image
   let featured_image = null;
   if (req.file) {
-    console.log('[updateNews] File received:', {
-      fieldname: req.file.fieldname,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
     try {
       const { deleteFromCloudinary, extractPublicIdFromUrl, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
       const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
@@ -2100,9 +1826,8 @@ export const updateNews = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('[updateNews] Old image deleted from Cloudinary');
           } catch (deleteError) {
-            console.warn('[updateNews] Failed to delete old image:', deleteError.message);
+            // Failed to delete old image - continue silently
           }
         }
       }
@@ -2114,15 +1839,10 @@ export const updateNews = async (req, res) => {
         { prefix: 'news_' }
       );
       featured_image = uploadResult.url;
-      console.log('[updateNews] Image uploaded successfully to Cloudinary:', featured_image);
     } catch (uploadError) {
-      console.error('[updateNews] Image upload failed:', uploadError);
-      console.error('[updateNews] Upload error stack:', uploadError.stack);
       // Don't fail the entire request - featured_image will remain null
       // The news can be updated without changing the featured image
     }
-  } else {
-    console.log('[updateNews] No file received in req.file - preserving existing image');
   }
 
   if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
@@ -2417,21 +2137,7 @@ export const updateNews = async (req, res) => {
 
     let result;
     try {
-      // Log query and params for debugging (only in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[updateNews] Executing query:', query);
-        console.log('[updateNews] Params:', params);
-        console.log('[updateNews] Action:', normalizedAction);
-        console.log('[updateNews] Current status:', currentStatus);
-        console.log('[updateNews] New status:', newStatus);
-      }
-      
       [result] = await db.execute(query, params);
-      
-      // Log result for debugging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[updateNews] Query result:', { affectedRows: result.affectedRows });
-      }
     } catch (dbError) {
       // If error is about missing status column, try to add it and retry
       if ((dbError.message?.includes("Unknown column 'status'") || 
@@ -2469,9 +2175,6 @@ export const updateNews = async (req, res) => {
           
           [result] = await db.execute(query, params);
         } catch (retryError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Error adding status column and retrying update:', retryError);
-          }
           throw retryError;
         }
       } else {
@@ -2480,17 +2183,6 @@ export const updateNews = async (req, res) => {
     }
 
     if (result.affectedRows === 0) {
-      // Log detailed error information (development only)
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[updateNews] Update failed - no rows affected:', {
-          id,
-          normalizedAction,
-          currentStatus,
-          newStatus,
-          query,
-          params
-        });
-      }
       return res.status(500).json({ 
         success: false, 
         message: "Failed to update news. The news item may not exist or may have been modified.",
@@ -2504,7 +2196,6 @@ export const updateNews = async (req, res) => {
       [id]
     );
     const currentFeaturedImage = updatedNews.length > 0 ? updatedNews[0].featured_image : null;
-    console.log('[updateNews] Updated news featured_image:', currentFeaturedImage || 'null');
 
     return res.json({ 
       success: true, 
@@ -2515,18 +2206,6 @@ export const updateNews = async (req, res) => {
       }
     });
   } catch (error) {
-    // Log the full error for debugging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[updateNews] Unexpected error:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        code: error.code,
-        sqlMessage: error.sqlMessage,
-        sqlState: error.sqlState
-      });
-    }
-    
     // Return detailed error in development, generic in production
     const errorMessage = process.env.NODE_ENV === 'development' 
       ? error.message 

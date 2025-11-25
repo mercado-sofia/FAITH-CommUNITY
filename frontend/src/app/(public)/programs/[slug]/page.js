@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/ui/Loader/Loader';
 import { ContactFormModal } from '../../../../components/ui';
@@ -477,7 +478,14 @@ export default function ProgramDetailsPage() {
                 
                 <div className={styles.programDescription}>
                   <h3 className={styles.descriptionTitle}>About This Program</h3>
-                  <p className={styles.descriptionText}>{program.description}</p>
+                  <div 
+                    className={styles.descriptionText}
+                    dangerouslySetInnerHTML={{ 
+                      __html: program.description 
+                        ? DOMPurify.sanitize(program.description) 
+                        : '<p>No description available</p>' 
+                    }} 
+                  />
                 </div>
                 
                 {/* Apply Button - positioned after description */}

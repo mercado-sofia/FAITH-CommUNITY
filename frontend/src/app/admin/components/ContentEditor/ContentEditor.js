@@ -4,7 +4,16 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { FaBold, FaItalic, FaUnderline, FaStrikethrough, FaLink, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight } from 'react-icons/fa';
 import styles from './ContentEditor.module.css';
 
-const ContentEditor = ({ value, onChange, placeholder = "Write your content here..." }) => {
+const ContentEditor = ({ 
+  value, 
+  onChange, 
+  placeholder = "Write your content here...",
+  showHeadings = true,
+  showAlignment = true,
+  showLink = true,
+  showQuote = true,
+  compact = false
+}) => {
   const editorRef = useRef();
   const [activeFormats, setActiveFormats] = useState(new Set());
   const [activeHeading, setActiveHeading] = useState(null); // null, 'h1', 'h2', or 'h3'
@@ -65,48 +74,6 @@ const ContentEditor = ({ value, onChange, placeholder = "Write your content here
     }
   };
 
-  const updateCurrentFormat = () => {
-    if (!editorRef.current) return;
-    
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) {
-      setActiveHeading(null);
-      return;
-    }
-    
-    const range = selection.getRangeAt(0);
-    let element = range.commonAncestorContainer;
-    
-    // If it's a text node, get its parent element
-    if (element.nodeType === Node.TEXT_NODE) {
-      element = element.parentElement;
-    }
-    
-    // Find the closest block element within the editor
-    while (element && element !== editorRef.current && editorRef.current.contains(element)) {
-      if (element.tagName) {
-        const tagName = element.tagName.toLowerCase();
-        switch (tagName) {
-          case 'h1':
-            setActiveHeading('h1');
-            return;
-          case 'h2':
-            setActiveHeading('h2');
-            return;
-          case 'h3':
-            setActiveHeading('h3');
-            return;
-          default:
-            break;
-        }
-      }
-      element = element.parentElement;
-    }
-    
-    // Default to null (normal text) if no heading found
-    setActiveHeading(null);
-  };
-
   const handleContentChange = () => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
@@ -139,10 +106,6 @@ const ContentEditor = ({ value, onChange, placeholder = "Write your content here
     if (url) {
       executeCommand('createLink', url);
     }
-  };
-
-  const insertHeading = (level) => {
-    executeCommand('formatBlock', `h${level}`);
   };
 
   const formatButtons = [
@@ -212,20 +175,22 @@ const ContentEditor = ({ value, onChange, placeholder = "Write your content here
   return (
     <div className={styles.editorWrapper}>
       <div className={styles.toolbar}>
-        <div className={styles.toolbarSection}>
-          {/* Heading Buttons */}
-          {headingButtons.map((button, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => handleHeadingSelect(button.type)}
-              className={`${styles.toolbarButton} ${styles.headingButton} ${activeHeading === button.type ? styles.active : ''}`}
-              title={button.title}
-            >
-              {button.label}
-            </button>
-          ))}
-        </div>
+        {showHeadings && (
+          <div className={styles.toolbarSection}>
+            {/* Heading Buttons */}
+            {headingButtons.map((button, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleHeadingSelect(button.type)}
+                className={`${styles.toolbarButton} ${styles.headingButton} ${activeHeading === button.type ? styles.active : ''}`}
+                title={button.title}
+              >
+                {button.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className={styles.toolbarSection}>
           {formatButtons.map((button, index) => (
@@ -255,44 +220,52 @@ const ContentEditor = ({ value, onChange, placeholder = "Write your content here
           ))}
         </div>
 
-        <div className={styles.toolbarSection}>
-          {alignButtons.map((button, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => executeCommand(button.command)}
-              className={`${styles.toolbarButton} ${activeFormats.has(button.command) ? styles.active : ''}`}
-              title={button.title}
-            >
-              <button.icon />
-            </button>
-          ))}
-        </div>
+        {showAlignment && (
+          <div className={styles.toolbarSection}>
+            {alignButtons.map((button, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => executeCommand(button.command)}
+                className={`${styles.toolbarButton} ${activeFormats.has(button.command) ? styles.active : ''}`}
+                title={button.title}
+              >
+                <button.icon />
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className={styles.toolbarSection}>
-          <button
-            type="button"
-            onClick={insertLink}
-            className={styles.toolbarButton}
-            title="Insert Link"
-          >
-            <FaLink />
-          </button>
-          <button
-            type="button"
-            onClick={() => executeCommand('formatBlock', 'blockquote')}
-            className={styles.toolbarButton}
-            title="Quote"
-          >
-            <FaQuoteLeft />
-          </button>
-        </div>
+        {(showLink || showQuote) && (
+          <div className={styles.toolbarSection}>
+            {showLink && (
+              <button
+                type="button"
+                onClick={insertLink}
+                className={styles.toolbarButton}
+                title="Insert Link"
+              >
+                <FaLink />
+              </button>
+            )}
+            {showQuote && (
+              <button
+                type="button"
+                onClick={() => executeCommand('formatBlock', 'blockquote')}
+                className={styles.toolbarButton}
+                title="Quote"
+              >
+                <FaQuoteLeft />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div
         ref={editorRef}
         contentEditable
-        className={styles.editor}
+        className={`${styles.editor} ${compact ? styles.editorCompact : ''}`}
         onInput={handleContentChange}
         onKeyUp={handleKeyUp}
         onMouseUp={handleMouseUp}
@@ -304,3 +277,4 @@ const ContentEditor = ({ value, onChange, placeholder = "Write your content here
 };
 
 export default ContentEditor;
+

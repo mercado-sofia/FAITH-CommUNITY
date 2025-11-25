@@ -32,12 +32,17 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     logError = true
   } = options;
 
+  // Skip logging if error is already logged
+  if (error?._alreadyLogged) {
+    logError = false;
+  }
+
   // Handle Response objects
   if (error && typeof error.status === 'number') {
     const status = error.status;
     
     if (status === 401) {
-      if (logError) {
+      if (logError && !error._alreadyLogged) {
         logger.apiError(context, new Error('Authentication failed'), { status });
       }
       
@@ -55,7 +60,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     }
     
     if (status === 403) {
-      if (logError) {
+      if (logError && !error._alreadyLogged) {
         logger.apiError(context, new Error('Access denied'), { status });
       }
       
@@ -68,7 +73,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     }
     
     if (status === 404) {
-      if (logError) {
+      if (logError && !error._alreadyLogged) {
         logger.apiError(context, new Error('Resource not found'), { status });
       }
       
@@ -81,7 +86,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     }
     
     if (status === 429) {
-      if (logError) {
+      if (logError && !error._alreadyLogged) {
         logger.apiError(context, new Error('Rate limit exceeded'), { status });
       }
       
@@ -94,7 +99,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     }
     
     if (status >= 500) {
-      if (logError) {
+      if (logError && !error._alreadyLogged) {
         logger.apiError(context, new Error('Server error'), { status });
       }
       
@@ -109,7 +114,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
   
   // Handle Error objects
   if (error instanceof Error) {
-    if (logError) {
+    if (logError && !error._alreadyLogged) {
       logger.apiError(context, error);
     }
     
@@ -140,7 +145,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
   
   // Handle string errors
   if (typeof error === 'string') {
-    if (logError) {
+    if (logError && !error._alreadyLogged) {
       logger.apiError(context, new Error(error));
     }
     
@@ -152,7 +157,7 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
   }
   
   // Default unknown error
-  if (logError) {
+  if (logError && !error?._alreadyLogged) {
     logger.apiError(context, new Error('Unknown error'), { error });
   }
   

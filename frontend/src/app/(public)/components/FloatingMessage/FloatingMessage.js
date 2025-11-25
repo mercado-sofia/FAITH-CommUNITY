@@ -25,6 +25,8 @@ export default function FloatingMessage() {
   const clickLockTimeoutRef = useRef(null);
 
   // Check user authentication status
+  // Only consider users with role 'user' as logged in for the public portal
+  // Admin and superadmin should see the email field even if they're logged in
   useEffect(() => {
     // Check for window to avoid SSR errors
     if (typeof window === 'undefined') return;
@@ -34,18 +36,53 @@ export default function FloatingMessage() {
       try {
         const { getCurrentUser } = await import('@/utils/authService');
         const user = await getCurrentUser();
-        if (user) {
-          setUserData(user);
-          setIsLoggedIn(true);
-          setEmail(user.email); // Pre-fill email for logged-in users
+        if (user && user.role) {
+          // Only treat as logged in if the user has role 'user' (public user)
+          // Admin and superadmin viewing the public portal should see the email field
+          const userRole = user.role?.toLowerCase();
+          if (userRole === 'user') {
+            setUserData(user);
+            setIsLoggedIn(true);
+            // Pre-fill email for logged-in public users (only if email exists)
+            if (user.email) {
+              setEmail(user.email);
+            }
+          } else {
+            // Admin or superadmin - treat as not logged in for public portal
+            setIsLoggedIn(false);
+            setUserData(null);
+            // Clear email for admin/superadmin since they should enter it manually
+            setEmail("");
+          }
+        } else {
+          // User is not authenticated or role is missing
+          setIsLoggedIn(false);
+          setUserData(null);
+          // Don't clear email here - let user keep what they typed
         }
       } catch (error) {
         // User is not authenticated
         setIsLoggedIn(false);
+        setUserData(null);
+        // Don't clear email on error - preserve user input
       }
     };
     
     checkAuth();
+    
+    // Listen for logout events to update auth state
+    const handleLogout = () => {
+      setIsLoggedIn(false);
+      setUserData(null);
+      setEmail(""); // Clear email on logout
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('user:logout', handleLogout);
+      return () => {
+        window.removeEventListener('user:logout', handleLogout);
+      };
+    }
   }, []);
 
   // Fetch organizations from API
@@ -83,7 +120,11 @@ export default function FloatingMessage() {
     
     if (resetAll) {
       setOrg("");
-      setEmail("");
+      // Only clear email for non-logged-in users
+      // For logged-in users (role 'user'), preserve the email since it's pre-filled
+      if (!isLoggedIn) {
+        setEmail("");
+      }
       setMessage("");
       setEmailError("");
     }
@@ -101,7 +142,7 @@ export default function FloatingMessage() {
         clickLockTimeoutRef.current = null;
       }, 300);
     }
-  }, []);
+  }, [isLoggedIn]);
 
   // Handle outside click, ESC press
   useEffect(() => {
@@ -218,22 +259,21 @@ export default function FloatingMessage() {
 
       // Prepare message data
       const messageData = {
-        organization_id: selectedOrg.id, // This should be the numeric ID
+        organization_id: selectedOrg.id,
         sender_email: email || (isLoggedIn && userData ? userData.email : ''),
-        sender_name: null, // Optional field
+        sender_name: null,
         message: message.trim(),
-        user_id: isLoggedIn && userData ? userData.id : null // Include user_id if authenticated
+        user_id: isLoggedIn && userData ? userData.id : null
       };
 
-      // Submit message with the numeric organization ID
-      const result = await submitMessage(messageData).unwrap();
+      // Submit message
+      await submitMessage(messageData).unwrap();
 
       // Show success message
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast("Message sent successfully!", "success", 4000);
       } else {
-        // Fallback: show success in error field (temporary)
-        setEmailError("");
+        // Fallback alert if toast is not available
         alert("Message sent successfully!");
       }
 
@@ -304,7 +344,7 @@ export default function FloatingMessage() {
                         key={organization.id}
                         className={styles.dropdownItem}
                         onClick={() => {
-                          setOrg(organization.acronym); // Use the 'org' field from DB
+                          setOrg(organization.acronym);
                           setDropdownOpen(false);
                         }}
                         role="option"
@@ -319,8 +359,6 @@ export default function FloatingMessage() {
                 </ul>
               )}
             </div>
-
-            <input type="hidden" name="organization" value={org} />
 
             {!isLoggedIn && (
               <>

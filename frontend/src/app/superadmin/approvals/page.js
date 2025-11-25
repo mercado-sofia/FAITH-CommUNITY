@@ -149,15 +149,10 @@ const matchesOrganization = (approval, orgAcronym) => {
   
   // Only return true if main org matches
   if (mainOrgAcronym && mainOrgAcronym === normalizedOrgAcronym) {
-    // Debug: Log successful match (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-    }
     return true;
   }
   
   // Main org doesn't match - exclude this approval
-  if (process.env.NODE_ENV === 'development' && mainOrgAcronym) {
-  }
   return false;
 };
 
@@ -522,14 +517,10 @@ export default function PendingApprovalsPage() {
 
     // Filter by organization (including collaborators)
     if (selectedOrganization && selectedOrganization !== 'all') {
-      const beforeFilterCount = filtered.length;
       filtered = filtered.filter(approval => {
         const matches = matchesOrganization(approval, selectedOrganization);
         return matches;
       });
-      // Debug: Log filter results (remove in production)
-      if (process.env.NODE_ENV === 'development') {
-      }
     }
 
     // Filter by section (case-insensitive matching)

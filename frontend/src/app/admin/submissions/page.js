@@ -70,11 +70,24 @@ export default function SubmissionsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
+      // Only log if error hasn't been logged already by the fetcher/SWR
+      const shouldLog = !error._alreadyLogged;
       const errorInfo = handleApiError(error, 'submissions_load', {
         redirectOnAuth: true,
-        logError: true
+        logError: shouldLog // Only log if not already logged
       });
-      showToast(errorInfo.message, 'error');
+      // Only show toast for user-facing errors (not 500s that are being retried)
+      // Check error status safely
+      const errorStatus = error?.status || error?.response?.status;
+      if (errorStatus && typeof errorStatus === 'number' && errorStatus >= 500) {
+        // Don't show toast for server errors during retries - SWR will handle retries
+        // The error will be visible in the UI state (empty submissions list, etc.)
+        return;
+      }
+      // Show toast for client errors (4xx) and other errors
+      if (errorInfo.message) {
+        showToast(errorInfo.message, 'error');
+      }
     }
   }, [error, showToast]);
 

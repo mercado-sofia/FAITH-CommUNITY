@@ -26,8 +26,10 @@ export default function HeadManagement({ showSuccessModal }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null); // For immediate preview of selected file
 
-  // Load head data
+  // Load head data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadHeadData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -38,36 +40,48 @@ export default function HeadManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
           // Handle single profile - data.data is an array that may be empty or have one item
           const head = data.data && data.data.length > 0 ? data.data[0] : null;
+          if (isMounted) {
             setHeadData(head);
             setFormData({
-            name: head?.name || '',
-            description: head?.description || '',
-            position: head?.position || 'Head of FACES',
-            image_url: head?.image_url || ''
+              name: head?.name || '',
+              description: head?.description || '',
+              position: head?.position || 'Head of FACES',
+              image_url: head?.image_url || ''
             });
+          }
         }
       } catch (error) {
-        console.error('Load error:', error);
-        let errorMessage = 'Failed to load head data';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        if (isMounted) {
+          console.error('Load error:', error);
+          let errorMessage = 'Failed to load head data';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          
+          showAuthError(errorMessage);
         }
-        
-        showAuthError(errorMessage);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadHeadData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount - use response data after save instead of reloading
 
   // Handle file selection
   const handleFileSelect = (e) => {

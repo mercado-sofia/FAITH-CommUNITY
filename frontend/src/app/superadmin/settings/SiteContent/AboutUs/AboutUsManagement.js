@@ -72,8 +72,10 @@ export default function AboutUsManagement({ showSuccessModal }) {
     };
   }, []);
 
-  // Load about us data
+  // Load about us data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadAboutUsData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -84,31 +86,42 @@ export default function AboutUsManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
-          setAboutUsData(data.data);
-          setTempAboutUs({
-            description: data.data?.description || '',
-            extension_categories: data.data?.extension_categories || [],
-            image_url: data.data?.image_url || ''
-          });
+          if (isMounted) {
+            setAboutUsData(data.data);
+            setTempAboutUs({
+              description: data.data?.description || '',
+              extension_categories: data.data?.extension_categories || [],
+              image_url: data.data?.image_url || ''
+            });
+          }
         } else if (response && response.status === 404) {
           // No data exists yet - that's okay, fields will be empty
-          setAboutUsData(null);
-          setTempAboutUs({
-            description: '',
-            extension_categories: [],
-            image_url: ''
-          });
+          if (isMounted) {
+            setAboutUsData(null);
+            setTempAboutUs({
+              description: '',
+              extension_categories: [],
+              image_url: ''
+            });
+          }
         }
       } catch (error) {
-        showAuthError('Failed to load about us data. Please try again.');
-      } finally {
+        if (isMounted) {
+          showAuthError('Failed to load about us data. Please try again.');
+        }
       }
     };
 
     loadAboutUsData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount - use response data after save instead of reloading
 
   // Edit toggle function
   const handleEditToggle = () => {
@@ -261,56 +274,20 @@ export default function AboutUsManagement({ showSuccessModal }) {
           }
         }
         
-        // Step 4: Use saved data or fetch final data
+        // Step 4: Use saved data from response (no need to reload - we already have the data)
         if (savedData) {
           setAboutUsData(savedData);
+          setTempAboutUs({
+            description: savedData.description || '',
+            extension_categories: savedData.extension_categories || [],
+            image_url: savedData.image_url || ''
+          });
           setIsEditingAboutUs(false);
           showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         } else {
-          // Fallback: Get the final updated data
-          const response = await makeAuthenticatedRequest(
-            `${baseUrl}/api/superadmin/about-us`,
-            { method: 'GET' },
-            'superadmin'
-          );
-
-          if (!response) {
-            showSuccessModal('Authentication failed. Please log in again.');
-            return;
-          }
-          
-          if (response.ok) {
-            try {
-              const data = await response.json();
-              if (data.success && data.data) {
-                setAboutUsData(data.data);
-                setIsEditingAboutUs(false);
-                showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
-              } else {
-                showSuccessModal(data.message || 'Failed to update about us content');
-              }
-            } catch (parseError) {
-              console.error('Error parsing response:', parseError);
-              showSuccessModal('Received invalid response from server. Please try again.');
-            }
-          } else {
-            let errorMessage = 'Failed to update about us content';
-            try {
-              const contentType = response.headers.get('content-type');
-              if (contentType && contentType.includes('application/json')) {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                console.error('Update error response:', errorData);
-              } else {
-                errorMessage = response.statusText || `Server error (${response.status})`;
-                console.error('Non-JSON error response:', response.status, response.statusText);
-              }
-            } catch (e) {
-              errorMessage = response.statusText || `Server error (${response.status})`;
-              console.error('Error parsing error response:', e);
-            }
-            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-          }
+          // This should rarely happen, but if it does, show success anyway since the save succeeded
+          setIsEditingAboutUs(false);
+          showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         }
       } catch (error) {
         console.error('Update error:', error);
@@ -599,55 +576,14 @@ export default function AboutUsManagement({ showSuccessModal }) {
                 <label className={styles.inputLabel}>
                   About Us Image
                 </label>
-                {isEditingAboutUs && (isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
-                  <div className={styles.imageActions}>
-                    <button
-                      onClick={handleDeleteImage}
-                      className={styles.removeBtn}
-                      title="Remove image"
-                    >
-                      <FiTrash2 color="#dc2626" />
-                    </button>
-                  </div>
-                )}
               </div>
               <div className={styles.imageUploadSection}>
                 {/* Current Image Display */}
                 {(() => {
                   const currentImageUrl = isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '');
-                  const fallbackImageUrl = '/samples/sample1.jpg';
                   
-                  if (currentImageUrl) {
-                    return (
-                      <div className={styles.currentImageContainer}>
-                        <Image
-                          src={getImageUrl(currentImageUrl, 'aboutus', 'images')}
-                          alt="Current About Us Image"
-                          className={styles.currentImage}
-                          width={400}
-                          height={300}
-                          style={{ objectFit: 'cover' }}
-                        />
-                        {/* Hover Overlay for Edit Mode */}
-                        {isEditingAboutUs && (
-                          <div className={styles.imageOverlay}>
-                            <label htmlFor="imageUpload" className={styles.uploadButton}>
-                              <FiUpload size={16} />
-                              {selectedFile ? 'Change Image' : 'Upload Image'}
-                            </label>
-                            <input
-                              type="file"
-                              id="imageUpload"
-                              accept="image/*"
-                              onChange={handleFileSelect}
-                              className={styles.fileInput}
-                              disabled={uploadingImage}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  } else if (selectedFile) {
+                  // Priority: selectedFile > currentImageUrl > fallback (gray container)
+                  if (selectedFile) {
                     return (
                       <div className={styles.currentImageContainer}>
                         <Image
@@ -673,24 +609,60 @@ export default function AboutUsManagement({ showSuccessModal }) {
                               className={styles.fileInput}
                               disabled={uploadingImage}
                             />
+                            <button
+                              onClick={handleDeleteImage}
+                              className={styles.removeBtn}
+                              title="Remove image"
+                            >
+                              <FiTrash2 size={16} />
+                              Remove Image
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else if (currentImageUrl) {
+                    return (
+                      <div className={styles.currentImageContainer}>
+                        <Image
+                          src={getImageUrl(currentImageUrl, 'aboutus', 'images')}
+                          alt="Current About Us Image"
+                          className={styles.currentImage}
+                          width={400}
+                          height={300}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        {/* Hover Overlay for Edit Mode */}
+                        {isEditingAboutUs && (
+                          <div className={styles.imageOverlay}>
+                            <label htmlFor="imageUpload" className={styles.uploadButton}>
+                              <FiUpload size={16} />
+                              Upload Image
+                            </label>
+                            <input
+                              type="file"
+                              id="imageUpload"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className={styles.fileInput}
+                              disabled={uploadingImage}
+                            />
+                            <button
+                              onClick={handleDeleteImage}
+                              className={styles.removeBtn}
+                              title="Remove image"
+                            >
+                              <FiTrash2 size={16} />
+                              Remove Image
+                            </button>
                           </div>
                         )}
                       </div>
                     );
                   } else {
                     return (
-                      <div className={styles.currentImageContainer}>
-                        <Image
-                          src={fallbackImageUrl}
-                          alt="About Us Image (default)"
-                          className={styles.currentImage}
-                          width={400}
-                          height={300}
-                          style={{ objectFit: 'cover' }}
-                        />
-                        <div className={styles.fallbackIndicator}>
-                          <span>Using default image</span>
-                        </div>
+                      <div className={styles.emptyImageContainer}>
+                        <span className={styles.emptyImageText}>No image Available</span>
                         {/* Hover Overlay for Edit Mode */}
                         {isEditingAboutUs && (
                           <div className={styles.imageOverlay}>

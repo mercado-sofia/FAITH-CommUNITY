@@ -26,8 +26,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   // File selection states for batch upload
   const [selectedFiles, setSelectedFiles] = useState({});
 
-  // Load branding data
+  // Load branding data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadBrandingData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -38,18 +40,27 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
-          setBrandingData(data.data);
+          if (isMounted) {
+            setBrandingData(data.data);
+          }
         }
       } catch (error) {
-        showAuthError('Failed to load branding data. Please try again.');
-      } finally {
+        if (isMounted) {
+          showAuthError('Failed to load branding data. Please try again.');
+        }
       }
     };
 
     loadBrandingData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount - use response data after save instead of reloading
 
   // Branding file upload handlers
   const handleFileUpload = async (file, type) => {

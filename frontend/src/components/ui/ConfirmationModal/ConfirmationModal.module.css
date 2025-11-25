@@ -133,7 +133,7 @@
   margin-right: -2px;
 }
 
-.closeBtn:hover {
+.closeBtn:hover:not(:disabled) {
   color: #39404d;
 }
 
@@ -185,7 +185,7 @@
   user-select: none;
 }
 
-.cancelBtn:hover {
+.cancelBtn:hover:not(:disabled) {
   background-color: #f9fafb;
   border-color: #9ca3af;
 }
@@ -210,7 +210,7 @@
   gap: 8px;
 }
 
-.deleteBtn:hover {
+.deleteBtn:hover:not(:disabled) {
   background-color: #b91c1c;
   border-color: #b91c1c;
 }
@@ -242,7 +242,7 @@
   gap: 8px;
 }
 
-.activateBtn:hover {
+.activateBtn:hover:not(:disabled) {
   background-color: #16a085;
   border-color: #16a085;
 }
@@ -274,7 +274,7 @@
   gap: 8px;
 }
 
-.updateBtn:hover {
+.updateBtn:hover:not(:disabled) {
   background-color: #000;
   color: white;
   border-color: #000;
@@ -307,7 +307,7 @@
   gap: 8px;
 }
 
-.declineBtn:hover {
+.declineBtn:hover:not(:disabled) {
   background-color: #dc2626;
   border-color: #dc2626;
 }
@@ -339,7 +339,7 @@
   gap: 8px;
 }
 
-.archiveBtn:hover {
+.archiveBtn:hover:not(:disabled) {
   background-color: #6B7280;
   border-color: #6B7280;
 }
@@ -394,7 +394,7 @@
   gap: 8px;
 }
 
-.unarchiveBtn:hover {
+.unarchiveBtn:hover:not(:disabled) {
   background-color: #16a085;
   border-color: #16a085;
 }
@@ -433,7 +433,7 @@
   gap: 8px;
 }
 
-.cancelConfirmBtn:hover {
+.cancelConfirmBtn:hover:not(:disabled) {
   background-color: #b91c1c;
   border-color: #b91c1c;
 }

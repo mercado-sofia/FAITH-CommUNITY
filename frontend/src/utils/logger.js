@@ -42,11 +42,25 @@ class Logger {
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server-side'
     };
 
-    console.error(`[ERROR] ${message}`, errorData);
-    
-    // In production, send to monitoring service
+    // In production, only log critical errors to console to reduce noise
+    // All errors are still sent to monitoring service
     if (this.isProduction) {
+      // Only log to console if it's a critical error (not a handled API error)
+      // Critical errors: component errors, server errors (500+), or errors without a type
+      const isCritical = !context?.type || 
+                        context.type === 'component_error' || 
+                        context.type === 'server_error' ||
+                        (context.type === 'api_error' && error?.status >= 500);
+      
+      if (isCritical) {
+        console.error(`[ERROR] ${message}`, errorData);
+      }
+      
+      // Always send to monitoring service
       this.sendToMonitoringService('error', message, errorData);
+    } else {
+      // In development, always log to console
+      console.error(`[ERROR] ${message}`, errorData);
     }
   }
 

@@ -23,16 +23,6 @@
   line-height: 1.2;
 }
 
-/* Action dropdown classes for JavaScript references */
-.actionDropdownOptions {
-  /* This class is referenced in JavaScript but styled in component CSS files */
-  position: relative;
-}
-
-.actionDropdownWrapper {
-  /* This class is referenced in JavaScript but styled in component CSS files */
-  position: relative;
-}
 
 /* Bulk Actions Bar */
 .bulkActionsBar {
@@ -338,5 +328,3 @@
   text-align: center;
   font-weight: 400;
 }
-
-/* Modal animations moved to BulkActionConfirmationModal.module.css */

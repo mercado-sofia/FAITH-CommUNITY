@@ -3,7 +3,6 @@
 import { useEffect } from 'react'
 import { FiTrash2, FiX, FiUserX, FiUserCheck, FiEdit3, FiArchive, FiRotateCw } from 'react-icons/fi'
 import { MdCancel } from 'react-icons/md'
-import { FaSpinner } from 'react-icons/fa'
 import styles from './ConfirmationModal.module.css'
 
 export default function ConfirmationModal({
@@ -253,7 +252,6 @@ export default function ConfirmationModal({
             disabled={loading}
           >
             {actionContent.buttonText}
-            {loading ? <FaSpinner className={styles.spinner} /> : null}
           </button>
         </div>
       </div>

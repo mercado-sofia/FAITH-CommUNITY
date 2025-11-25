@@ -23,6 +23,8 @@ Welcome to the FAITH CommUNITY frontend documentation. This comprehensive guide 
 - [Logging System](./05-development/LOGGING_README.md) - Production-ready logging implementation
 - [Session Persistence Implementation](./05-development/SESSION_PERSISTENCE_IMPLEMENTATION.md) - Session management and security
 - [Vercel Deployment](./05-development/VERCEL_DEPLOYMENT.md) - Frontend deployment guide
+- [Error Handling Flow](./05-development/ERROR_HANDLING_FLOW.md) - Organized error handling flow for admin pages
+- [Error Handling Implementation Summary](./05-development/ERROR_HANDLING_IMPLEMENTATION_SUMMARY.md) - Error handling implementation verification
 
 ## 🎯 Project Overview
 

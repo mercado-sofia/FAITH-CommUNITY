@@ -88,8 +88,10 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const [tempCopyright, setTempCopyright] = useState('');
   const [tempServices, setTempServices] = useState([]);
 
-  // Load footer data
+  // Load footer data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadFooterData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -100,30 +102,29 @@ export default function FooterContentManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
-          setFooterData(data.data);
           
           // Set contact info (handle null/empty values)
           const contactData = {
             phone: data.data.contact?.phone?.url || '',
             email: data.data.contact?.email?.url || ''
           };
-          setContactInfo(contactData);
-          setTempContactInfo(contactData);
           
           // Set social media
-          if (data.data.socialMedia && Array.isArray(data.data.socialMedia)) {
-            setSocialMedia(data.data.socialMedia);
-            setTempSocialMedia(data.data.socialMedia);
-          }
+          const socialMediaData = data.data.socialMedia && Array.isArray(data.data.socialMedia) 
+            ? data.data.socialMedia 
+            : [];
           
           // Set copyright with fallback to default text (matching public footer)
           const defaultCopyright = '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.';
           let copyrightData = data.data.copyright?.content || '';
           
-          // Auto-insert copyright if it doesn't exist in database
-          if (!copyrightData && (!data.data.copyright || Object.keys(data.data.copyright).length === 0)) {
+          // Only auto-insert if truly empty (not just whitespace) and copyright object doesn't exist
+          // This prevents race conditions from multiple loads
+          if ((!copyrightData || !copyrightData.trim()) && (!data.data.copyright || Object.keys(data.data.copyright).length === 0)) {
             try {
               const insertResponse = await makeAuthenticatedRequest(
                 `${baseUrl}/api/superadmin/footer/copyright`,
@@ -137,46 +138,61 @@ export default function FooterContentManagement({ showSuccessModal }) {
                 'superadmin'
               );
               
-              if (insertResponse && insertResponse.ok) {
+              if (insertResponse && insertResponse.ok && isMounted) {
                 copyrightData = defaultCopyright;
-              } else {
+              } else if (isMounted) {
                 // If auto-insert fails, use default for display
                 copyrightData = defaultCopyright;
               }
             } catch (error) {
-              console.error('Auto-insert copyright error:', error);
-              // Use default for display even if auto-insert fails
-              copyrightData = defaultCopyright;
+              if (isMounted) {
+                console.error('Auto-insert copyright error:', error);
+                // Use default for display even if auto-insert fails
+                copyrightData = defaultCopyright;
+              }
             }
-          } else if (!copyrightData) {
+          } else if (!copyrightData || !copyrightData.trim()) {
             // If copyright object exists but content is empty, use default
             copyrightData = defaultCopyright;
           }
           
-          setCopyright(copyrightData);
-          setTempCopyright(copyrightData);
-          
           // Set services
           const servicesData = data.data.services || [];
-          setServices(servicesData);
-          setTempServices(servicesData);
+          
+          if (isMounted) {
+            setFooterData(data.data);
+            setContactInfo(contactData);
+            setTempContactInfo(contactData);
+            setSocialMedia(socialMediaData);
+            setTempSocialMedia(socialMediaData);
+            setCopyright(copyrightData);
+            setTempCopyright(copyrightData);
+            setServices(servicesData);
+            setTempServices(servicesData);
+          }
         }
       } catch (error) {
-        console.error('Load error:', error);
-        let errorMessage = 'Failed to load footer data';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        if (isMounted) {
+          console.error('Load error:', error);
+          let errorMessage = 'Failed to load footer data';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          
+          showAuthError(errorMessage);
         }
-        
-        showAuthError(errorMessage);
       }
     };
 
     loadFooterData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount - use response data after save instead of reloading
 
   // Footer update handlers
   const handleContactUpdate = () => {
@@ -460,46 +476,34 @@ export default function FooterContentManagement({ showSuccessModal }) {
           console.warn('Failed to invalidate cache:', cacheError);
         }
         
-        // Reload footer data to ensure consistency with database
-        const loadFooterData = async () => {
-          try {
-            const reloadResponse = await makeAuthenticatedRequest(
-              `${baseUrl}/api/superadmin/footer`,
-              { method: 'GET' },
-              'superadmin'
-            );
-            if (reloadResponse && reloadResponse.ok) {
-              const reloadData = await reloadResponse.json();
-              if (reloadData.success && reloadData.data) {
-                setFooterData(reloadData.data);
-                setContactInfo({
-                  phone: reloadData.data.contact?.phone?.url || '',
-                  email: reloadData.data.contact?.email?.url || ''
-                });
-                setSocialMedia(reloadData.data.socialMedia || []);
-                const defaultCopyright = '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.';
-                setCopyright(reloadData.data.copyright?.content || defaultCopyright);
-                setServices(reloadData.data.services || []);
-              }
-            }
-          } catch (error) {
-            console.error('Error reloading footer data:', error);
-          }
-        };
-        await loadFooterData();
-        
-        // Update the main state with temp data
+        // Update the main state with temp data (no need to reload - we already have the response)
+        // The response confirms the save was successful, so we can trust our temp data
         switch (footerModalType) {
           case 'contact':
             setContactInfo({ ...tempContactInfo });
+            setFooterData(prev => ({
+              ...prev,
+              contact: {
+                phone: { url: tempContactInfo.phone || null },
+                email: { url: tempContactInfo.email || null }
+              }
+            }));
             setIsEditingContact(false);
             break;
           case 'social':
             setSocialMedia([...tempSocialMedia]);
+            setFooterData(prev => ({
+              ...prev,
+              socialMedia: [...tempSocialMedia]
+            }));
             setIsEditingSocial(false);
             break;
           case 'copyright':
             setCopyright(tempCopyright);
+            setFooterData(prev => ({
+              ...prev,
+              copyright: { content: tempCopyright }
+            }));
             setIsEditingCopyright(false);
             break;
         }

@@ -179,7 +179,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         submissions: [{
           organization_id: currentAdmin.org,
           section: 'programs',
-          previous_data: {}, // No previous data for new programs
+          // No previous_data needed for programs - they are always new submissions
           proposed_data: {
             title: programData.title.trim(),
             description: programData.description.trim(),
@@ -216,12 +216,26 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
+        // Try to extract error message from response
+        let errorMessage = '';
+        try {
+          const errorData = await response.json().catch(() => null);
+          if (errorData?.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          // If JSON parsing fails, try text
+          const errorText = await response.text().catch(() => '');
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        
         const errorInfo = handleApiError({ status: response.status }, 'program_submit', {
           redirectOnAuth: true,
           logError: true
         });
-        const errorText = await response.text().catch(() => '');
-        throw new Error(errorInfo.message || `Failed to submit program: ${response.status}`);
+        throw new Error(errorMessage || errorInfo.message || `Failed to submit program: ${response.status}`);
       }
 
       const responseData = await response.json();

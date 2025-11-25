@@ -438,7 +438,7 @@ export default function ProgramDetailsPage() {
             href="/programs" 
             className={styles.breadcrumbLink}
           >
-            Programs
+            Program
           </Link>
           <span className={styles.breadcrumbSeparator}>›</span>
           <span className={styles.breadcrumbCurrent}>{program.title}</span>

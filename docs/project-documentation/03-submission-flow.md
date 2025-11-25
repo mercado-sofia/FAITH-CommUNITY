@@ -5,22 +5,21 @@ The submission system enables admins to propose changes to their organization's 
 
 ## Submission Types
 
-1. **Organization Information**: Updates to organization details (name, description, logo, etc.)
-2. **Programs**: New program submissions or updates to existing programs
-3. **Post Act Reports**: Post-activity reports for completed programs
-4. **Highlights**: Organization highlights requiring approval
-5. **News**: News articles (some may require approval)
+1. **Programs**: New program submissions
+2. **Post Act Reports**: Post-activity reports for completed programs
+3. **Highlights**: Organization highlights requiring approval
+
+**Note:** Organization information and news are not part of the admin-to-superadmin submission flow.
 
 ## Submission Workflow
 
 ### Step 1: Admin Creates Submission
 
 **Process:**
-1. Admin makes changes in the admin portal (e.g., edits organization info, creates a program)
+1. Admin creates new submissions in the admin portal (e.g., creates a program, highlight, or post-act report)
 2. Changes are stored in `submissions` table with:
-   - `previous_data`: Current state (JSON)
-   - `proposed_data`: Proposed changes (JSON)
-   - `section`: Type of submission (e.g., "organization", "programs", "Post Act Report")
+   - `proposed_data`: Submission data (JSON) - all submissions are new, no previous data needed
+   - `section`: Type of submission (e.g., "programs", "highlights", "Post Act Report")
    - `status`: Set to "pending"
    - `submitted_by`: Admin ID
    - `organization_id`: Organization ID
@@ -58,7 +57,7 @@ The submission system enables admins to propose changes to their organization's 
    - Includes organization and admin details
    - Enriches collaborator data for program submissions
 3. Superadmin can:
-   - View previous data vs. proposed data
+   - View submission data
    - Approve the submission
    - Reject the submission (with optional reason)
 
@@ -69,12 +68,7 @@ The submission system enables admins to propose changes to their organization's 
 
 **When Superadmin Approves:**
 
-1. **For Organization Updates:**
-   - Updates `organizations` table with proposed data
-   - Updates submission status to "approved"
-   - Creates notification for admin
-
-2. **For Program Submissions:**
+1. **For Program Submissions:**
    - **Non-Collaborative Programs:**
      - Creates program in `programs_projects` table
      - Sets `is_approved = true`
@@ -88,7 +82,7 @@ The submission system enables admins to propose changes to their organization's 
      - Waits for all collaborators to accept
      - Program created only after all collaborators accept
 
-3. **For Post Act Reports:**
+2. **For Post Act Reports:**
    - Updates `program_post_act_reports` table status to "approved"
    - Updates submission status to "approved"
    - Creates notification for admin
@@ -137,9 +131,8 @@ pending → approved_pending_collaboration → (waiting for collaborators) → a
 ```sql
 - id: Primary key
 - organization_id: Foreign key to organizations
-- section: Submission type (ENUM)
-- previous_data: Current state (JSON)
-- proposed_data: Proposed changes (JSON)
+- section: Submission type (ENUM: 'programs', 'highlights', 'Post Act Report')
+- proposed_data: Submission data (JSON) - all submissions are new
 - submitted_by: Admin ID (Foreign key)
 - status: 'pending', 'approved', 'rejected', 'approved_pending_collaboration'
 - rejection_reason: Text (nullable)

@@ -497,6 +497,27 @@ const runIncrementalMigrations = async (connection) => {
       await connection.query(`ALTER TABLE submissions CHANGE COLUMN comment_reject rejection_reason TEXT`);
     }
 
+    // Remove unused previous_data column from submissions table
+    try {
+      const [previousDataColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'submissions' 
+        AND TABLE_SCHEMA = DATABASE()
+        AND COLUMN_NAME = 'previous_data'
+      `);
+      
+      if (previousDataColumn.length > 0) {
+        await connection.query(`ALTER TABLE submissions DROP COLUMN previous_data`);
+        logInfo('Removed unused previous_data column from submissions table', { context: 'database' });
+      }
+    } catch (error) {
+      logWarn('Could not remove previous_data column (may not exist)', { 
+        context: 'database', 
+        error: error.message 
+      });
+    }
+
     // Update admin_notifications type enum to include new notification types
     try {
       await connection.query(`
@@ -1144,8 +1165,7 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           organization_id INT NOT NULL,
           section VARCHAR(50) NOT NULL,
-          previous_data JSON,
-          proposed_data JSON NOT NULL,
+          proposed_data JSON NOT NULL COMMENT 'Submission data - all submissions are new',
           submitted_by INT NOT NULL,
           status ENUM('pending', 'approved', 'rejected', 'approved_pending_collaboration') DEFAULT 'pending',
           rejection_reason TEXT,

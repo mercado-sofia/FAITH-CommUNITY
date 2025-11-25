@@ -308,6 +308,7 @@ export default function SubmissionTable({
           actionType="cancel"
           onConfirm={() => handleCancel(confirmId)}
           onCancel={() => setConfirmId(null)}
+          isLoading={loadingStates[`cancel-${confirmId}`]}
         />
       )}
       {deleteId && (
@@ -316,7 +317,7 @@ export default function SubmissionTable({
           itemType="submission"
           onConfirm={() => handleDelete(deleteId)}
           onCancel={() => setDeleteId(null)}
-          isDeleting={false}
+          isLoading={loadingStates[`delete-${deleteId}`]}
         />
       )}
       

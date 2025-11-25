@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/useAuthState';
 import { logout, USER_TYPES } from '@/utils/authService';
 import { useDropdown } from '@/hooks/useDropdown';
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 import { Logo, NavigationLinks, NotificationsDropdown, ProfileDropdown, LogoutModal, MobileSidebar } from './components';
 import styles from './Navbar.module.css';
 import { FaBars } from 'react-icons/fa';
@@ -28,9 +29,16 @@ export default function Navbar() {
   // Apply handler - always navigate to /apply, show modal if not authenticated
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
+      // Store redirect URL before navigating
+      storeRedirectUrl("/apply");
       // Still navigate to /apply page, but show modal
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('showLoginModal'));
+        // Use setTimeout to ensure modal shows after navigation
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('showLoginModal', {
+            detail: { redirectUrl: "/apply" }
+          }));
+        }, 100);
       }
       // Don't prevent default - let the Link navigate to /apply
     }

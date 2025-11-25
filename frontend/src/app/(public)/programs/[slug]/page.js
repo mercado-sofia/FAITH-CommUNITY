@@ -14,6 +14,7 @@ import { RelatedPrograms } from '../components';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { formatDateLong, formatDateShort } from '@/utils/dateUtils';
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 
 // Custom functions to preserve exact date formatting for program details
 const formatEventDateWithWeekday = (dateString) => {
@@ -240,10 +241,18 @@ export default function ProgramDetailsPage() {
         }
         
         // Always navigate to /apply page (with program parameter)
-        router.push(`/apply?program=${program.id}`);
+        const applyUrl = `/apply?program=${program.id}`;
+        router.push(applyUrl);
         // Show modal if not logged in
         if (!isLoggedIn && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('showLoginModal'));
+          // Store redirect URL before showing modal
+          storeRedirectUrl(applyUrl);
+          // Use setTimeout to ensure modal shows after navigation
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('showLoginModal', {
+              detail: { redirectUrl: applyUrl }
+            }));
+          }, 100);
         }
       } else if (programStatus !== 'Upcoming' && programStatus !== 'Active' && programStatus !== 'Completed') {
         // Handle Contact Organization button click

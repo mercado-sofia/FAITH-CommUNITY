@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './BannerSection.module.css';
 import { useFadeIn } from '../../hooks/useFadeIn';
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 
 export default function BannerSection() {
   const router = useRouter();
@@ -47,7 +48,14 @@ export default function BannerSection() {
             router.push("/apply");
             // Show modal if not logged in
             if (!isLoggedIn && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('showLoginModal'));
+              // Store redirect URL before showing modal
+              storeRedirectUrl("/apply");
+              // Use setTimeout to ensure modal shows after navigation
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('showLoginModal', {
+                  detail: { redirectUrl: "/apply" }
+                }));
+              }, 100);
             }
           }}>
             Get Involved

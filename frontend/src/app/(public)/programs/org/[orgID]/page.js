@@ -10,6 +10,7 @@ import { usePublicOrganizationData } from '../../../hooks/usePublicData';
 import { useAuthState } from '@/hooks/useAuthState';
 import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
 import { useFadeIn } from '../../../hooks/useFadeIn';
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 import styles from '../org.module.css';
 
 // Volunteer Banner Component with fade-in animation
@@ -48,9 +49,16 @@ export default function OrgPage() {
   // Handle volunteer button click - always navigate to /apply, show modal if not authenticated
   const handleVolunteerClick = (e) => {
     if (!isAuthenticated) {
+      // Store redirect URL before navigating
+      storeRedirectUrl("/apply");
       // Still navigate to /apply page, but show modal
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('showLoginModal'));
+        // Use setTimeout to ensure modal shows after navigation
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('showLoginModal', {
+            detail: { redirectUrl: "/apply" }
+          }));
+        }, 100);
       }
       // Don't prevent default - let the Link navigate to /apply
     }

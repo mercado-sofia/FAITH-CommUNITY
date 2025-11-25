@@ -70,22 +70,40 @@ export const formatDateShort = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
     
+    // Handle Date objects by converting to ISO string
+    let dateValue = dateString;
+    if (dateString instanceof Date) {
+      // If it's an Invalid Date, return early
+      if (isNaN(dateString.getTime())) {
+        logger.warn('Invalid Date object provided to formatDateShort', { dateString });
+        return 'Invalid date';
+      }
+      // Convert Date object to ISO string for processing
+      dateValue = dateString.toISOString();
+    }
+    
+    // Ensure we have a string to work with
+    const dateStr = String(dateValue).trim();
+    if (!dateStr || dateStr === 'Invalid Date') {
+      return 'Invalid date';
+    }
+    
     // Check if this is an ISO format with timezone (TIMESTAMP field from backend)
-    const hasTimezone = dateString.trim().endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateString.trim());
+    const hasTimezone = dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr);
     
     let date;
     if (hasTimezone) {
       // TIMESTAMP field (timezone-aware) - parse as UTC and convert to local time
-      date = new Date(dateString);
+      date = new Date(dateStr);
       if (isNaN(date.getTime())) {
-        logger.warn('Invalid ISO date string with timezone in formatDateShort', { dateString });
+        logger.warn('Invalid ISO date string with timezone in formatDateShort', { dateString: dateStr });
         return 'Invalid date';
       }
     } else {
       // DATETIME field (timezone-naive) - parse as local time
-      date = parseMySQLDateTime(dateString);
+      date = parseMySQLDateTime(dateStr);
       if (!date || isNaN(date.getTime())) {
-        logger.warn('Invalid date string provided to formatDateShort', { dateString });
+        logger.warn('Invalid date string provided to formatDateShort', { dateString: dateStr });
         return 'Invalid date';
       }
     }

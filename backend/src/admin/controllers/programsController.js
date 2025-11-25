@@ -2547,27 +2547,25 @@ export const unarchiveProgram = async (req, res) => {
   }
 
   try {
-    // Check if program exists and is archived
-    const [programRows] = await db.execute(
-      "SELECT id, title, status, event_start_date, event_end_date FROM programs_projects WHERE id = ?",
-      [id]
-    );
+    // Check if program exists, is archived, and admin has permission
+    const [programRows] = await db.execute(`
+      SELECT p.*, o.orgName 
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND p.status = 'archived' AND (p.organization_id = ? OR p.id IN (
+        SELECT program_id FROM program_collaborations 
+        WHERE collaborator_admin_id = ? AND status = 'accepted'
+      ))
+    `, [id, req.admin?.organization_id, req.admin?.id]);
 
     if (programRows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Program not found"
+        message: "Program not found or you don't have permission to unarchive it"
       });
     }
 
     const program = programRows[0];
-
-    if (program.status !== 'archived') {
-      return res.status(400).json({
-        success: false,
-        message: "Program is not archived"
-      });
-    }
 
     // Determine restore status based on event dates
     // Use the same logic as news restore

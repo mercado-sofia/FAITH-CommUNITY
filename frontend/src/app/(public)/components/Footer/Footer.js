@@ -36,6 +36,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Toast from "../Toast/Toast";
 import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublicData";
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 
 import { API_BASE_URL } from '@/config/api';
 const API_BASE = API_BASE_URL || '';
@@ -135,9 +136,16 @@ export default function Footer() {
   // Handle apply link click - always navigate to /apply, show modal if not authenticated
   const handleApplyClick = (e) => {
     if (!isLoggedIn) {
+      // Store redirect URL before navigating
+      storeRedirectUrl("/apply");
       // Still navigate to /apply page, but show modal
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('showLoginModal'));
+        // Use setTimeout to ensure modal shows after navigation
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('showLoginModal', {
+            detail: { redirectUrl: "/apply" }
+          }));
+        }, 100);
       }
       // Don't prevent default - let the Link navigate to /apply
     }

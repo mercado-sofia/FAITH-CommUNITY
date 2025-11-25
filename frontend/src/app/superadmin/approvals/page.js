@@ -258,12 +258,21 @@ export default function PendingApprovalsPage() {
       // Format submissions
       const allApprovals = submissionsResult.data.map((item) => ({
         ...item,
-        submitted_at: new Date(item.submitted_at),
+        // Keep submitted_at as string for proper date formatting
+        // Only convert to Date for sorting if valid
         uniqueKey: `submission-${item.id}` // Create unique key
       }));
       
       // Sort by date (newest first)
-      allApprovals.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+      allApprovals.sort((a, b) => {
+        const dateA = a.submitted_at ? new Date(a.submitted_at) : new Date(0);
+        const dateB = b.submitted_at ? new Date(b.submitted_at) : new Date(0);
+        // If either date is invalid, put it at the end
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
+        return dateB.getTime() - dateA.getTime();
+      });
 
       setApprovals(allApprovals);
       setError(null);
@@ -632,10 +641,16 @@ export default function PendingApprovalsPage() {
           return b.score - a.score;
         }
         // Secondary sort: by date (when scores are equal)
+        const dateA = a.approval.submitted_at ? new Date(a.approval.submitted_at) : new Date(0);
+        const dateB = b.approval.submitted_at ? new Date(b.approval.submitted_at) : new Date(0);
+        // If either date is invalid, put it at the end
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
         if (sortBy === 'latest') {
-          return new Date(b.approval.submitted_at) - new Date(a.approval.submitted_at);
+          return dateB.getTime() - dateA.getTime();
         } else if (sortBy === 'oldest') {
-          return new Date(a.approval.submitted_at) - new Date(b.approval.submitted_at);
+          return dateA.getTime() - dateB.getTime();
         }
         return 0;
       });
@@ -645,10 +660,16 @@ export default function PendingApprovalsPage() {
     } else {
       // When not searching, sort only by date
       filtered.sort((a, b) => {
+        const dateA = a.submitted_at ? new Date(a.submitted_at) : new Date(0);
+        const dateB = b.submitted_at ? new Date(b.submitted_at) : new Date(0);
+        // If either date is invalid, put it at the end
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
         if (sortBy === 'latest') {
-          return new Date(b.submitted_at) - new Date(a.submitted_at);
+          return dateB.getTime() - dateA.getTime();
         } else if (sortBy === 'oldest') {
-          return new Date(a.submitted_at) - new Date(b.submitted_at);
+          return dateA.getTime() - dateB.getTime();
         }
         return 0;
       });

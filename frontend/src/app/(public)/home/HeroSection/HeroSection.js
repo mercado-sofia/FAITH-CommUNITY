@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { FaPlay } from 'react-icons/fa';
 import styles from './HeroSection.module.css';
 import { usePublicHeroSection } from '../../hooks/usePublicData';
+import { storeRedirectUrl } from '@/utils/redirectUtils';
 
 export default function HeroSection() {
   const router = useRouter();
@@ -140,7 +141,14 @@ export default function HeroSection() {
                     router.push("/apply");
                     // Show modal if not logged in
                     if (!isLoggedIn && typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('showLoginModal'));
+                      // Store redirect URL before showing modal
+                      storeRedirectUrl("/apply");
+                      // Use setTimeout to ensure modal shows after navigation
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('showLoginModal', {
+                          detail: { redirectUrl: "/apply" }
+                        }));
+                      }, 100);
                     }
                   }}
                 >

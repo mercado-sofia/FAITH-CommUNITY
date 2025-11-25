@@ -73,11 +73,22 @@ export default function DatePickerPopover({
   const parseValue = (str) => {
     if (!str) return null;
     
-    // Check if it includes time (T separator)
-    if (str.includes('T')) {
-      // Parse datetime string as local time (no timezone conversion)
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM) to avoid timezone conversion
+    let cleanStr = str.trim();
+    if (cleanStr.endsWith('Z')) {
+      cleanStr = cleanStr.slice(0, -1);
+    }
+    const timezoneMatch = cleanStr.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      cleanStr = cleanStr.slice(0, timezoneMatch.index);
+    }
+    cleanStr = cleanStr.trim();
+    
+    // Check if it includes time (T separator for ISO format or space for MySQL format)
+    if (cleanStr.includes('T')) {
+      // Parse ISO datetime string as local time (no timezone conversion)
       // Format: yyyy-MM-ddTHH:mm or yyyy-MM-ddTHH:mm:ss
-      const match = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+      const match = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
       if (match) {
         const [, year, month, day, hour, minute, second = '00'] = match;
         // Create date in local time (month is 0-indexed in JavaScript Date)
@@ -90,12 +101,26 @@ export default function DatePickerPopover({
           parseInt(second, 10)
         );
       }
-      // Fallback to standard parsing if format doesn't match
-      return new Date(str);
+    } else if (cleanStr.includes(' ')) {
+      // Parse MySQL DATETIME format as local time (no timezone conversion)
+      // Format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd HH:mm
+      const match = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        const [, year, month, day, hour, minute, second = '00'] = match;
+        // Create date in local time (month is 0-indexed in JavaScript Date)
+        return new Date(
+          parseInt(year, 10),
+          parseInt(month, 10) - 1,
+          parseInt(day, 10),
+          parseInt(hour, 10),
+          parseInt(minute, 10),
+          parseInt(second, 10)
+        );
+      }
     }
     
     // Date only - use date-fns parse which handles local time correctly
-    return parse(str, "yyyy-MM-dd", new Date());
+    return parse(cleanStr, "yyyy-MM-dd", new Date());
   };
   
   const selected = parseValue(value);

@@ -304,7 +304,7 @@ export default function SubmissionModal({ data, onClose }) {
     };
 
     fetchProgramTitle();
-  }, [submissionData]);
+  }, [submissionData, data]);
 
   const formatData = (dataObj) => {
     // Use full submission data if available

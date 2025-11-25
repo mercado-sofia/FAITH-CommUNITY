@@ -1050,6 +1050,8 @@ export const approveSubmission = async (req, res) => {
           }
 
           // Handle post-act report if provided (for completed programs created with post-act report)
+          // When a program with post-act report is approved, the post-act report is automatically approved
+          // without creating a duplicate submission that needs separate approval
           if (data.postActReport && data.postActReport.file_url && programId) {
             try {
               // Check if program_post_act_reports table exists
@@ -1060,67 +1062,70 @@ export const approveSubmission = async (req, res) => {
               const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
               
               if (hasPostActTable) {
-                // Create post-act report record with status 'pending'
-                const [reportResult] = await connection.execute(
-                  `INSERT INTO program_post_act_reports (program_id, file_public_id, file_url, status, uploaded_by_admin_id)
-                   VALUES (?, ?, ?, 'pending', ?)`,
-                  [
-                    programId,
-                    data.postActReport.file_public_id || null,
-                    data.postActReport.file_url,
-                    submission.submitted_by || null
-                  ]
+                // Check if a post-act report already exists for this program
+                // This prevents duplicates if program was already approved with a post-act report
+                const [existingReport] = await connection.execute(
+                  `SELECT id, status FROM program_post_act_reports WHERE program_id = ? LIMIT 1`,
+                  [programId]
                 );
                 
-                const reportId = reportResult.insertId;
-                
-                // Create a submission record for the post-act report so it appears in superadmin approvals
-                let postActSubmissionId = null;
-                try {
-                  const [submissionResult] = await connection.execute(
-                    `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
-                     VALUES (?, ?, ?, ?, 'pending', NOW())`,
+                if (existingReport.length > 0) {
+                  // Post-act report already exists - update it instead of creating duplicate
+                  const existingReportId = existingReport[0].id;
+                  await connection.execute(
+                    `UPDATE program_post_act_reports 
+                     SET file_public_id = ?, file_url = ?, status = 'approved', 
+                         uploaded_by_admin_id = ?, reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+                     WHERE id = ?`,
                     [
-                      orgId,
-                      'Post Act Report',
-                      JSON.stringify({
-                        program_id: programId,
-                        report_id: reportId,
-                        file_url: data.postActReport.file_url,
-                        file_public_id: data.postActReport.file_public_id || null
-                      }),
-                      submission.submitted_by || null
+                      data.postActReport.file_public_id || null,
+                      data.postActReport.file_url,
+                      submission.submitted_by || null,
+                      req.superadmin?.id || null,
+                      existingReportId
                     ]
                   );
-                  postActSubmissionId = submissionResult.insertId;
-                } catch (submissionError) {
-                  // Non-fatal: submissions table may not exist or section not whitelisted
-                  logError('Failed to create post-act report submission record', submissionError, { context: 'approval_controller' });
+                  logInfo(`Updated existing post-act report ${existingReportId} for program ${programId} during program approval`, { context: 'approval_controller' });
+                } else {
+                  // Create new post-act report record with status 'approved' (auto-approved as part of program approval)
+                  // No separate submission is created since it's already included in the program submission
+                  const [reportResult] = await connection.execute(
+                    `INSERT INTO program_post_act_reports (program_id, file_public_id, file_url, status, uploaded_by_admin_id, reviewed_by_superadmin_id, reviewed_at)
+                     VALUES (?, ?, ?, 'approved', ?, ?, NOW())`,
+                    [
+                      programId,
+                      data.postActReport.file_public_id || null,
+                      data.postActReport.file_url,
+                      submission.submitted_by || null,
+                      req.superadmin?.id || null
+                    ]
+                  );
+                  
+                  const reportId = reportResult.insertId;
+                  logInfo(`Created new post-act report ${reportId} for program ${programId} during program approval`, { context: 'approval_controller' });
                 }
                 
-                // Notify superadmin about the new post act report submission
+                // Update program status to Completed with manual override since post-act report is approved
+                await connection.execute(
+                  `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+                  [programId]
+                );
+                
+                // Notify admin that the post-act report was auto-approved with the program
                 try {
-                  const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
-                  const [superadminRows] = await connection.execute('SELECT id FROM users WHERE role = \'superadmin\' LIMIT 1');
-                  const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
-                  if (superadminId) {
-                    // Get organization acronym for message context
-                    const [orgRows] = await connection.execute('SELECT org, orgName FROM organizations WHERE id = ? LIMIT 1', [orgId]);
-                    const orgAcronym = orgRows.length ? orgRows[0].org : 'Unknown Org';
-                    
-                    await SuperAdminNotificationController.createNotification(
-                      superadminId,
-                      'approval_request',
-                      'Post Act Report Submitted',
-                      `${orgAcronym} submitted a Post Act Report for program "${data.title}".`,
-                      'post_act_report',
-                      postActSubmissionId, // Link notification to submission
-                      orgId
+                  if (submission.submitted_by) {
+                    await NotificationController.createNotification(
+                      submission.submitted_by,
+                      'post_act_report_approved',
+                      'Post Act Report Approved',
+                      `Your Post Act Report for program "${data.title}" was automatically approved with the program. The program is now marked as Completed.`,
+                      'programs',
+                      programId
                     );
                   }
                 } catch (notifErr) {
                   // Non-fatal: notification failure should not block approval
-                  logError('Failed to send post-act report notification', notifErr, { context: 'approval_controller' });
+                  logError('Failed to send post-act report auto-approval notification', notifErr, { context: 'approval_controller' });
                 }
               }
             } catch (postActError) {
@@ -2085,6 +2090,91 @@ export const bulkApproveSubmissions = async (req, res) => {
                 }
               }
               // Skip any invalid formats
+            }
+          }
+
+          // Handle post-act report if provided (for completed programs created with post-act report)
+          // When a program with post-act report is approved, the post-act report is automatically approved
+          // without creating a duplicate submission that needs separate approval
+          if (data.postActReport && data.postActReport.file_url && programId) {
+            try {
+              // Check if program_post_act_reports table exists
+              const [tableCheckRows] = await connection.execute(
+                `SELECT COUNT(*) as cnt FROM information_schema.tables 
+                  WHERE table_schema = DATABASE() AND table_name = 'program_post_act_reports'`
+              );
+              const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
+              
+              if (hasPostActTable) {
+                // Check if a post-act report already exists for this program
+                // This prevents duplicates if program was already approved with a post-act report
+                const [existingReport] = await connection.execute(
+                  `SELECT id, status FROM program_post_act_reports WHERE program_id = ? LIMIT 1`,
+                  [programId]
+                );
+                
+                if (existingReport.length > 0) {
+                  // Post-act report already exists - update it instead of creating duplicate
+                  const existingReportId = existingReport[0].id;
+                  await connection.execute(
+                    `UPDATE program_post_act_reports 
+                     SET file_public_id = ?, file_url = ?, status = 'approved', 
+                         uploaded_by_admin_id = ?, reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+                     WHERE id = ?`,
+                    [
+                      data.postActReport.file_public_id || null,
+                      data.postActReport.file_url,
+                      submission.submitted_by || null,
+                      req.superadmin?.id || null,
+                      existingReportId
+                    ]
+                  );
+                  logInfo(`Updated existing post-act report ${existingReportId} for program ${programId} during bulk program approval`, { context: 'approval_controller' });
+                } else {
+                  // Create new post-act report record with status 'approved' (auto-approved as part of program approval)
+                  // No separate submission is created since it's already included in the program submission
+                  const [reportResult] = await connection.execute(
+                    `INSERT INTO program_post_act_reports (program_id, file_public_id, file_url, status, uploaded_by_admin_id, reviewed_by_superadmin_id, reviewed_at)
+                     VALUES (?, ?, ?, 'approved', ?, ?, NOW())`,
+                    [
+                      programId,
+                      data.postActReport.file_public_id || null,
+                      data.postActReport.file_url,
+                      submission.submitted_by || null,
+                      req.superadmin?.id || null
+                    ]
+                  );
+                  
+                  const reportId = reportResult.insertId;
+                  logInfo(`Created new post-act report ${reportId} for program ${programId} during bulk program approval`, { context: 'approval_controller' });
+                }
+                
+                // Update program status to Completed with manual override since post-act report is approved
+                await connection.execute(
+                  `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+                  [programId]
+                );
+                
+                // Notify admin that the post-act report was auto-approved with the program
+                try {
+                  if (submission.submitted_by) {
+                    await NotificationController.createNotification(
+                      submission.submitted_by,
+                      'post_act_report_approved',
+                      'Post Act Report Approved',
+                      `Your Post Act Report for program "${data.title}" was automatically approved with the program. The program is now marked as Completed.`,
+                      'programs',
+                      programId
+                    );
+                  }
+                } catch (notifErr) {
+                  // Non-fatal: notification failure should not block approval
+                  logError('Failed to send post-act report auto-approval notification in bulk approval', notifErr, { context: 'approval_controller' });
+                }
+              }
+            } catch (postActError) {
+              // Non-fatal: post-act report handling failure should not block program approval
+              logError('Failed to handle post-act report during bulk program approval', postActError, { context: 'approval_controller' });
             }
           }
         }

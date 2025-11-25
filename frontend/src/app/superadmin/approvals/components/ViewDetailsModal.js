@@ -2,10 +2,80 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile, FaPlay } from 'react-icons/fa';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
-import { formatDateTime } from '../../../../utils/dateUtils';
+import { formatDateTime, formatDateShort } from '../../../../utils/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
 import logger from '@/utils/logger';
 import styles from './styles/ViewDetailsModal.module.css';
+
+// Helper function to calculate program status from dates (for program details)
+const calculateProgramStatusFromDates = (event_start_date, event_end_date, multiple_dates) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+  // Handle multiple dates
+  if (multiple_dates && Array.isArray(multiple_dates) && multiple_dates.length > 0) {
+    const dates = multiple_dates
+      .filter(date => date) // Filter out null/undefined
+      .map(dateStr => {
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      })
+      .sort((a, b) => a - b); // Sort chronologically
+    
+    if (dates.length === 0) {
+      return 'Upcoming'; // Default if no valid dates
+    }
+    
+    const earliestDate = dates[0];
+    const latestDate = dates[dates.length - 1];
+    
+    // If today is before the earliest date, it's upcoming
+    if (today < earliestDate) {
+      return 'Upcoming';
+    }
+    // If today is after the latest date, it's completed
+    if (today > latestDate) {
+      return 'Completed';
+    }
+    // If today is between or on any of the dates, it's active
+    return 'Active';
+  }
+
+  // Handle single date or date range
+  if (event_start_date) {
+    const startDate = new Date(event_start_date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    if (event_end_date) {
+      const endDate = new Date(event_end_date);
+      endDate.setHours(0, 0, 0, 0);
+      
+      // If today is before the start date, it's upcoming
+      if (today < startDate) {
+        return 'Upcoming';
+      }
+      // If today is after the end date, it's completed
+      if (today > endDate) {
+        return 'Completed';
+      }
+      // If today is between or on the dates, it's active
+      return 'Active';
+    } else {
+      // Only start date provided
+      // If today is before the start date, it's upcoming
+      if (today < startDate) {
+        return 'Upcoming';
+      }
+      // If today is on or after the start date, it's active
+      // (We can't determine completion without an end date)
+      return 'Active';
+    }
+  }
+
+  // Default to upcoming if no dates are set
+  return 'Upcoming';
+};
 
 // Helper function to get proper video URL
 const getVideoUrl = (mediaPath) => {
@@ -204,7 +274,7 @@ const ViewDetailsModal = ({
     // Note: advocacy and competency are no longer part of the approval workflow
     const sectionMap = {
       'organization': 'Organization Information',
-      'programs': 'Program Information'
+      'programs': 'Program'
     };
     return sectionMap[section] || section;
   };
@@ -420,7 +490,13 @@ const ViewDetailsModal = ({
             </div>
             <div className={styles.infoItem}>
               <span className={styles.infoLabel}>Date</span>
-              <span className={styles.infoValue}>{formatDateTime(submissionData.submitted_at)}</span>
+              <span className={styles.infoValue}>
+                {formatDateShort(
+                  submissionData.submitted_at instanceof Date 
+                    ? submissionData.submitted_at.toISOString() 
+                    : submissionData.submitted_at
+                )}
+              </span>
             </div>
           </div>
 
@@ -564,44 +640,102 @@ const ViewDetailsModal = ({
                       <strong>Category:</strong> {programData.category || 'N/A'}
                     </div>
                     <div className={styles.summaryItem}>
-                      <strong>Status:</strong> {submissionData.status || programData.status || 'N/A'}
+                      <strong>Status:</strong> {(() => {
+                        // Calculate program status from dates (not submission status)
+                        const programStatus = calculateProgramStatusFromDates(
+                          programData.event_start_date,
+                          programData.event_end_date,
+                          programData.multiple_dates
+                        );
+                        return programStatus;
+                      })()}
                     </div>
-                    <div className={styles.summaryItem}>
-                      <strong>Collaboration:</strong> 
-                      {(programData.is_collaborative || (programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0)) 
-                        ? <span className={styles.collabBadge}>Collaborative Program</span>
-                        : <span className={styles.nonCollabBadge}>Single Organization</span>
-                      }
-                    </div>
+                    {(programData.is_collaborative || (programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0)) && (
+                      <div className={styles.summaryItem}>
+                        <strong>Collaboration:</strong> 
+                        <span className={styles.collabBadge}>Collaborative Program</span>
+                      </div>
+                    )}
                   </div>
                   {(() => {
                     // Format event dates for display
                     if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
-                      return (
-                        <div className={styles.summaryItem}>
-                          <strong>Event Dates:</strong>
-                          <div className={styles.eventDatesList}>
-                            {programData.multiple_dates.map((date, index) => (
-                              <span key={index} className={styles.eventDateTag}>
-                                {formatDateTime(date)}
-                              </span>
-                            ))}
+                      // Filter out invalid dates
+                      const validDates = programData.multiple_dates.filter(date => {
+                        if (!date) return false;
+                        const dateObj = new Date(date);
+                        return !isNaN(dateObj.getTime());
+                      });
+                      
+                      if (validDates.length > 0) {
+                        return (
+                          <div className={styles.summaryItem}>
+                            <strong>Event Dates:</strong>
+                            <div className={styles.eventDatesList}>
+                              {validDates.map((date, index) => {
+                                const formatted = formatDateTime(date);
+                                // Only show if formatDateTime didn't return "Invalid date"
+                                if (formatted === 'Invalid date') return null;
+                                return (
+                                  <span key={index} className={styles.eventDateTag}>
+                                    {formatted}
+                                  </span>
+                                );
+                              }).filter(Boolean)}
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      }
                     } else if (programData.event_start_date && programData.event_end_date) {
-                      if (programData.event_start_date === programData.event_end_date) {
-                        return (
-                          <div className={styles.summaryItem}>
-                            <strong>Event Date:</strong> {formatDateTime(programData.event_start_date)}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div className={styles.summaryItem}>
-                            <strong>Event Date Range:</strong> {formatDateTime(programData.event_start_date)} - {formatDateTime(programData.event_end_date)}
-                          </div>
-                        );
+                      // Validate both dates before formatting
+                      const startDate = new Date(programData.event_start_date);
+                      const endDate = new Date(programData.event_end_date);
+                      const startValid = !isNaN(startDate.getTime());
+                      const endValid = !isNaN(endDate.getTime());
+                      
+                      if (startValid && endValid) {
+                        const startFormatted = formatDateTime(programData.event_start_date);
+                        const endFormatted = formatDateTime(programData.event_end_date);
+                        
+                        // Only show if both dates formatted successfully
+                        if (startFormatted !== 'Invalid date' && endFormatted !== 'Invalid date') {
+                          if (programData.event_start_date === programData.event_end_date) {
+                            return (
+                              <div className={styles.summaryItem}>
+                                <strong>Event Date:</strong> {startFormatted}
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className={styles.summaryItem}>
+                                <strong>Event Date Range:</strong> {startFormatted} - {endFormatted}
+                              </div>
+                            );
+                          }
+                        }
+                      } else if (startValid) {
+                        // Only start date is valid
+                        const startFormatted = formatDateTime(programData.event_start_date);
+                        if (startFormatted !== 'Invalid date') {
+                          return (
+                            <div className={styles.summaryItem}>
+                              <strong>Event Date:</strong> {startFormatted}
+                            </div>
+                          );
+                        }
+                      }
+                    } else if (programData.event_start_date) {
+                      // Only start date exists
+                      const startDate = new Date(programData.event_start_date);
+                      if (!isNaN(startDate.getTime())) {
+                        const startFormatted = formatDateTime(programData.event_start_date);
+                        if (startFormatted !== 'Invalid date') {
+                          return (
+                            <div className={styles.summaryItem}>
+                              <strong>Event Date:</strong> {startFormatted}
+                            </div>
+                          );
+                        }
                       }
                     }
                     return null;

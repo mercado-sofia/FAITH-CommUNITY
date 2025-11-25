@@ -53,13 +53,18 @@ const adminFetcher = async (url) => {
         errorMessage = 'Access denied. You do not have permission to access this resource.';
       } else if (response.status === 404) {
         errorMessage = 'Resource not found.';
+      } else if (response.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
       }
       
       const error = new Error(errorMessage);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error._alreadyLogged = true; // Mark as already logged to prevent duplicate logs
       logger.apiError(url, error, { 
         status: response.status, 
         statusText: response.statusText,
-        type: response.status === 401 ? 'auth_error' : 'api_error'
+        type: response.status === 401 ? 'auth_error' : response.status >= 500 ? 'server_error' : 'api_error'
       });
       throw error;
     }
@@ -70,6 +75,7 @@ const adminFetcher = async (url) => {
       data = await response.json();
     } catch (parseError) {
       const error = new Error('Invalid JSON response from server');
+      error._alreadyLogged = true; // Mark as already logged
       logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
       throw error;
     }
@@ -77,6 +83,7 @@ const adminFetcher = async (url) => {
     // Validate response structure
     if (!data || typeof data !== 'object') {
       const error = new Error('Invalid response format from server');
+      error._alreadyLogged = true; // Mark as already logged
       logger.apiError(url, error, { type: 'response_format_error', data });
       throw error;
     }
@@ -84,9 +91,13 @@ const adminFetcher = async (url) => {
     return data;
   } catch (error) {
     // Only log if it's not already logged (to avoid duplicate logs)
-    if (!error.logged && !error.message.includes('No admin token found')) {
+    if (!error._alreadyLogged && !error.logged && !error.message.includes('No admin token found')) {
+      error._alreadyLogged = true;
       logger.apiError(url, error, { type: 'fetch_error' });
-      error.logged = true;
+    }
+    // Ensure error has status property for SWR retry logic
+    if (!error.status && error.response?.status) {
+      error.status = error.response.status;
     }
     throw error;
   }
@@ -108,11 +119,16 @@ export const useAdminSubmissions = (orgAcronym) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (orgAcronym) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && orgAcronym) {
           logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { orgAcronym });
         }
       }
@@ -149,11 +165,16 @@ export const useAdminVolunteers = (adminId) => {
       errorRetryInterval: 1000, // Faster retry interval
       keepPreviousData: true, // Keep previous data while loading new data
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (adminIdStr) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && adminIdStr) {
           logger.swrError(`${API_BASE_URL}/api/volunteers/admin/${adminIdStr}`, error, { adminId: adminIdStr });
         }
       }
@@ -239,13 +260,18 @@ const organizationFetcher = async (url) => {
         errorMessage = 'Access denied. You do not have permission to access this resource.';
       } else if (response.status === 404) {
         errorMessage = 'Resource not found.';
+      } else if (response.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
       }
       
       const error = new Error(errorMessage);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error._alreadyLogged = true; // Mark as already logged to prevent duplicate logs
       logger.apiError(url, error, { 
         status: response.status, 
         statusText: response.statusText,
-        type: response.status === 401 ? 'auth_error' : 'api_error'
+        type: response.status === 401 ? 'auth_error' : response.status >= 500 ? 'server_error' : 'api_error'
       });
       throw error;
     }
@@ -256,6 +282,7 @@ const organizationFetcher = async (url) => {
       data = await response.json();
     } catch (parseError) {
       const error = new Error('Invalid JSON response from server');
+      error._alreadyLogged = true; // Mark as already logged
       logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
       throw error;
     }
@@ -264,9 +291,13 @@ const organizationFetcher = async (url) => {
     return data;
   } catch (error) {
     // Only log if it's not already logged (to avoid duplicate logs)
-    if (!error.logged) {
+    if (!error._alreadyLogged && !error.logged && !error.message.includes('No admin token found')) {
+      error._alreadyLogged = true;
       logger.apiError(url, error, { type: 'fetch_error' });
-      error.logged = true;
+    }
+    // Ensure error has status property for SWR retry logic
+    if (!error.status && error.response?.status) {
+      error.status = error.response.status;
     }
     throw error;
   }
@@ -288,11 +319,16 @@ export const useAdminOrganization = (organizationId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (organizationId) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && organizationId) {
           logger.swrError(`${API_BASE_URL}/api/organization/${organizationId}`, error, { organizationId });
         }
       }
@@ -343,11 +379,18 @@ export const useAdminPrograms = () => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/admin/programs`, error);
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged) {
+          logger.swrError(`${API_BASE_URL}/api/admin/programs`, error);
+        }
       }
     }
   );
@@ -378,10 +421,18 @@ export const useArchivedPrograms = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/admin/programs/${orgId}/archived`, error);
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged) {
+          logger.swrError(`${API_BASE_URL}/api/admin/programs/${orgId}/archived`, error);
+        }
       }
     }
   );
@@ -415,12 +466,16 @@ export const useAdminNews = (orgAcronym) => {
       errorRetryInterval: 2000, // Faster retry interval
       keepPreviousData: true, // Keep previous data while loading
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), 403 (forbidden), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 403 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 403 (forbidden), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 403 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        // Only log if orgAcronym is valid to avoid spam
-        if (orgAcronym) {
+        // Only log if error hasn't been logged already by the fetcher and orgAcronym is valid
+        if (!error._alreadyLogged && orgAcronym) {
           logger.swrError(`${API_BASE_URL}/api/news/org/${orgAcronym}`, error, { orgAcronym });
         }
       }
@@ -469,11 +524,16 @@ export const useAdminAdvocacies = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (orgId) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && orgId) {
           logger.swrError(`${API_BASE_URL}/api/advocacies/${orgId}`, error, { orgId });
         }
       }
@@ -508,11 +568,16 @@ export const useAdminCompetencies = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (orgId) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && orgId) {
           logger.swrError(`${API_BASE_URL}/api/competencies/${orgId}`, error, { orgId });
         }
       }
@@ -547,11 +612,16 @@ export const useAdminHeads = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (orgId) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && orgId) {
           logger.swrError(`${API_BASE_URL}/api/heads/${orgId}`, error, { orgId });
         }
       }
@@ -586,11 +656,16 @@ export const useAdminById = (adminId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
-        return error.status !== 401 && error.status !== 404 && error.status !== 429;
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
       },
       onError: (error) => {
-        if (adminId) {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged && adminId) {
           logger.swrError(`${API_BASE_URL}/api/admins/${adminId}`, error, { adminId });
         }
       }

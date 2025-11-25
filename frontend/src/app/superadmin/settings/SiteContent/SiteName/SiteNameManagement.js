@@ -16,8 +16,10 @@ export default function SiteNameManagement({ showSuccessModal }) {
   const [isEditingSiteName, setIsEditingSiteName] = useState(false);
   const [tempSiteName, setTempSiteName] = useState('');
 
-  // Load site name data
+  // Load site name data - only on mount, not on showSuccessModal changes
   useEffect(() => {
+    let isMounted = true;
+    
     const loadSiteNameData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -28,13 +30,16 @@ export default function SiteNameManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
           const defaultSiteName = 'FAITH CommUNITY';
           let siteNameValue = data.data?.site_name || '';
           
-          // Auto-insert site name if it doesn't exist in database
-          if (!siteNameValue) {
+          // Only auto-insert if truly empty (not just whitespace)
+          // This prevents race conditions from multiple loads
+          if (!siteNameValue || !siteNameValue.trim()) {
             try {
               const insertResponse = await makeAuthenticatedRequest(
                 `${baseUrl}/api/superadmin/branding/site-name`,
@@ -48,39 +53,49 @@ export default function SiteNameManagement({ showSuccessModal }) {
                 'superadmin'
               );
               
-              if (insertResponse && insertResponse.ok) {
+              if (insertResponse && insertResponse.ok && isMounted) {
                 siteNameValue = defaultSiteName;
-              } else {
+              } else if (isMounted) {
                 // If auto-insert fails, use default for display
                 siteNameValue = defaultSiteName;
               }
             } catch (error) {
-              console.error('Auto-insert site name error:', error);
-              // Use default for display even if auto-insert fails
-              siteNameValue = defaultSiteName;
+              if (isMounted) {
+                console.error('Auto-insert site name error:', error);
+                // Use default for display even if auto-insert fails
+                siteNameValue = defaultSiteName;
+              }
             }
           }
           
-          setSiteNameData(data.data || { site_name: siteNameValue });
-          setSiteName(siteNameValue);
-          setTempSiteName(siteNameValue);
+          if (isMounted) {
+            setSiteNameData(data.data || { site_name: siteNameValue });
+            setSiteName(siteNameValue);
+            setTempSiteName(siteNameValue);
+          }
         }
       } catch (error) {
-        console.error('Load error:', error);
-        let errorMessage = 'Failed to load site name data';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        if (isMounted) {
+          console.error('Load error:', error);
+          let errorMessage = 'Failed to load site name data';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          
+          showAuthError(errorMessage);
         }
-        
-        showAuthError(errorMessage);
       }
     };
 
     loadSiteNameData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount
 
   // Edit toggle function
   const handleEditToggle = () => {

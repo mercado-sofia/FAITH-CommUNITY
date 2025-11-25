@@ -26,8 +26,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   
@@ -35,21 +33,39 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState({});
   
+  // Separate edit states for each section
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [isEditingVideo, setIsEditingVideo] = useState(false);
+  const [isEditingImages, setIsEditingImages] = useState(false);
   
-  // Main edit state and temp data for batch save
-  const [isEditingHero, setIsEditingHero] = useState(false);
-  const [tempHeroData, setTempHeroData] = useState({});
-  const [showHeroModal, setShowHeroModal] = useState(false);
-  const [isUpdatingHero, setIsUpdatingHero] = useState(false);
+  // Temp data for each section
+  const [tempTextData, setTempTextData] = useState({ tag: '', heading: '' });
+  const [tempVideoData, setTempVideoData] = useState({ video_url: null, video_link: null, video_type: 'upload' });
+  const [tempImagesData, setTempImagesData] = useState([]);
   
-  // File selection states for batch upload
+  // Modals for each section
+  const [showTextModal, setShowTextModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showImagesModal, setShowImagesModal] = useState(false);
+  
+  // Video player modal (for fullscreen video viewing)
+  const [showVideoPlayerModal, setShowVideoPlayerModal] = useState(false);
+  
+  // Loading states for each section
+  const [isUpdatingText, setIsUpdatingText] = useState(false);
+  const [isUpdatingVideo, setIsUpdatingVideo] = useState(false);
+  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
+  
+  // File selection states for video and images
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const [selectedImageFiles, setSelectedImageFiles] = useState({});
   // Track images that should be deleted (images that had URLs but are now removed)
   const [imagesToDelete, setImagesToDelete] = useState(new Set());
 
-  // Load hero data
+  // Load hero data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadHeroData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -60,9 +76,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
-          if (data.data) {
+          if (data.data && isMounted) {
             // Use defaults if data is missing or empty (matching auto-insert values)
             const defaultHeroData = {
               tag: 'Welcome to FAITH CommUNITY',
@@ -100,29 +118,34 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           }
         }
       } catch (error) {
-        console.error('Load error:', error);
-        let errorMessage = 'Failed to load hero section data';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        if (isMounted) {
+          console.error('Load error:', error);
+          let errorMessage = 'Failed to load hero section data';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          
+          showAuthError(errorMessage);
         }
-        
-        showAuthError(errorMessage);
-      } finally {
       }
     };
 
     loadHeroData();
-  }, [showSuccessModal]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run on mount
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (showVideoModal) {
+    if (showVideoPlayerModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -131,49 +154,86 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showVideoModal]);
+  }, [showVideoPlayerModal]);
 
-  // Handle ESC key to close video
+  // Handle ESC key to close video player
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && showVideoModal) {
-        setShowVideoModal(false);
+      if (event.key === 'Escape' && showVideoPlayerModal) {
+        setShowVideoPlayerModal(false);
       }
     };
 
-    if (showVideoModal) {
+    if (showVideoPlayerModal) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showVideoModal]);
+  }, [showVideoPlayerModal]);
 
-  // Update text content
-  const handleTextUpdate = async (field, value) => {
+  // Text Content Section Handlers
+  const handleTextEditToggle = () => {
+    if (!isEditingText) {
+      setTempTextData({
+        tag: heroData.tag,
+        heading: heroData.heading
+      });
+    }
+    setIsEditingText(!isEditingText);
+  };
+
+  const handleTextCancel = () => {
+    setIsEditingText(false);
+    setTempTextData({ tag: '', heading: '' });
+  };
+
+  const handleTextSave = () => {
+    if (!tempTextData.tag?.trim()) {
+      showSuccessModal('Tag cannot be empty');
+      return;
+    }
+    if (!tempTextData.heading?.trim()) {
+      showSuccessModal('Heading cannot be empty');
+      return;
+    }
+    setShowTextModal(true);
+  };
+
+  const handleTextConfirm = async () => {
     try {
-      setIsUpdating(true);
+      setIsUpdatingText(true);
       const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
+      
+      // Update both tag and heading in one request
       const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/hero-section/text`,
+        `${baseUrl}/api/superadmin/hero-section`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ field, value }),
+          body: JSON.stringify({
+            ...heroData,
+            tag: tempTextData.tag.trim(),
+            heading: tempTextData.heading.trim()
+          }),
         },
         'superadmin'
       );
 
       if (response && response.ok) {
+        const data = await response.json();
         setHeroData(prev => ({
           ...prev,
-          [field]: value
+          tag: data.data.tag,
+          heading: data.data.heading
         }));
-        showSuccessModal(`${field === 'tag' ? 'Tag' : 'Heading'} updated successfully!`);
+        setIsEditingText(false);
+        setTempTextData({ tag: '', heading: '' });
+        showSuccessModal('Text content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
         if (response.status === 401) {
@@ -188,9 +248,9 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           return;
         }
         
-        let errorMessage = `Failed to update ${field}`;
+        let errorMessage = 'Failed to update text content';
         try {
-        const errorData = await response.json();
+          const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Update error response:', errorData);
         } catch (e) {
@@ -201,7 +261,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       }
     } catch (error) {
       console.error('Update error:', error);
-      let errorMessage = `Failed to update ${field}`;
+      let errorMessage = 'Failed to update text content';
       
       if (error.message) {
         errorMessage = error.message;
@@ -211,8 +271,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       
       showSuccessModal(errorMessage);
     } finally {
-      setIsUpdating(false);
+      setIsUpdatingText(false);
+      setShowTextModal(false);
     }
+  };
+
+  const handleTextCancelModal = () => {
+    setShowTextModal(false);
   };
 
 
@@ -255,7 +320,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
 
   // File upload handlers
-  const handleFileUpload = async (file, type, imageId = null) => {
+  // silent: if true, don't show success modal or update heroData (for batch operations)
+  const handleFileUpload = async (file, type, imageId = null, silent = false) => {
     try {
       
       // Set loading state
@@ -289,22 +355,28 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       if (response.ok) {
         const data = await response.json();
         if (imageId) {
-          setHeroData(prev => ({
-            ...prev,
-            images: prev.images.map(img => 
-              img.id === imageId ? { ...img, url: data.data.url } : img
-            )
-          }));
-          showSuccessModal('Image uploaded successfully!');
+          // Only update heroData and show modal if not in silent mode (batch operation)
+          if (!silent) {
+            setHeroData(prev => ({
+              ...prev,
+              images: prev.images.map(img => 
+                img.id === imageId ? { ...img, url: data.data.url } : img
+              )
+            }));
+            showSuccessModal('Image uploaded successfully!');
+          }
           return data.data.url;
         } else {
-          setHeroData(prev => ({
-            ...prev,
-            [`${type}_url`]: data.data[`${type}_url`],
-            video_link: type === 'video' ? null : prev.video_link, // Clear video link when uploading video
-            video_type: type === 'video' ? 'upload' : prev.video_type
-          }));
-          showSuccessModal(`${type === 'video' ? 'Video' : 'File'} uploaded successfully!`);
+          // Only update heroData and show modal if not in silent mode (batch operation)
+          if (!silent) {
+            setHeroData(prev => ({
+              ...prev,
+              [`${type}_url`]: data.data[`${type}_url`],
+              video_link: type === 'video' ? null : prev.video_link, // Clear video link when uploading video
+              video_type: type === 'video' ? 'upload' : prev.video_type
+            }));
+            showSuccessModal(`${type === 'video' ? 'Video' : 'File'} uploaded successfully!`);
+          }
           return data.data[`${type}_url`];
         }
       } else {
@@ -356,110 +428,91 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     }
   };
 
-  // Handle immediate video upload when file is selected
-  const handleVideoFileSelect = async (file) => {
-    if (!file) return;
-    
-    setSelectedVideoFile(file);
-    
-    // Upload video immediately
-    try {
-      const videoUrl = await handleFileUpload(file, 'video');
-      if (videoUrl) {
-        // Update temp data with the uploaded video URL
-        setTempHeroData(prev => ({
-          ...prev,
-          video_url: videoUrl,
-          video_link: null,
-          video_type: 'upload'
-        }));
-        setSelectedVideoFile(null); // Clear selected file since it's now uploaded
-      } else {
-        setSelectedVideoFile(null); // Clear on failure
-      }
-    } catch (error) {
-      setSelectedVideoFile(null); // Clear on error
+  // Video Content Section Handlers
+  const handleVideoEditToggle = () => {
+    if (!isEditingVideo) {
+      setTempVideoData({
+        video_url: heroData.video_url,
+        video_link: heroData.video_link,
+        video_type: heroData.video_type
+      });
     }
+    setIsEditingVideo(!isEditingVideo);
   };
 
-  const handleFileDelete = (type, imageId = null) => {
-    setDeleteType({ type, imageId });
-    setShowDeleteModal(true);
+  const handleVideoCancel = () => {
+    setIsEditingVideo(false);
+    setTempVideoData({ video_url: null, video_link: null, video_type: 'upload' });
+    setSelectedVideoFile(null);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteType) return;
-    
-    // If in edit mode, just mark for deletion and update temp data
-    if (isEditingHero) {
-      if (deleteType.imageId) {
-        // Mark image for deletion
-        setImagesToDelete(prev => new Set(prev).add(deleteType.imageId));
-        // Remove from tempHeroData
-        setTempHeroData(prev => ({
-          ...prev,
-          images: prev.images.map(img => 
-            img.id === deleteType.imageId ? { ...img, url: null } : img
-          )
-        }));
-        // Clear any selected file for this image
-        setSelectedImageFiles(prev => {
-          const newFiles = { ...prev };
-          delete newFiles[deleteType.imageId];
-          return newFiles;
-        });
-        showSuccessModal('Image will be deleted when you save changes');
-      } else {
-        // Handle video deletion in edit mode
-        if (deleteType.type === 'video') {
-          setTempHeroData(prev => ({
-            ...prev,
-            video_url: null,
-            video_link: null,
-            video_type: 'upload'
-          }));
-          setSelectedVideoFile(null);
-          showSuccessModal('Video will be deleted when you save changes');
-        }
-      }
-      setShowDeleteModal(false);
-      setDeleteType(null);
-      return;
-    }
-    
-    // If not in edit mode, delete immediately
+  const handleVideoSave = () => {
+    setShowVideoModal(true);
+  };
+
+  const handleVideoConfirm = async () => {
     try {
-      setIsDeleting(true);
+      setIsUpdatingVideo(true);
       const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
-      const endpoint = deleteType.imageId 
-        ? `${baseUrl}/api/superadmin/hero-section/image/${deleteType.imageId}`
-        : `${baseUrl}/api/superadmin/hero-section/${deleteType.type}`;
       
+      let finalVideoData = { ...tempVideoData };
+      
+      // Set video_type based on what's being used
+      if (finalVideoData.video_link && !finalVideoData.video_url) {
+        finalVideoData.video_type = 'link';
+      } else if (finalVideoData.video_url && !finalVideoData.video_link) {
+        finalVideoData.video_type = 'upload';
+      }
+      
+      // Upload video if a new file is selected
+      if (selectedVideoFile) {
+        try {
+          const videoUrl = await handleFileUpload(selectedVideoFile, 'video');
+          if (videoUrl) {
+            finalVideoData.video_url = videoUrl;
+            finalVideoData.video_link = null;
+            finalVideoData.video_type = 'upload';
+            setSelectedVideoFile(null);
+          } else {
+            showSuccessModal('Failed to upload video. Please try again.');
+            return;
+          }
+        } catch (error) {
+          showSuccessModal('Failed to upload video. Please try again.');
+          return;
+        }
+      }
+      
+      // Save video data
       const response = await makeAuthenticatedRequest(
-        endpoint,
-        { method: 'DELETE' },
+        `${baseUrl}/api/superadmin/hero-section`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...heroData,
+            video_url: finalVideoData.video_url,
+            video_link: finalVideoData.video_link,
+            video_type: finalVideoData.video_type
+          }),
+        },
         'superadmin'
       );
 
       if (response && response.ok) {
-        if (deleteType.imageId) {
-          setHeroData(prev => ({
-            ...prev,
-            images: prev.images.map(img => 
-              img.id === deleteType.imageId ? { ...img, url: null } : img
-            )
-          }));
-          showSuccessModal('Image deleted successfully!');
-        } else {
-          setHeroData(prev => ({
-            ...prev,
-            [`${deleteType.type}_url`]: null,
-            video_link: deleteType.type === 'video' ? null : prev.video_link,
-            video_type: deleteType.type === 'video' ? 'upload' : prev.video_type
-          }));
-          showSuccessModal(`${deleteType.type === 'video' ? 'Video' : 'File'} deleted successfully!`);
-        }
+        const data = await response.json();
+        setHeroData(prev => ({
+          ...prev,
+          video_url: data.data.video_url,
+          video_link: data.data.video_link,
+          video_type: data.data.video_type
+        }));
+        setIsEditingVideo(false);
+        setTempVideoData({ video_url: null, video_link: null, video_type: 'upload' });
+        showSuccessModal('Video content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
         if (response.status === 401) {
@@ -474,11 +527,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           return;
         }
         
-        let errorMessage = `Failed to delete ${deleteType.type}`;
+        let errorMessage = 'Failed to update video content';
         try {
-        const errorData = await response.json();
+          const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Delete error response:', errorData);
+          console.error('Update error response:', errorData);
         } catch (e) {
           errorMessage = response.statusText || `Server error (${response.status})`;
           console.error('Non-JSON error response:', response.status, response.statusText);
@@ -486,8 +539,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      console.error('Delete error:', error);
-      let errorMessage = `Failed to delete ${deleteType.type}`;
+      console.error('Update error:', error);
+      let errorMessage = 'Failed to update video content';
       
       if (error.message) {
         errorMessage = error.message;
@@ -497,191 +550,349 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       
       showSuccessModal(errorMessage);
     } finally {
-      setIsDeleting(false);
+      setIsUpdatingVideo(false);
+      setShowVideoModal(false);
+    }
+  };
+
+  const handleVideoCancelModal = () => {
+    setShowVideoModal(false);
+  };
+
+  // Handle immediate video upload when file is selected (only in edit mode)
+  const handleVideoFileSelect = async (file) => {
+    if (!file) return;
+    
+    setSelectedVideoFile(file);
+    
+    // Upload video immediately
+    try {
+      const videoUrl = await handleFileUpload(file, 'video');
+      if (videoUrl) {
+        // Update temp data with the uploaded video URL
+        setTempVideoData(prev => ({
+          ...prev,
+          video_url: videoUrl,
+          video_link: null,
+          video_type: 'upload'
+        }));
+        setSelectedVideoFile(null); // Clear selected file since it's now uploaded
+      } else {
+        setSelectedVideoFile(null); // Clear on failure
+      }
+    } catch (error) {
+      setSelectedVideoFile(null); // Clear on error
+    }
+  };
+
+  // Banner Images Section Handlers
+  const handleImagesEditToggle = () => {
+    if (!isEditingImages) {
+      setTempImagesData([...heroData.images]);
+    }
+    setIsEditingImages(!isEditingImages);
+  };
+
+  const handleImagesCancel = () => {
+    setIsEditingImages(false);
+    setTempImagesData([]);
+    setSelectedImageFiles({});
+    setImagesToDelete(new Set());
+  };
+
+  const handleImagesSave = () => {
+    setShowImagesModal(true);
+  };
+
+  const handleImagesConfirm = async () => {
+    try {
+      setIsUpdatingImages(true);
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
+      
+      let finalImagesData = [...tempImagesData];
+      
+      // First, delete images that were marked for deletion
+      const deletePromises = Array.from(imagesToDelete).map(async (imageId) => {
+        try {
+          const endpoint = `${baseUrl}/api/superadmin/hero-section/image/${imageId}`;
+          
+          const response = await makeAuthenticatedRequest(
+            endpoint,
+            { method: 'DELETE' },
+            'superadmin'
+          );
+          
+          if (response && response.ok) {
+            // Remove from finalImagesData
+            finalImagesData = finalImagesData.map(img => 
+              img.id === imageId ? { ...img, url: null } : img
+            );
+          } else {
+            console.warn(`Failed to delete image ${imageId}, continuing with update`);
+          }
+        } catch (error) {
+          console.error(`Error deleting image ${imageId}:`, error);
+          // Continue with update even if deletion fails
+        }
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Upload new images (this will automatically replace old ones on the backend)
+      // Only upload images that have selected files
+      // Use silent=true to avoid showing modals and updating heroData during batch operation
+      for (const [imageId, file] of Object.entries(selectedImageFiles)) {
+        try {
+          // The backend upload function will handle deleting the old image
+          // Pass silent=true to prevent modal popups and state updates during batch save
+          const imageUrl = await handleFileUpload(file, 'image', parseInt(imageId), true);
+          if (imageUrl) {
+            finalImagesData = finalImagesData.map(img => 
+              img.id === parseInt(imageId) ? { ...img, url: imageUrl } : img
+            );
+            // Remove from imagesToDelete if it was there (since we're replacing, not deleting)
+            setImagesToDelete(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(parseInt(imageId));
+              return newSet;
+            });
+          } else {
+            showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
+            return;
+          }
+        } catch (error) {
+          showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
+          return;
+        }
+      }
+      
+      // Clear selected files and deletion tracking
+      setSelectedImageFiles({});
+      setImagesToDelete(new Set());
+      
+      // Save images data
+      const response = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/hero-section`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...heroData,
+            images: finalImagesData
+          }),
+        },
+        'superadmin'
+      );
+
+      if (response && response.ok) {
+        const data = await response.json();
+        setHeroData(prev => ({
+          ...prev,
+          images: data.data.images
+        }));
+        setIsEditingImages(false);
+        setTempImagesData([]);
+        showSuccessModal('Banner images updated successfully! The changes will be visible on the public site immediately.');
+      } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
+        let errorMessage = 'Failed to update banner images';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      let errorMessage = 'Failed to update banner images';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
+    } finally {
+      setIsUpdatingImages(false);
+      setShowImagesModal(false);
+    }
+  };
+
+  const handleImagesCancelModal = () => {
+    setShowImagesModal(false);
+  };
+
+  // Handle video deletion in video edit mode
+  const handleVideoDelete = () => {
+    setDeleteType({ type: 'video' });
+    setShowDeleteModal(true);
+  };
+
+  const handleVideoDeleteConfirm = async () => {
+    if (!isEditingVideo) {
+      // If not in edit mode, delete immediately
+      try {
+        setIsDeleting(true);
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
+        const endpoint = `${baseUrl}/api/superadmin/hero-section/video`;
+        
+        const response = await makeAuthenticatedRequest(
+          endpoint,
+          { method: 'DELETE' },
+          'superadmin'
+        );
+
+        if (response && response.ok) {
+          setHeroData(prev => ({
+            ...prev,
+            video_url: null,
+            video_link: null,
+            video_type: 'upload'
+          }));
+          showSuccessModal('Video deleted successfully!');
+        } else {
+          // Handle errors
+          if (response.status === 401) {
+            showSuccessModal('Authentication expired. Please log in again.');
+            return;
+          }
+          
+          if (response.status === 0) {
+            showSuccessModal(`CORS error: Unable to connect to backend.`);
+            return;
+          }
+          
+          let errorMessage = 'Failed to delete video';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+          }
+          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        }
+      } catch (error) {
+        showSuccessModal('Failed to delete video. Please try again.');
+      } finally {
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        setDeleteType(null);
+      }
+    } else {
+      // If in edit mode, just mark for deletion
+      setTempVideoData(prev => ({
+        ...prev,
+        video_url: null,
+        video_link: null,
+        video_type: 'upload'
+      }));
+      setSelectedVideoFile(null);
       setShowDeleteModal(false);
       setDeleteType(null);
+      showSuccessModal('Video will be deleted when you save changes');
+    }
+  };
+
+  // Handle image deletion in images edit mode
+  const handleImageDelete = (imageId) => {
+    setDeleteType({ type: 'image', imageId });
+    setShowDeleteModal(true);
+  };
+
+  const handleImageDeleteConfirm = async () => {
+    if (!deleteType || !deleteType.imageId) return;
+    
+    if (!isEditingImages) {
+      // If not in edit mode, delete immediately
+      try {
+        setIsDeleting(true);
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
+        const endpoint = `${baseUrl}/api/superadmin/hero-section/image/${deleteType.imageId}`;
+        
+        const response = await makeAuthenticatedRequest(
+          endpoint,
+          { method: 'DELETE' },
+          'superadmin'
+        );
+
+        if (response && response.ok) {
+          setHeroData(prev => ({
+            ...prev,
+            images: prev.images.map(img => 
+              img.id === deleteType.imageId ? { ...img, url: null } : img
+            )
+          }));
+          showSuccessModal('Image deleted successfully!');
+        } else {
+          // Handle errors
+          if (response.status === 401) {
+            showSuccessModal('Authentication expired. Please log in again.');
+            return;
+          }
+          
+          if (response.status === 0) {
+            showSuccessModal(`CORS error: Unable to connect to backend.`);
+            return;
+          }
+          
+          let errorMessage = 'Failed to delete image';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+          }
+          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        }
+      } catch (error) {
+        showSuccessModal('Failed to delete image. Please try again.');
+      } finally {
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        setDeleteType(null);
+      }
+    } else {
+      // If in edit mode, mark for deletion
+      setImagesToDelete(prev => new Set(prev).add(deleteType.imageId));
+      setTempImagesData(prev => prev.map(img => 
+        img.id === deleteType.imageId ? { ...img, url: null } : img
+      ));
+      setSelectedImageFiles(prev => {
+        const newFiles = { ...prev };
+        delete newFiles[deleteType.imageId];
+        return newFiles;
+      });
+      setShowDeleteModal(false);
+      setDeleteType(null);
+      showSuccessModal('Image will be deleted when you save changes');
     }
   };
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
     setDeleteType(null);
-  };
-
-  // Main edit toggle for Hero Section
-  const handleEditToggle = () => {
-    if (!isEditingHero) {
-      setTempHeroData({
-        tag: heroData.tag,
-        heading: heroData.heading,
-        video_url: heroData.video_url,
-        video_link: heroData.video_link,
-        video_type: heroData.video_type,
-        images: [...heroData.images]
-      });
-    }
-    setIsEditingHero(!isEditingHero);
-  };
-
-  // Cancel edit
-  const handleCancelEdit = () => {
-    setIsEditingHero(false);
-    setTempHeroData({});
-    setSelectedVideoFile(null);
-    setSelectedImageFiles({});
-    setImagesToDelete(new Set());
-    setIsUploadingVideo(false);
-  };
-
-  // Hero update handler
-  const handleHeroUpdate = () => {
-    if (!tempHeroData.tag?.trim()) {
-      showSuccessModal('Tag cannot be empty');
-      return;
-    }
-    if (!tempHeroData.heading?.trim()) {
-      showSuccessModal('Heading cannot be empty');
-      return;
-    }
-    setShowHeroModal(true);
-  };
-
-  // Confirm hero update with batch file uploads
-  const handleHeroConfirm = async () => {
-      try {
-        setIsUpdatingHero(true);
-        
-        let finalHeroData = { ...tempHeroData };
-        
-        // Set video_type based on what's being used
-        if (finalHeroData.video_link && !finalHeroData.video_url) {
-          finalHeroData.video_type = 'link';
-        } else if (finalHeroData.video_url && !finalHeroData.video_link) {
-          finalHeroData.video_type = 'upload';
-        }
-        
-        // First, delete images that were marked for deletion
-        const deletePromises = Array.from(imagesToDelete).map(async (imageId) => {
-          try {
-            const { API_BASE_URL } = await import('@/config/api');
-            const baseUrl = API_BASE_URL || '';
-            const endpoint = `${baseUrl}/api/superadmin/hero-section/image/${imageId}`;
-            
-            const response = await makeAuthenticatedRequest(
-              endpoint,
-              { method: 'DELETE' },
-              'superadmin'
-            );
-            
-            if (response && response.ok) {
-              // Remove from finalHeroData
-              finalHeroData.images = finalHeroData.images.map(img => 
-                img.id === imageId ? { ...img, url: null } : img
-              );
-            } else {
-              console.warn(`Failed to delete image ${imageId}, continuing with update`);
-            }
-          } catch (error) {
-            console.error(`Error deleting image ${imageId}:`, error);
-            // Continue with update even if deletion fails
-          }
-        });
-        
-        await Promise.all(deletePromises);
-        
-        // Upload new images (this will automatically replace old ones on the backend)
-        // Only upload images that have selected files
-        for (const [imageId, file] of Object.entries(selectedImageFiles)) {
-          try {
-            // The backend upload function will handle deleting the old image
-            const imageUrl = await handleFileUpload(file, 'image', parseInt(imageId));
-            if (imageUrl) {
-              finalHeroData.images = finalHeroData.images.map(img => 
-                img.id === parseInt(imageId) ? { ...img, url: imageUrl } : img
-              );
-              // Remove from imagesToDelete if it was there (since we're replacing, not deleting)
-              setImagesToDelete(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(parseInt(imageId));
-                return newSet;
-              });
-            }
-          } catch (error) {
-            showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
-            return;
-          }
-        }
-        
-        // Clear selected files and deletion tracking
-        setSelectedImageFiles({});
-        setImagesToDelete(new Set());
-        
-        // Save all hero data
-        const { API_BASE_URL } = await import('@/config/api');
-        const baseUrl = API_BASE_URL || '';
-        const response = await makeAuthenticatedRequest(
-          `${baseUrl}/api/superadmin/hero-section`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(finalHeroData),
-          },
-          'superadmin'
-        );
-
-        if (response && response.ok) {
-          const data = await response.json();
-          setHeroData(data.data);
-          setIsEditingHero(false);
-          setTempHeroData({});
-          showSuccessModal('Hero section updated successfully! The changes will be visible on the public site immediately.');
-        } else {
-          // Handle 401 responses
-          if (response.status === 401) {
-            showSuccessModal('Authentication expired. Please log in again.');
-            return;
-          }
-          
-          // Handle CORS errors (status 0)
-          if (response.status === 0) {
-            console.error('CORS or network error detected');
-            showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
-            return;
-          }
-          
-          let errorMessage = 'Failed to update hero section';
-          try {
-          const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-            console.error('Update hero error response:', errorData);
-          } catch (e) {
-            errorMessage = response.statusText || `Server error (${response.status})`;
-            console.error('Non-JSON error response:', response.status, response.statusText);
-          }
-          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-        }
-      } catch (error) {
-        console.error('Update hero error:', error);
-        let errorMessage = 'Failed to update hero section';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
-        }
-        
-        showSuccessModal(errorMessage);
-      } finally {
-        setIsUpdatingHero(false);
-        setShowHeroModal(false);
-      }
-  };
-
-  // Cancel hero update
-  const handleHeroCancel = () => {
-    setShowHeroModal(false);
   };
 
 
@@ -692,35 +903,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           <h2>Hero Section</h2>
           <p>Manage the main hero section content, including tag, heading, video, and banner images</p>
         </div>
-        <div className={styles.headerActions}>
-          {isEditingHero ? (
-            <>
-              <button
-                onClick={handleCancelEdit}
-                className={styles.cancelBtn}
-                disabled={isUpdatingHero}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleHeroUpdate}
-                disabled={isUpdatingHero}
-                className={styles.saveBtn}
-              >
-                {isUpdatingHero ? 'Saving...' : 'Save Changes'}
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleEditToggle}
-              className={styles.editToggleBtn}
-              disabled={isUpdatingHero}
-            >
-              <FiEdit3 size={16} />
-              Edit
-            </button>
-          )}
-        </div>
       </div>
 
       <div className={styles.panelContent}>
@@ -728,9 +910,38 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.textContentSection}>
           <div className={styles.sectionHeader}>
             <h3>Text Content</h3>
+            <div className={styles.headerActions}>
+              {isEditingText ? (
+                <>
+                  <button
+                    onClick={handleTextCancel}
+                    className={styles.cancelBtn}
+                    disabled={isUpdatingText}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleTextSave}
+                    disabled={isUpdatingText}
+                    className={styles.saveBtn}
+                  >
+                    {isUpdatingText ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleTextEditToggle}
+                  className={styles.editToggleBtn}
+                  disabled={isUpdatingText}
+                >
+                  <FiEdit3 size={16} />
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
           
-          {isEditingHero ? (
+          {isEditingText ? (
             <>
               {/* Tag */}
               <div className={styles.inputGroup}>
@@ -738,8 +949,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <input
                   type="text"
                   className={styles.textInput}
-                  value={tempHeroData.tag || ''}
-                  onChange={(e) => setTempHeroData(prev => ({ ...prev, tag: e.target.value }))}
+                  value={tempTextData.tag || ''}
+                  onChange={(e) => setTempTextData(prev => ({ ...prev, tag: e.target.value }))}
                   placeholder="Enter tag text..."
                 />
               </div>
@@ -750,8 +961,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <textarea
                   className={styles.textInput}
                   rows={3}
-                  value={tempHeroData.heading || ''}
-                  onChange={(e) => setTempHeroData(prev => ({ ...prev, heading: e.target.value }))}
+                  value={tempTextData.heading || ''}
+                  onChange={(e) => setTempTextData(prev => ({ ...prev, heading: e.target.value }))}
                   placeholder="Enter main heading..."
                 />
               </div>
@@ -774,6 +985,35 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.mediaSection}>
           <div className={styles.sectionHeader}>
             <h3>Video Content</h3>
+            <div className={styles.headerActions}>
+              {isEditingVideo ? (
+                <>
+                  <button
+                    onClick={handleVideoCancel}
+                    className={styles.cancelBtn}
+                    disabled={isUpdatingVideo}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleVideoSave}
+                    disabled={isUpdatingVideo || isUploadingVideo}
+                    className={styles.saveBtn}
+                  >
+                    {isUpdatingVideo ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleVideoEditToggle}
+                  className={styles.editToggleBtn}
+                  disabled={isUpdatingVideo}
+                >
+                  <FiEdit3 size={16} />
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
           {/* Main Video Layout: Video container on left, fields on right */}
           <div className={styles.videoMainLayout}>
@@ -789,7 +1029,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                     src={heroData.video_url} 
                     style={{ width: '100%', height: '200px', objectFit: 'cover' }}
                   />
-                  <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                  <div className={styles.videoPlayOverlay} onClick={() => setShowVideoPlayerModal(true)}>
                     <FaPlay size={24} />
                   </div>
                 </div>
@@ -834,7 +1074,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                           setIframeError(false);
                         }}
                       />
-                      <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                      <div className={styles.videoPlayOverlay} onClick={() => setShowVideoPlayerModal(true)}>
                         <FaPlay size={24} />
                       </div>
                     </>
@@ -850,7 +1090,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
             {/* Video Fields - Right Side */}
             <div className={styles.videoFieldsSection}>
-              {isEditingHero ? (
+              {isEditingVideo ? (
                 <>
                   {/* Video Link Input */}
                   <div className={styles.inputGroup}>
@@ -858,8 +1098,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                     <input
                       type="url"
                       className={styles.textInput}
-                      value={tempHeroData.video_link || ''}
-                      onChange={(e) => setTempHeroData(prev => ({ ...prev, video_link: e.target.value }))}
+                      value={tempVideoData.video_link || ''}
+                      onChange={(e) => setTempVideoData(prev => ({ ...prev, video_link: e.target.value }))}
                       placeholder="https://www.youtube.com/watch?v=..."
                     />
                   </div>
@@ -899,17 +1139,17 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         </span>
                       </div>
                     </div>
-                  ) : tempHeroData.video_url ? (
+                  ) : tempVideoData.video_url ? (
                     <div className={styles.uploadActions}>
                       <div className={styles.videoPreviewContainer}>
                         <video 
-                          src={tempHeroData.video_url} 
+                          src={tempVideoData.video_url} 
                           style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
                           controls
                         />
                         <div className={styles.videoOverlay}>
                           <button
-                            onClick={() => handleFileDelete('video')}
+                            onClick={handleVideoDelete}
                             className={styles.deleteVideoBtn}
                             title="Delete uploaded video"
                           >
@@ -948,17 +1188,48 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
         {/* Images Section */}
         <div className={styles.imagesSection}>
-          <h3>Banner Images</h3>
+          <div className={styles.sectionHeader}>
+            <h3>Banner Images</h3>
+            <div className={styles.headerActions}>
+              {isEditingImages ? (
+                <>
+                  <button
+                    onClick={handleImagesCancel}
+                    className={styles.cancelBtn}
+                    disabled={isUpdatingImages}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleImagesSave}
+                    disabled={isUpdatingImages}
+                    className={styles.saveBtn}
+                  >
+                    {isUpdatingImages ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleImagesEditToggle}
+                  className={styles.editToggleBtn}
+                  disabled={isUpdatingImages}
+                >
+                  <FiEdit3 size={16} />
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
           <div className={styles.imagesGrid}>
-            {(isEditingHero ? tempHeroData.images : heroData.images || []).map((image, index) => (
+            {(isEditingImages ? tempImagesData : heroData.images || []).map((image, index) => (
               <div key={image.id} className={styles.imageItem}>
                 <div className={styles.itemHeader}>
                   <span className={styles.itemLabel}>Image {index + 1}</span>
                   <div className={styles.itemActions}>
-                    {isEditingHero && image.url && !imagesToDelete.has(image.id) && (
+                    {isEditingImages && image.url && !imagesToDelete.has(image.id) && (
                           <button 
                             className={styles.removeBtn}
-                            onClick={() => handleFileDelete('image', image.id)}
+                            onClick={() => handleImageDelete(image.id)}
                             title="Remove image"
                           >
                             <FiTrash2 color="#dc2626" />
@@ -967,7 +1238,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                   </div>
                 </div>
                 
-                {isEditingHero ? (
+                {isEditingImages ? (
                   <>
                     {/* Image Preview */}
                     {(() => {
@@ -1128,11 +1399,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         <input
                           type="text"
                           className={styles.textInput}
-                          value={tempHeroData.images?.[index]?.heading || ''}
+                          value={tempImagesData[index]?.heading || ''}
                           onChange={(e) => {
-                            const newImages = [...tempHeroData.images];
+                            const newImages = [...tempImagesData];
                             newImages[index].heading = e.target.value;
-                            setTempHeroData(prev => ({ ...prev, images: newImages }));
+                            setTempImagesData(newImages);
                           }}
                           placeholder="Enter image heading..."
                         />
@@ -1143,11 +1414,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         <input
                           type="text"
                           className={styles.textInput}
-                          value={tempHeroData.images?.[index]?.subheading || ''}
+                          value={tempImagesData[index]?.subheading || ''}
                           onChange={(e) => {
-                            const newImages = [...tempHeroData.images];
+                            const newImages = [...tempImagesData];
                             newImages[index].subheading = e.target.value;
-                            setTempHeroData(prev => ({ ...prev, images: newImages }));
+                            setTempImagesData(newImages);
                           }}
                           placeholder="Enter image subheading..."
                         />
@@ -1232,34 +1503,59 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         itemName={deleteType?.type}
         itemType={deleteType?.imageId ? `image ${deleteType.imageId}` : deleteType?.type}
         actionType="delete"
-        onConfirm={handleDeleteConfirm}
+        onConfirm={deleteType?.imageId ? handleImageDeleteConfirm : handleVideoDeleteConfirm}
         onCancel={handleDeleteCancel}
         isDeleting={isDeleting}
       />
       
+      {/* Text Content Update Modal */}
       <ConfirmationModal
-        isOpen={showHeroModal}
-        itemName="Hero Section"
-        itemType="all changes"
+        isOpen={showTextModal}
+        itemName="Text Content"
+        itemType="text content"
         actionType="update"
-        onConfirm={handleHeroConfirm}
-        onCancel={handleHeroCancel}
-        isDeleting={isUpdatingHero}
-        customMessage="This will update the hero section content across the entire public website. The changes will be visible immediately."
+        onConfirm={handleTextConfirm}
+        onCancel={handleTextCancelModal}
+        isDeleting={isUpdatingText}
+        customMessage="This will update the text content (tag and heading) across the entire public website. The changes will be visible immediately."
+      />
+      
+      {/* Video Content Update Modal */}
+      <ConfirmationModal
+        isOpen={showVideoModal}
+        itemName="Video Content"
+        itemType="video content"
+        actionType="update"
+        onConfirm={handleVideoConfirm}
+        onCancel={handleVideoCancelModal}
+        isDeleting={isUpdatingVideo}
+        customMessage="This will update the video content across the entire public website. The changes will be visible immediately."
+      />
+      
+      {/* Banner Images Update Modal */}
+      <ConfirmationModal
+        isOpen={showImagesModal}
+        itemName="Banner Images"
+        itemType="banner images"
+        actionType="update"
+        onConfirm={handleImagesConfirm}
+        onCancel={handleImagesCancelModal}
+        isDeleting={isUpdatingImages}
+        customMessage="This will update the banner images across the entire public website. The changes will be visible immediately."
       />
 
-      {/* Full Viewport Video Modal */}
-      {showVideoModal && mounted && (heroData?.video_url || heroData?.video_link) && createPortal(
+      {/* Full Viewport Video Player Modal */}
+      {showVideoPlayerModal && mounted && (heroData?.video_url || heroData?.video_link) && createPortal(
         <div 
           className={styles.videoOverlay}
           onClick={(e) => {
             // Close video when clicking on overlay (not on video itself)
             if (e.target === e.currentTarget) {
-              setShowVideoModal(false);
+              setShowVideoPlayerModal(false);
             }
           }}
         >
-          <button className={styles.closeButton} onClick={() => setShowVideoModal(false)}>✖</button>
+          <button className={styles.closeButton} onClick={() => setShowVideoPlayerModal(false)}>✖</button>
           {heroData?.video_link ? (
             iframeError ? (
               <div style={{ 
@@ -1282,7 +1578,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <button 
                   onClick={() => {
                     setIframeError(false);
-                    setShowVideoModal(false);
+                    setShowVideoPlayerModal(false);
                   }}
                   style={{ 
                     marginTop: '1rem', 
@@ -1319,7 +1615,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
               autoPlay 
               className={styles.videoPlayer}
               onError={(e) => {
-                setShowVideoModal(false);
+                setShowVideoPlayerModal(false);
               }}
             >
               <source src={heroData.video_url} type="video/mp4" />

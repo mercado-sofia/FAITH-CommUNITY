@@ -19,8 +19,10 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   const [tempMission, setTempMission] = useState('');
   const [tempVision, setTempVision] = useState('');
 
-  // Load mission and vision data (for reference only, don't auto-populate)
+  // Load mission and vision data - only on mount to prevent race conditions
   useEffect(() => {
+    let isMounted = true;
+    
     const loadMissionVisionData = async () => {
       try {
         const { API_BASE_URL } = await import('@/config/api');
@@ -31,9 +33,10 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           'superadmin'
         );
 
+        if (!isMounted) return;
+
         if (response && response.ok) {
           const data = await response.json();
-          setMissionVisionData(data);
           
           // Populate form fields with current data from database
           // This ensures superadmin sees what's currently displayed on the public site
@@ -47,39 +50,49 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           const currentMission = missionItem?.content || '';
           const currentVision = visionItem?.content || '';
           
-          // Set the state so it displays what's currently on the public site
-          setMission(currentMission);
-          setVision(currentVision);
-          setTempMission(currentMission);
-          setTempVision(currentVision);
+          if (isMounted) {
+            setMissionVisionData(data);
+            // Set the state so it displays what's currently on the public site
+            setMission(currentMission);
+            setVision(currentVision);
+            setTempMission(currentMission);
+            setTempVision(currentVision);
+          }
         } else {
-          console.error('Failed to load mission/vision: response not ok', response);
-          if (response) {
-            console.error('Response status:', response.status);
-            try {
-              const errorData = await response.json();
-              console.error('Error data:', errorData);
-            } catch (e) {
-              console.error('Could not parse error response');
+          if (isMounted) {
+            console.error('Failed to load mission/vision: response not ok', response);
+            if (response) {
+              console.error('Response status:', response.status);
+              try {
+                const errorData = await response.json();
+                console.error('Error data:', errorData);
+              } catch (e) {
+                console.error('Could not parse error response');
+              }
             }
           }
         }
       } catch (error) {
-        console.error('Load error:', error);
-        let errorMessage = 'Failed to load mission and vision data';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        if (isMounted) {
+          console.error('Load error:', error);
+          let errorMessage = 'Failed to load mission and vision data';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          
+          showAuthError(errorMessage);
         }
-        
-        showAuthError(errorMessage);
-      } finally {
       }
     };
 
     loadMissionVisionData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []); // Load on mount only
 
   // Handle edit toggle
@@ -307,42 +320,45 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           console.warn('Failed to invalidate cache:', cacheError);
         }
         
-        // Wait a bit to ensure database transaction is committed
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Update state with saved data (no need to reload - we already have the response data)
+        // Use savedData from responses, or fallback to temp values if response parsing failed
+        if (savedData.mission !== null) {
+          setMission(savedData.mission);
+          setTempMission(savedData.mission);
+        }
+        if (savedData.vision !== null) {
+          setVision(savedData.vision);
+          setTempVision(savedData.vision);
+        }
         
-        // Reload data to ensure consistency with database
-        const loadData = async () => {
-          try {
-            const response = await makeAuthenticatedRequest(
-              `${baseUrl}/api/mission-vision`,
-              { method: 'GET' },
-              'superadmin'
-            );
-            if (response && response.ok) {
-              const data = await response.json();
-              setMissionVisionData(data);
-              
-              // Update form state with fresh data from database
-              const missionItem = data.find(item => item.type === 'Mission');
-              const visionItem = data.find(item => item.type === 'Vision');
-              const freshMission = missionItem?.content || '';
-              const freshVision = visionItem?.content || '';
-              
-              // Only update if we got valid data
-              if (missionItem || visionItem) {
-                setMission(freshMission);
-                setVision(freshVision);
-                setTempMission(freshMission);
-                setTempVision(freshVision);
-              }
+        // Update missionVisionData with saved values for consistency
+        setMissionVisionData(prev => {
+          const updated = [...(prev || [])];
+          const missionIndex = updated.findIndex(item => 
+            item.type === 'Mission' || item.type?.toLowerCase() === 'mission'
+          );
+          const visionIndex = updated.findIndex(item => 
+            item.type === 'Vision' || item.type?.toLowerCase() === 'vision'
+          );
+          
+          if (savedData.mission !== null) {
+            if (missionIndex >= 0) {
+              updated[missionIndex] = { ...updated[missionIndex], content: savedData.mission };
             } else {
-              console.error('Failed to reload data: response not ok', response);
+              updated.push({ type: 'Mission', content: savedData.mission });
             }
-          } catch (error) {
-            console.error('Error reloading data:', error);
           }
-        };
-        await loadData();
+          
+          if (savedData.vision !== null) {
+            if (visionIndex >= 0) {
+              updated[visionIndex] = { ...updated[visionIndex], content: savedData.vision };
+            } else {
+              updated.push({ type: 'Vision', content: savedData.vision });
+            }
+          }
+          
+          return updated;
+        });
         
         setIsEditing(false);
         

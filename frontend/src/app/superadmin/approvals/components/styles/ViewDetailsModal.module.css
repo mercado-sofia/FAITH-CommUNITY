@@ -228,7 +228,7 @@
 
 .sectionTitle {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -252,9 +252,9 @@
 /* Post Act Report Container */
 .postActReportContainer {
   padding: 16px;
-  background: #f0fdf4;
+  background: #f3f4f6;
   border-radius: 12px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #e5e7eb;
   margin-top: 12px;
 }
 
@@ -266,7 +266,7 @@
 
 .fileIcon {
   font-size: 20px;
-  color: #16a34a;
+  color: #6b7280;
   flex-shrink: 0;
 }
 
@@ -280,21 +280,21 @@
 .postActReportLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #166534;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.025em;
 }
 
 .postActReportLink {
   font-size: 14px;
-  color: #16a34a;
+  color: #4b5563;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
 }
 
 .postActReportLink:hover {
-  color: #15803d;
+  color: #1f2937;
   text-decoration: underline;
 }
 
@@ -510,13 +510,7 @@
   transform: translateY(-1px);
 }
 
-/* Text Data Container */
-.textDataContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
+/* Data Block */
 .dataBlock {
   background: transparent;
   border: none;
@@ -946,6 +940,19 @@
 .collaboratorEmail {
   font-size: 14px;
   color: #6b7280;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Collaboration Badge */
+.collabBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

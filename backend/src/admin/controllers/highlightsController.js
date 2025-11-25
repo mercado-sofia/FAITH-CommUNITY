@@ -32,10 +32,21 @@ export const getAdminHighlights = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
+    // Check if year column exists
+    const [yearColumnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
     // Build query with or without program_id column and program title
     const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
     const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    const yearSelect = hasYearColumn ? ', h.year' : '';
     const query = `
       SELECT 
         h.id,
@@ -44,7 +55,7 @@ export const getAdminHighlights = async (req, res) => {
         h.media_files,
         h.status,
         h.organization_id,
-        h.created_by${programIdSelect}${programTitleSelect},
+        h.created_by${programIdSelect}${programTitleSelect}${yearSelect},
         h.created_at,
         h.updated_at
       FROM admin_highlights h
@@ -66,7 +77,8 @@ export const getAdminHighlights = async (req, res) => {
         ...highlight,
         media: safeParseJSON(highlight.media_files, []),
         program_id: programId,
-        program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
+        program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+        year: hasYearColumn ? (highlight.year || null) : null
       };
     });
     
@@ -96,10 +108,21 @@ export const getHighlightById = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
+    // Check if year column exists
+    const [yearColumnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
     // Build query with or without program_id column and program title
     const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
     const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    const yearSelect = hasYearColumn ? ', h.year' : '';
     const query = `
       SELECT 
         h.id,
@@ -107,7 +130,7 @@ export const getHighlightById = async (req, res) => {
         h.description,
         h.media_files,
         h.organization_id,
-        h.created_by${programIdSelect}${programTitleSelect},
+        h.created_by${programIdSelect}${programTitleSelect}${yearSelect},
         h.created_at,
         h.updated_at
       FROM admin_highlights h
@@ -130,7 +153,8 @@ export const getHighlightById = async (req, res) => {
       ...rows[0],
       media: safeParseJSON(rows[0].media_files, []),
       program_id: programId,
-      program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null
+      program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null,
+      year: hasYearColumn ? (rows[0].year || null) : null
     };
     
     res.json({ highlight });
@@ -149,7 +173,7 @@ export const createHighlight = async (req, res) => {
   try {
     await connection.beginTransaction();
     
-    const { title, description, media = [], program_id } = req.body;
+    const { title, description, media = [], program_id, year } = req.body;
     const { organization_id: orgId, id: adminId } = req.admin;
     
     // Validate required fields
@@ -160,6 +184,14 @@ export const createHighlight = async (req, res) => {
     // Validate program_id is required
     if (!program_id) {
       return res.status(400).json({ error: 'Associated Program is required' });
+    }
+    
+    // Validate year if provided
+    if (year !== null && year !== undefined) {
+      const yearNum = parseInt(year, 10);
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 10) {
+        return res.status(400).json({ error: 'Year must be a valid year between 1900 and ' + (new Date().getFullYear() + 10) });
+      }
     }
     
     // Check if program_id column exists
@@ -173,19 +205,36 @@ export const createHighlight = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
-    // Build INSERT query with or without program_id column
+    // Check if year column exists
+    const [yearColumnCheck] = await connection.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
+    // Build INSERT query with or without program_id and year columns
     const programIdColumn = hasProgramIdColumn ? ', program_id' : '';
     const programIdValue = hasProgramIdColumn ? ', ?' : '';
+    const yearColumn = hasYearColumn ? ', year' : '';
+    const yearValue = hasYearColumn ? ', ?' : '';
     const highlightQuery = `
-      INSERT INTO admin_highlights (title, description, media_files, status, organization_id, created_by${programIdColumn}, created_at, updated_at)
-      VALUES (?, ?, ?, 'pending', ?, ?${programIdValue}, NOW(), NOW())
+      INSERT INTO admin_highlights (title, description, media_files, status, organization_id, created_by${programIdColumn}${yearColumn}, created_at, updated_at)
+      VALUES (?, ?, ?, 'pending', ?, ?${programIdValue}${yearValue}, NOW(), NOW())
     `;
     
     const mediaFilesJson = JSON.stringify(media);
     
-    const insertParams = hasProgramIdColumn
-      ? [title, description, mediaFilesJson, orgId, adminId, program_id || null]
-      : [title, description, mediaFilesJson, orgId, adminId];
+    const insertParams = [];
+    insertParams.push(title, description, mediaFilesJson, orgId, adminId);
+    if (hasProgramIdColumn) {
+      insertParams.push(program_id || null);
+    }
+    if (hasYearColumn) {
+      insertParams.push(year !== null && year !== undefined ? parseInt(year, 10) : null);
+    }
     
     const [highlightResult] = await connection.execute(highlightQuery, insertParams);
     
@@ -203,6 +252,7 @@ export const createHighlight = async (req, res) => {
       description,
       media_files: mediaFilesJson,
       program_id: program_id || null,
+      year: year !== null && year !== undefined ? parseInt(year, 10) : null,
       action: 'create'
     });
     
@@ -237,7 +287,7 @@ export const updateHighlight = async (req, res) => {
     await connection.beginTransaction();
     
     const { id } = req.params;
-    const { title, description, media = [], program_id } = req.body;
+    const { title, description, media = [], program_id, year } = req.body;
     const { organization_id: orgId } = req.admin;
     
     // Validate required fields
@@ -254,6 +304,14 @@ export const updateHighlight = async (req, res) => {
     const programIdNum = parseInt(program_id, 10);
     if (isNaN(programIdNum) || programIdNum <= 0) {
       return res.status(400).json({ error: 'Invalid program ID. Must be a positive integer.' });
+    }
+    
+    // Validate year if provided
+    if (year !== null && year !== undefined) {
+      const yearNum = parseInt(year, 10);
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 10) {
+        return res.status(400).json({ error: 'Year must be a valid year between 1900 and ' + (new Date().getFullYear() + 10) });
+      }
     }
     
     // Validate ID parameter
@@ -282,11 +340,22 @@ export const updateHighlight = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
-    // Build UPDATE query with or without program_id column
+    // Check if year column exists
+    const [yearColumnCheck] = await connection.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
+    // Build UPDATE query with or without program_id and year columns
     const programIdUpdate = hasProgramIdColumn ? ', program_id = ?' : '';
+    const yearUpdate = hasYearColumn ? ', year = ?' : '';
     const updateQuery = `
       UPDATE admin_highlights 
-      SET title = ?, description = ?, media_files = ?${programIdUpdate}, updated_at = NOW()
+      SET title = ?, description = ?, media_files = ?${programIdUpdate}${yearUpdate}, updated_at = NOW()
       WHERE id = ? AND organization_id = ?
     `;
     
@@ -294,10 +363,17 @@ export const updateHighlight = async (req, res) => {
     
     // Ensure program_id is a number for the database
     const programIdForDb = hasProgramIdColumn ? programIdNum : null;
+    const yearForDb = hasYearColumn ? (year !== null && year !== undefined ? parseInt(year, 10) : null) : null;
     
-    const updateParams = hasProgramIdColumn
-      ? [title, description, mediaFilesJson, programIdForDb, id, orgId]
-      : [title, description, mediaFilesJson, id, orgId];
+    const updateParams = [];
+    updateParams.push(title, description, mediaFilesJson);
+    if (hasProgramIdColumn) {
+      updateParams.push(programIdForDb);
+    }
+    if (hasYearColumn) {
+      updateParams.push(yearForDb);
+    }
+    updateParams.push(id, orgId);
     
     await connection.execute(updateQuery, updateParams);
     
@@ -313,6 +389,7 @@ export const updateHighlight = async (req, res) => {
       description,
       media_files: mediaFilesJson,
       program_id: program_id || null,
+      year: year !== null && year !== undefined ? parseInt(year, 10) : null,
       action: 'update'
     });
     
@@ -429,10 +506,21 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
   
   const hasProgramIdColumn = columnCheck[0]?.count > 0;
   
+  // Check if year column exists
+  const [yearColumnCheck] = await connection.execute(`
+    SELECT COUNT(*) as count 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'admin_highlights' 
+    AND COLUMN_NAME = 'year'
+  `);
+  const hasYearColumn = yearColumnCheck[0]?.count > 0;
+  
   // Build query with or without program_id column and program title
   const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
   const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
   const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+  const yearSelect = hasYearColumn ? ', h.year' : '';
   const query = `
     SELECT 
       h.id,
@@ -440,7 +528,7 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
       h.description,
       h.media_files,
       h.organization_id,
-      h.created_by${programIdSelect}${programTitleSelect},
+      h.created_by${programIdSelect}${programTitleSelect}${yearSelect},
       h.created_at,
       h.updated_at
     FROM admin_highlights h
@@ -458,7 +546,8 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
     ...rows[0],
     media: safeParseJSON(rows[0].media_files, []),
     program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null,
-    program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null
+    program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null,
+    year: hasYearColumn ? (rows[0].year || null) : null
   };
 };
 
@@ -478,10 +567,21 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
+    // Check if year column exists
+    const [yearColumnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
     // Build query with or without program_id and program title
     const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
     const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    const yearSelect = hasYearColumn ? ', h.year' : '';
     
     let query = `
       SELECT 
@@ -497,7 +597,7 @@ export const getAllHighlightsForApproval = async (req, res) => {
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.org_color as organization_color,
-        a.email as admin_email${programIdSelect}${programTitleSelect}
+        a.email as admin_email${programIdSelect}${programTitleSelect}${yearSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
       LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
@@ -520,7 +620,8 @@ export const getAllHighlightsForApproval = async (req, res) => {
       ...highlight,
       media: safeParseJSON(highlight.media_files, []),
       program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
-      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
+      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+      year: hasYearColumn ? (highlight.year || null) : null
     }));
     
     res.json({ highlights });
@@ -599,10 +700,21 @@ export const getApprovedHighlights = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
+    // Check if year column exists
+    const [yearColumnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
     // Build query with or without program_id and program title
     const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
     const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    const yearSelect = hasYearColumn ? ', h.year' : '';
     
     const query = `
       SELECT 
@@ -614,7 +726,7 @@ export const getApprovedHighlights = async (req, res) => {
         h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo${programIdSelect}${programTitleSelect}
+        o.logo as organization_logo${programIdSelect}${programTitleSelect}${yearSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
       LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
@@ -642,6 +754,7 @@ export const getApprovedHighlights = async (req, res) => {
         media: safeParseJSON(highlight.media_files, []),
         program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
         program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+        year: hasYearColumn ? (highlight.year || null) : null,
         organization_logo: logoUrl
       };
     });
@@ -669,10 +782,21 @@ export const getFeaturedHighlights = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
+    // Check if year column exists
+    const [yearColumnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'year'
+    `);
+    const hasYearColumn = yearColumnCheck[0]?.count > 0;
+    
     // Build query with or without program_id and program title
     const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
     const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    const yearSelect = hasYearColumn ? ', h.year' : '';
     
     const query = `
       SELECT 
@@ -687,7 +811,7 @@ export const getFeaturedHighlights = async (req, res) => {
         h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo${programIdSelect}${programTitleSelect}
+        o.logo as organization_logo${programIdSelect}${programTitleSelect}${yearSelect}
       FROM featured_highlights fh
       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
       LEFT JOIN organizations o ON h.organization_id = o.id
@@ -707,7 +831,8 @@ export const getFeaturedHighlights = async (req, res) => {
       ...highlight,
       media: safeParseJSON(highlight.media_files, []),
       program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
-      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
+      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+      year: hasYearColumn ? (highlight.year || null) : null
     }));
     
     res.json({ highlights });

@@ -4,6 +4,7 @@ import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile, FaPlay
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatDateTime, formatDateShort } from '../../../../utils/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
+import DOMPurify from 'dompurify';
 import logger from '@/utils/logger';
 import styles from './styles/ViewDetailsModal.module.css';
 
@@ -568,9 +569,14 @@ const ViewDetailsModal = ({
               {programData.description && (
                 <div className={styles.contentSection}>
                   <h4 className={styles.sectionTitle}>DESCRIPTION:</h4>
-                  <div className={styles.descriptionBox}>
-                    {programData.description}
-                  </div>
+                  <div 
+                    className={styles.descriptionBox}
+                    dangerouslySetInnerHTML={{ 
+                      __html: programData.description 
+                        ? DOMPurify.sanitize(programData.description) 
+                        : '<p>No description provided</p>' 
+                    }} 
+                  />
                 </div>
               )}
 
@@ -784,9 +790,14 @@ const ViewDetailsModal = ({
               {highlightsData.description && (
                 <div className={styles.contentSection}>
                   <h4 className={styles.sectionTitle}>DESCRIPTION:</h4>
-                  <div className={styles.descriptionBox}>
-                    {highlightsData.description}
-                  </div>
+                  <div 
+                    className={styles.descriptionBox}
+                    dangerouslySetInnerHTML={{ 
+                      __html: highlightsData.description 
+                        ? DOMPurify.sanitize(highlightsData.description) 
+                        : '<p>No description provided</p>' 
+                    }} 
+                  />
                 </div>
               )}
 
@@ -804,6 +815,16 @@ const ViewDetailsModal = ({
                     ) : (
                       `Program #${highlightsData.program_id}`
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Year Section */}
+              {highlightsData.year && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>YEAR:</h4>
+                  <div className={styles.descriptionBox}>
+                    {highlightsData.year}
                   </div>
                 </div>
               )}

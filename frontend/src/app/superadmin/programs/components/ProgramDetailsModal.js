@@ -7,6 +7,7 @@ import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths
 import { getProgramStatusByDates } from '@/utils/programStatusUtils'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js'
+import DOMPurify from 'dompurify'
 import styles from './styles/ProgramDetailsModal.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
@@ -260,9 +261,14 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
             {/* Description - Full Width Below */}
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Description</h4>
-              <p className={styles.description}>
-                {programData.description || 'No description provided'}
-              </p>
+              <div 
+                className={styles.description}
+                dangerouslySetInnerHTML={{ 
+                  __html: programData.description 
+                    ? DOMPurify.sanitize(programData.description) 
+                    : '<p>No description provided</p>' 
+                }} 
+              />
             </div>
 
             {/* Collaborator Section - Only show if program is collaborative */}

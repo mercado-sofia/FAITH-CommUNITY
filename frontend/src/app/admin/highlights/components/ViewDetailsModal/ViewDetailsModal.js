@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiX, FiCalendar, FiImage, FiVideo, FiFile } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
+import DOMPurify from 'dompurify';
 import styles from './ViewDetailsModal.module.css';
 import { API_BASE_URL } from '@/config/api';
 
@@ -223,9 +224,14 @@ export default function ViewDetailsModal({ highlight, onClose }) {
           {/* Description */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Description</h3>
-            <p className={styles.description}>
-              {highlight?.description || 'No description provided.'}
-            </p>
+            <div 
+              className={styles.description}
+              dangerouslySetInnerHTML={{ 
+                __html: highlight?.description 
+                  ? DOMPurify.sanitize(highlight.description) 
+                  : '<p>No description provided.</p>' 
+              }} 
+            />
           </div>
 
           {/* Media Gallery */}
@@ -331,6 +337,15 @@ export default function ViewDetailsModal({ highlight, onClose }) {
                   ) : highlight?.program_title || programTitle || (highlight?.program_id ? `Program #${highlight.program_id}` : 'No program associated')}
                 </span>
               </div>
+              {highlight?.year && (
+                <div className={styles.metaItem}>
+                  <FiCalendar className={styles.metaIcon} />
+                  <span className={styles.metaLabel}>Year:</span>
+                  <span className={styles.metaValue}>
+                    {highlight.year}
+                  </span>
+                </div>
+              )}
               <div className={styles.metaItem}>
                 <FiCalendar className={styles.metaIcon} />
                 <span className={styles.metaLabel}>Created:</span>

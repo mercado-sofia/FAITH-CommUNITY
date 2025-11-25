@@ -131,6 +131,11 @@
   border-color: #dc2626;
 }
 
+.editorError {
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+}
+
 /* Custom Dropdown Styles */
 .customDropdownContainer {
   position: relative;

@@ -516,17 +516,13 @@ export default function AdminHighlightsPage() {
           </div>
         </>
       ) : (
-        <>
-          <div className={styles.createPostHeader}>
-            <h1>{pageMode === 'edit' ? 'Edit Highlight' : 'Add New Highlight'}</h1>
-          </div>
           <HighlightForm
             mode={pageMode}
             highlight={editingHighlight}
             onCancel={handleFormCancel}
             onSubmit={handleFormSubmit}
+          headerTitle={pageMode === 'edit' ? 'Edit Highlight' : 'Add New Highlight'}
           />
-        </>
       )}
 
       {/* View Details Modal */}

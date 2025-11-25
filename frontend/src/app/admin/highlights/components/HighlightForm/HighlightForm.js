@@ -6,6 +6,8 @@ import { FaSpinner, FaTimes, FaImage, FaVideo, FaFile, FaEye, FaExclamationTrian
 import { LuUpload } from 'react-icons/lu';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
+import { ContentEditor } from '@/app/admin/components';
+import DOMPurify from 'dompurify';
 import styles from './HighlightForm.module.css';
 import { API_BASE_URL } from '@/config/api';
 
@@ -65,14 +67,15 @@ const CustomDropdown = ({ options, value, onChange, disabled, placeholder, error
   );
 };
 
-export default function HighlightForm({ mode = 'create', highlight = null, onCancel, onSubmit }) {
+export default function HighlightForm({ mode = 'create', highlight = null, onCancel, onSubmit, headerTitle }) {
   const isEditMode = mode === 'edit';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     media: [],
-    program_id: null
+    program_id: null,
+    year: null
   });
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState({ images: false, videos: false });
@@ -181,7 +184,8 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         title: highlight.title || '',
         description: highlight.description || '',
         media: highlight.media || [],
-        program_id: programId
+        program_id: programId,
+        year: highlight.year !== null && highlight.year !== undefined ? highlight.year : null
       });
     } else {
       // Create mode: reset form to empty state
@@ -189,7 +193,8 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         title: '',
         description: '',
         media: [],
-        program_id: null
+        program_id: null,
+        year: null
       });
     }
     // Clear any existing errors when switching modes
@@ -233,6 +238,25 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     }
   }, [errors]);
 
+  // Generate year options (from 1900 to current year - only past and current years)
+  // Note: Uses new Date().getFullYear() to automatically include the current year
+  // This means the dropdown will automatically update when the year changes (e.g., 2025 -> 2026)
+  const generateYearOptions = useCallback(() => {
+    const currentYear = new Date().getFullYear(); // Dynamically gets the current year
+    const startYear = 1900;
+    const endYear = currentYear; // Only up to current year, no future years
+    const years = [];
+    
+    for (let year = endYear; year >= startYear; year--) {
+      years.push({
+        value: year,
+        label: year.toString()
+      });
+    }
+    
+    return years;
+  }, []); // Empty deps - function is called on every render anyway, so it always gets current year
+
   // Validate form
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -245,8 +269,28 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       newErrors.title = 'Title is required';
     }
     
-    if (!formData.description.trim()) {
+    // Check if description has actual text content (not just HTML tags)
+    if (!formData.description || !formData.description.trim()) {
       newErrors.description = 'Description is required';
+    } else if (typeof document !== 'undefined') {
+      // Check if there's actual text content (strip HTML tags)
+      const textContent = document.createElement('div');
+      textContent.innerHTML = DOMPurify.sanitize(formData.description);
+      const plainText = (textContent.textContent || textContent.innerText || '').trim();
+      if (!plainText) {
+      newErrors.description = 'Description is required';
+    }
+    }
+    
+    // Year is required
+    if (!formData.year || formData.year === null || formData.year === undefined) {
+      newErrors.year = 'Year is required';
+    } else {
+      const yearNum = parseInt(formData.year, 10);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+        newErrors.year = 'Year must be between 1900 and ' + currentYear;
+      }
     }
     
     setErrors(newErrors);
@@ -533,10 +577,11 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     setIsSubmitting(true);
     
     try {
-      // Ensure program_id is properly formatted before submission
+      // Ensure program_id and year are properly formatted before submission
       const submissionData = {
         ...formData,
-        program_id: formData.program_id != null ? Number(formData.program_id) : null
+        program_id: formData.program_id != null ? Number(formData.program_id) : null,
+        year: formData.year != null ? Number(formData.year) : null
       };
       
       await onSubmit(submissionData);
@@ -552,6 +597,37 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     <>
       {/* Form */}
       <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Header with Title and Action Buttons */}
+        <div className={styles.formHeader}>
+          <div className={styles.headerLeft}>
+            <button
+              type="button"
+              onClick={onCancel}
+              className={styles.backLink}
+              disabled={isSubmitting}
+            >
+              Go Back
+            </button>
+            <h1>{headerTitle || (isEditMode ? 'Edit Highlight' : 'Create Highlight')}</h1>
+          </div>
+          <div className={styles.headerActions}>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <FaSpinner className={styles.spinner} />
+                  {isEditMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                isEditMode ? 'Update Highlight' : 'Create Highlight'
+              )}
+            </button>
+          </div>
+        </div>
+
         <div className={styles.formLayout}>
           {/* Left Container - Form Fields */}
           <div className={styles.leftContainer}>
@@ -599,7 +675,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
               </div>
             </div>
 
-            {/* Title */}
+            {/* Title and Description */}
             <div className={styles.container}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>
@@ -617,57 +693,55 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
                   <span className={styles.errorText}>{errors.title}</span>
                 )}
               </div>
-            </div>
-
-            {/* Description */}
-            <div className={styles.container}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>
                   Description
                 </label>
-                <textarea
+                <div className={errors.description ? styles.editorError : ''}>
+                  <ContentEditor
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
+                    onChange={(value) => handleInputChange('description', value)}
                   placeholder="Enter detailed description of the success story"
-                  rows={6}
-                  disabled={isSubmitting}
+                    showHeadings={false}
+                    showAlignment={false}
+                    showLink={false}
+                    showQuote={false}
+                    compact={true}
                 />
+                </div>
                 {errors.description && (
                   <span className={styles.errorText}>{errors.description}</span>
                 )}
               </div>
             </div>
 
-            {/* Form Actions - Below left container, aligned right */}
-            <div className={styles.formActions}>
-              <button
-                type="button"
-                className={styles.cancelButton}
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={styles.submitButton}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <FaSpinner className={styles.spinner} />
-                    {isEditMode ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  isEditMode ? 'Update Highlight' : 'Create Highlight'
-                )}
-              </button>
-            </div>
           </div>
 
           {/* Right Panel - Media Upload */}
           <div className={styles.rightPanel}>
+            {/* Year Selection */}
+            <div className={styles.container}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  Year
+                </label>
+                <CustomDropdown
+                  options={generateYearOptions()}
+                  value={formData.year != null ? Number(formData.year) : ''}
+                  onChange={(value) => handleInputChange('year', value != null && value !== '' ? parseInt(value, 10) : null)}
+                  disabled={isSubmitting}
+                  placeholder="Select year when highlight happened"
+                  error={errors.year}
+                />
+                <p className={styles.helperText}>
+                  Select the year when this highlight occurred.
+                </p>
+                {errors.year && (
+                  <span className={styles.errorText}>{errors.year}</span>
+                )}
+              </div>
+            </div>
+
             {/* Image Upload Container */}
             <div className={styles.container}>
               <h3 className={styles.containerTitle}>Image Upload</h3>

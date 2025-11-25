@@ -99,7 +99,6 @@ export const upsertMissionVision = async (req, res) => {
             `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
             duplicateIds
           );
-          console.log(`Cleaned up ${duplicateIds.length} duplicate ${normalizedType} entries`);
         }
       }
       
@@ -276,13 +275,8 @@ export const cleanupMissionVision = async () => {
             duplicateIds
           );
           deletedCount += duplicateIds.length;
-          console.log(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`);
         }
       }
-    }
-    
-    if (deletedCount > 0) {
-      console.log(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`);
     }
     
     return { deletedCount };

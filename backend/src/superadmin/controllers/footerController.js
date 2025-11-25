@@ -114,7 +114,6 @@ export const updateContactInfo = async (req, res) => {
               `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
               duplicateIds
             );
-            console.log(`Cleaned up ${duplicateIds.length} duplicate phone entries`);
           }
         }
       } else {
@@ -148,7 +147,6 @@ export const updateContactInfo = async (req, res) => {
               `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
               duplicateIds
             );
-            console.log(`Cleaned up ${duplicateIds.length} duplicate email entries`);
           }
         }
       } else {

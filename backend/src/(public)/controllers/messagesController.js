@@ -77,10 +77,6 @@ export const submitMessage = async (req, res) => {
         // Store user data for later use in notification
         userByEmailResult = userResult;
         
-        // Log in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message] Found user by user_id: ${actualUserId}, email: ${actualSenderEmail}`);
-        }
       }
     }
     
@@ -102,15 +98,6 @@ export const submitMessage = async (req, res) => {
         // Use the email from users table for consistency
         actualSenderEmail = userByEmailResult[0].email.toLowerCase();
         
-        // Log in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message] Found user by email: ${actualUserId}, email: ${actualSenderEmail}, name: ${userByEmailResult[0].first_name} ${userByEmailResult[0].last_name}`);
-        }
-      } else {
-        // Log in development if user not found
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message] User not found by email: ${actualSenderEmail}`);
-        }
       }
     }
 
@@ -144,10 +131,6 @@ export const submitMessage = async (req, res) => {
           const { first_name, last_name } = userByEmailResult[0];
           fullName = `${first_name || ''} ${last_name || ''}`.trim();
           
-          // Log in development
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] Using user data from lookup: first_name="${first_name}", last_name="${last_name}", fullName="${fullName}"`);
-          }
         } else {
           // Otherwise, query for the name (shouldn't happen, but just in case)
           const [userNameResult] = await db.execute(
@@ -162,46 +145,19 @@ export const submitMessage = async (req, res) => {
             const { first_name, last_name } = userNameResult[0];
             fullName = `${first_name || ''} ${last_name || ''}`.trim();
             
-            // Log in development
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`[Message Notification] Queried user name: first_name="${first_name}", last_name="${last_name}", fullName="${fullName}"`);
-            }
           }
         }
         
         // Use the full name if available
         if (fullName && fullName.length > 0) {
           senderDisplayName = fullName;
-          // Log in development for debugging
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] ✅ Registered user found: "${fullName}" (ID: ${actualUserId})`);
-          }
         } else if (sender_name && sender_name.trim()) {
           // Fallback to provided sender_name if full name is empty
           senderDisplayName = sender_name.trim();
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] ⚠️ Using provided sender_name: "${sender_name}" (User ID: ${actualUserId}) - full name was empty`);
-          }
-        } else {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] ❌ Registered user found but no name available (ID: ${actualUserId}), using "Guest User"`);
-          }
         }
       } else if (sender_name && sender_name.trim()) {
         // For unregistered users, use provided sender_name if available
         senderDisplayName = sender_name.trim();
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message Notification] Unregistered user with name: "${sender_name}"`);
-        }
-      } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message Notification] Unregistered user, using "Guest User"`);
-        }
-      }
-      
-      // Final log of what will be used in notification
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Message Notification] Final senderDisplayName: "${senderDisplayName}" (actualUserId: ${actualUserId || 'null'})`);
       }
       
       const notificationPromises = adminResult.map(admin => {

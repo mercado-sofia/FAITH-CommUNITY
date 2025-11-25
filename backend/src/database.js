@@ -691,6 +691,27 @@ const runIncrementalMigrations = async (connection) => {
       // Column might already exist or other error - silently skip
     }
 
+    // Add year column to admin_highlights if it doesn't exist
+    try {
+      const [yearColumnCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND COLUMN_NAME = 'year'
+      `);
+      
+      if (yearColumnCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE admin_highlights 
+          ADD COLUMN year INT NULL,
+          ADD INDEX idx_year (year)
+        `);
+      }
+    } catch (yearError) {
+      // Column might already exist or other error - silently skip
+    }
+
     // Fix admin_highlights id column to ensure AUTO_INCREMENT and PRIMARY KEY are properly set
     try {
       // Check if id column has AUTO_INCREMENT
@@ -1435,6 +1456,7 @@ const initializeDatabase = async () => {
           status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
           organization_id INT NOT NULL,
           program_id INT NULL,
+          year INT NULL,
           created_by INT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1443,6 +1465,7 @@ const initializeDatabase = async () => {
           FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
           INDEX idx_organization_id (organization_id),
           INDEX idx_program_id (program_id),
+          INDEX idx_year (year),
           INDEX idx_created_by (created_by),
           INDEX idx_created_at (created_at),
           INDEX idx_status (status)

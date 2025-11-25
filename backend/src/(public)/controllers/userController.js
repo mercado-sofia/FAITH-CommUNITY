@@ -204,9 +204,6 @@ export const registerUser = async (req, res) => {
       });
 
     } catch (emailError) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Failed to send verification email:', emailError.message);
-      }
       
       res.status(201).json({
         message: 'Registration successful! However, we could not send the verification email. Please contact support to verify your account.',
@@ -337,29 +334,10 @@ export const loginUser = async (req, res) => {
     const accessCookieOptions = getAccessTokenCookieOptions(req);
     const refreshCookieOptions = getRefreshCookieOptions(req);
     
-    // Debug logging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[loginUser] Setting cookies:', {
-        accessTokenLength: accessToken.length,
-        refreshTokenLength: refreshToken.length,
-        accessCookieOptions,
-        refreshCookieOptions,
-        host: req.headers.host,
-        origin: req.headers.origin,
-        'x-forwarded-host': req.headers['x-forwarded-host']
-      });
-    }
-    
     // Set both tokens as httpOnly cookies
     // Express will automatically overwrite existing cookies with the same name
     res.cookie('access_token', accessToken, accessCookieOptions)
     res.cookie('refresh_token', refreshToken, refreshCookieOptions)
-    
-    // Log the actual Set-Cookie headers being sent (development only)
-    if (process.env.NODE_ENV === 'development') {
-      const setCookieHeaders = res.getHeader('Set-Cookie');
-      console.log('[loginUser] Set-Cookie headers being sent:', setCookieHeaders);
-    }
     
     // Don't return token in response body - it's in httpOnly cookie now
     res.json({
@@ -382,15 +360,6 @@ export const loginUser = async (req, res) => {
 
   } catch (error) {
     logError('Login error', error, { context: 'user_controller', email: req.body?.email });
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Login error details:', {
-        message: error.message,
-        code: error.code,
-        sqlState: error.sqlState,
-        sqlMessage: error.sqlMessage,
-        stack: error.stack
-      });
-    }
     res.status(500).json({ 
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -1182,14 +1151,6 @@ export const refreshAccessToken = async (req, res) => {
       role: user.role // Return role so frontend knows which type
     })
   } catch (e) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[refreshAccessToken] Error refreshing token:', e);
-      console.error('[refreshAccessToken] Error details:', {
-        name: e.name,
-        message: e.message,
-        stack: e.stack?.split('\n').slice(0, 10).join('\n')
-      });
-    }
     res.status(500).json({ 
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? e.message : undefined
@@ -1209,9 +1170,6 @@ export const verifyEmail = async (req, res) => {
 
     // Validate token format (should be 64 hex characters from crypto.randomBytes(32))
     if (!/^[a-f0-9]{64}$/i.test(token)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Invalid token format:', { tokenLength: token.length, tokenPreview: token.substring(0, 10) + '...' });
-      }
       return res.status(400).json({ error: 'Invalid verification token format' });
     }
 
@@ -1222,9 +1180,6 @@ export const verifyEmail = async (req, res) => {
     );
 
     if (users.length === 0) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Token not found in database:', { tokenLength: token.length, tokenPreview: token.substring(0, 10) + '...' });
-      }
       return res.status(400).json({ error: 'Invalid verification token. The token may have already been used or does not exist.' });
     }
 
@@ -1246,19 +1201,12 @@ export const verifyEmail = async (req, res) => {
       [user.id]
     );
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Email verified successfully for user:', user.email);
-    }
-
     res.json({ 
       message: 'Email verified successfully! You can now log in to your account.',
       verified: true 
     });
 
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('❌ Error verifying email:', error);
-    }
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1420,25 +1368,10 @@ export const checkAuthStatus = async (req, res) => {
               const accessCookieOpts = getAccessTokenCookieOptions(req);
               const refreshCookieOpts = getRefreshCookieOptions(req);
               
-              // Debug logging (development only)
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[checkAuthStatus] Cookie options BEFORE setting:', {
-                  accessCookieOpts,
-                  refreshCookieOpts,
-                  accessTokenLength: accessToken.length
-                });
-              }
-              
               // Set both new tokens as httpOnly cookies
               // Express will automatically overwrite existing cookies with the same name
               res.cookie('access_token', accessToken, accessCookieOpts);
               res.cookie('refresh_token', newRefresh, refreshCookieOpts);
-              
-              // Log the actual Set-Cookie headers being sent (development only)
-              if (process.env.NODE_ENV === 'development') {
-                const setCookieHeaders = res.getHeader('Set-Cookie');
-                console.log('[checkAuthStatus] Set-Cookie headers after refresh:', setCookieHeaders);
-              }
               
               // Get user data (same logic as below)
               let userData = { id: user.id, email: user.email, role: user.role };
@@ -1489,9 +1422,6 @@ export const checkAuthStatus = async (req, res) => {
             }
           }
         } catch (refreshError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('[checkAuthStatus] Token refresh error (no access token):', refreshError);
-          }
         }
       }
       
@@ -1660,22 +1590,11 @@ export const checkAuthStatus = async (req, res) => {
           }
         } catch (refreshError) {
           // Refresh failed - return not authenticated
-          if (process.env.NODE_ENV === 'development') {
-            console.error('[checkAuthStatus] Token refresh error:', refreshError);
-          }
         }
       }
       return res.json({ authenticated: false });
     }
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[checkAuthStatus] Error in checkAuthStatus:', error);
-      console.error('[checkAuthStatus] Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n')
-      });
-    }
     return res.json({ authenticated: false, error: error.message });
   }
 };

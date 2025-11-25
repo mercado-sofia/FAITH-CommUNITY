@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
+import DOMPurify from 'dompurify'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import { formatDateShort } from '../../../../utils/dateUtils'
@@ -56,9 +57,21 @@ const FeaturedProjectsPage = () => {
             <span className={styles.orgName}>{project.orgName}</span>
           </div>
           <p className={styles.projectDescription}>
-            {project.description?.length > 150 
-              ? `${project.description.substring(0, 150)}...` 
-              : project.description}
+            {(() => {
+              if (!project.description) return '';
+              // Strip HTML tags for card preview
+              if (typeof document !== 'undefined') {
+                const textContent = document.createElement('div');
+                textContent.innerHTML = DOMPurify.sanitize(project.description);
+                const plainText = (textContent.textContent || textContent.innerText || '').trim();
+                return plainText.length > 150 
+                  ? `${plainText.substring(0, 150)}...` 
+                  : plainText;
+              }
+              return project.description?.length > 150 
+                ? `${project.description.substring(0, 150)}...` 
+                : project.description;
+            })()}
           </p>
           
           <div className={styles.projectFooter}>

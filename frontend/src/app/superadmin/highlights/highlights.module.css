@@ -283,7 +283,7 @@
   gap: 2rem;
   flex-wrap: wrap;
   position: relative;
-  z-index: 1000;
+  z-index: 10;
 }
 
 .filterGroup {
@@ -305,7 +305,7 @@
   display: flex;
   align-items: center;
   position: relative;
-  z-index: 1000;
+  z-index: 10;
 }
 
 .organizationDropdown {
@@ -356,7 +356,7 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 1001;
+  z-index: 11;
   max-height: 200px;
   overflow-y: auto;
   min-width: 100%;
@@ -374,7 +374,7 @@
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.15s ease;
   position: relative;
-  z-index: 1001;
+  z-index: 11;
   outline: none !important;
 }
 

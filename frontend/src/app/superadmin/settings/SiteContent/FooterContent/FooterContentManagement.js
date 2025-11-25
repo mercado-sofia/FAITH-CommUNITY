@@ -60,7 +60,6 @@ const SOCIAL_PLATFORMS = [
 ];
 
 export default function FooterContentManagement({ showSuccessModal }) {
-  const [footerData, setFooterData] = useState(null);
   const [contactInfo, setContactInfo] = useState({ phone: '', email: '' });
   const [socialMedia, setSocialMedia] = useState([]);
   const [copyright, setCopyright] = useState('');
@@ -107,10 +106,72 @@ export default function FooterContentManagement({ showSuccessModal }) {
         if (response && response.ok) {
           const data = await response.json();
           
-          // Set contact info (handle null/empty values)
+          // Default contact values (matching public footer)
+          const defaultPhone = '+163-3654-7896';
+          const defaultEmail = 'info@faithcommunity.com';
+          
+          // Get contact info from response
+          let phoneData = data.data.contact?.phone?.url || '';
+          let emailData = data.data.contact?.email?.url || '';
+          
+          // Check if phone needs auto-insert (missing if no phone object exists OR phone object exists but url is empty/null)
+          const phoneMissing = !data.data.contact?.phone || 
+            (!phoneData || !phoneData.trim());
+          // Check if email needs auto-insert
+          const emailMissing = !data.data.contact?.email || 
+            (!emailData || !emailData.trim());
+          
+          // Auto-insert contact info if missing (similar to copyright logic)
+          if (phoneMissing || emailMissing) {
+            try {
+              const contactBody = {};
+              if (phoneMissing) {
+                contactBody.phone = defaultPhone;
+                phoneData = defaultPhone; // Set for display immediately
+              }
+              if (emailMissing) {
+                contactBody.email = defaultEmail;
+                emailData = defaultEmail; // Set for display immediately
+              }
+              
+              const insertResponse = await makeAuthenticatedRequest(
+                `${baseUrl}/api/superadmin/footer/contact`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(contactBody),
+                },
+                'superadmin'
+              );
+              
+              if (insertResponse && insertResponse.ok && isMounted) {
+                // Values already set above
+              } else if (isMounted) {
+                // If auto-insert fails, defaults are already set for display
+                console.warn('Auto-insert contact info failed, using defaults for display');
+              }
+            } catch (error) {
+              if (isMounted) {
+                console.error('Auto-insert contact info error:', error);
+                // Defaults are already set for display
+              }
+            }
+          } else {
+            // If contact objects exist but urls are empty, use defaults
+            if (!phoneData || !phoneData.trim()) {
+              phoneData = defaultPhone;
+            }
+            if (!emailData || !emailData.trim()) {
+              emailData = defaultEmail;
+            }
+          }
+          
+          // Set contact info with defaults
           const contactData = {
-            phone: data.data.contact?.phone?.url || '',
-            email: data.data.contact?.email?.url || ''
+            phone: phoneData,
+            email: emailData
           };
           
           // Set social media
@@ -160,7 +221,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
           const servicesData = data.data.services || [];
           
           if (isMounted) {
-            setFooterData(data.data);
             setContactInfo(contactData);
             setTempContactInfo(contactData);
             setSocialMedia(socialMediaData);
@@ -194,17 +254,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     };
   }, []); // Only run on mount - use response data after save instead of reloading
 
-  // Footer update handlers
-  const handleContactUpdate = () => {
-    setFooterModalType('contact');
-    setShowFooterModal(true);
-  };
-
-  const handleSocialMediaUpdate = () => {
-    setFooterModalType('social');
-    setShowFooterModal(true);
-  };
-
   // Helper function to get platform icon
   const getPlatformIcon = (platformName) => {
     const platform = SOCIAL_PLATFORMS.find(p => p.name === platformName);
@@ -230,19 +279,11 @@ export default function FooterContentManagement({ showSuccessModal }) {
       icon: newSocialPlatform
     };
 
-    if (isEditingSocial) {
-      setTempSocialMedia(prev => [...prev, newSocial]);
-    } else {
-      setSocialMedia(prev => [...prev, newSocial]);
-    }
+    // Always add to tempSocialMedia since this is only called in edit mode
+    setTempSocialMedia(prev => [...prev, newSocial]);
     setNewSocialPlatform('');
     setNewSocialUrl('');
     setShowAddSocialModal(false);
-  };
-
-  // Remove social media platform
-  const handleRemoveSocialMedia = (index) => {
-    setSocialMedia(prev => prev.filter((_, i) => i !== index));
   };
 
   // Get available platforms (not already added)
@@ -250,11 +291,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     const currentSocialMedia = isEditingSocial ? tempSocialMedia : socialMedia;
     const usedPlatforms = currentSocialMedia.map(social => social.platform);
     return SOCIAL_PLATFORMS.filter(platform => !usedPlatforms.includes(platform.name));
-  };
-
-  const handleCopyrightUpdate = () => {
-    setFooterModalType('copyright');
-    setShowFooterModal(true);
   };
 
   const handleAddService = async () => {
@@ -446,11 +482,10 @@ export default function FooterContentManagement({ showSuccessModal }) {
           body = { content: tempCopyright?.trim() || null };
           break;
         case 'services':
-          // Handle services updates
+          // Handle services updates (handleServicesUpdate manages its own loading state)
           await handleServicesUpdate();
           setShowFooterModal(false);
           setFooterModalType('');
-          setIsUpdatingFooter(false);
           return;
         default:
           return;
@@ -481,29 +516,14 @@ export default function FooterContentManagement({ showSuccessModal }) {
         switch (footerModalType) {
           case 'contact':
             setContactInfo({ ...tempContactInfo });
-            setFooterData(prev => ({
-              ...prev,
-              contact: {
-                phone: { url: tempContactInfo.phone || null },
-                email: { url: tempContactInfo.email || null }
-              }
-            }));
             setIsEditingContact(false);
             break;
           case 'social':
             setSocialMedia([...tempSocialMedia]);
-            setFooterData(prev => ({
-              ...prev,
-              socialMedia: [...tempSocialMedia]
-            }));
             setIsEditingSocial(false);
             break;
           case 'copyright':
             setCopyright(tempCopyright);
-            setFooterData(prev => ({
-              ...prev,
-              copyright: { content: tempCopyright }
-            }));
             setIsEditingCopyright(false);
             break;
         }
@@ -608,163 +628,162 @@ export default function FooterContentManagement({ showSuccessModal }) {
     }
   };
 
-  // Handle services update
+  // Handle services update - optimized with parallel operations
   const handleServicesUpdate = async () => {
     try {
+      setIsUpdatingFooter(true);
       const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
-      // Create new services (those with isNew flag or temp IDs)
-      for (const tempService of tempServices) {
-        if (tempService.isNew || (typeof tempService.id === 'string' && tempService.id.startsWith('temp-'))) {
-          const response = await makeAuthenticatedRequest(
-            `${baseUrl}/api/superadmin/footer/services`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ name: tempService.name }),
-            },
-            'superadmin'
-          );
-          
-          if (!response || !response.ok) {
-            // Handle 401 responses
-            if (response.status === 401) {
-              showSuccessModal('Authentication expired. Please log in again.');
-              return;
-            }
-            
-            // Handle CORS errors (status 0)
-            if (response.status === 0) {
-              console.error('CORS or network error detected');
-              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
-              return;
-            }
-            
-            let errorMessage = 'Failed to create service';
-            try {
-            const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || errorMessage;
-              console.error('Create service error response:', errorData);
-            } catch (e) {
-              errorMessage = response.statusText || `Server error (${response.status})`;
-              console.error('Non-JSON error response:', response.status, response.statusText);
-            }
-            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-            return;
-          }
-        }
-      }
-      
-      // Update existing services
-      for (const tempService of tempServices) {
-        // Skip new services (they were just created above)
-        if (tempService.isNew || (typeof tempService.id === 'string' && tempService.id.startsWith('temp-'))) {
-          continue;
+      // Helper function to handle API errors
+      const handleApiError = async (response, operation) => {
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return true;
         }
         
-        const originalService = services.find(s => s.id === tempService.id);
-        if (originalService && originalService.name !== tempService.name) {
-          const response = await makeAuthenticatedRequest(
-            `${baseUrl}/api/superadmin/footer/services/${tempService.id}`,
-            {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ name: tempService.name }),
-            },
-            'superadmin'
-          );
-          
-          if (!response || !response.ok) {
-            // Handle 401 responses
-            if (response.status === 401) {
-              showSuccessModal('Authentication expired. Please log in again.');
-              return;
-            }
-            
-            // Handle CORS errors (status 0)
-            if (response.status === 0) {
-              console.error('CORS or network error detected');
-              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
-              return;
-            }
-            
-            let errorMessage = 'Failed to update service';
-            try {
-            const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || errorMessage;
-              console.error('Update service error response:', errorData);
-            } catch (e) {
-              errorMessage = response.statusText || `Server error (${response.status})`;
-              console.error('Non-JSON error response:', response.status, response.statusText);
-            }
-            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-            return;
-          }
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return true;
         }
-      }
-      
-      // Delete removed services
-      for (const originalService of services) {
-        const tempService = tempServices.find(s => s.id === originalService.id);
-        if (!tempService) {
-          const response = await makeAuthenticatedRequest(
-            `${baseUrl}/api/superadmin/footer/services/${originalService.id}`,
-            { method: 'DELETE' },
-            'superadmin'
-          );
-          
-          if (!response || !response.ok) {
-            // Handle 401 responses
-            if (response.status === 401) {
-              showSuccessModal('Authentication expired. Please log in again.');
-              return;
-            }
-            
-            // Handle CORS errors (status 0)
-            if (response.status === 0) {
-              console.error('CORS or network error detected');
-              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
-              return;
-            }
-            
-            let errorMessage = 'Failed to delete service';
-            try {
-            const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || errorMessage;
-              console.error('Delete service error response:', errorData);
-            } catch (e) {
-              errorMessage = response.statusText || `Server error (${response.status})`;
-              console.error('Non-JSON error response:', response.status, response.statusText);
-            }
-            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-            return;
-          }
+        
+        let errorMessage = `Failed to ${operation} service`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
         }
-      }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        return true;
+      };
       
-      // Reload services to get the latest data with correct IDs
-      const reloadResponse = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/footer`,
-        { method: 'GET' },
-        'superadmin'
+      // Separate services into operations
+      const servicesToCreate = tempServices.filter(s => 
+        s.isNew || (typeof s.id === 'string' && s.id.startsWith('temp-'))
       );
       
-      if (reloadResponse && reloadResponse.ok) {
-        const reloadData = await reloadResponse.json();
-        if (reloadData.services) {
-          setServices(reloadData.services);
+      const servicesToUpdate = tempServices.filter(s => {
+        if (s.isNew || (typeof s.id === 'string' && s.id.startsWith('temp-'))) {
+          return false;
         }
-      }
+        const originalService = services.find(os => os.id === s.id);
+        return originalService && originalService.name !== s.name;
+      });
+      
+      const servicesToDelete = services.filter(os => 
+        !tempServices.find(ts => ts.id === os.id)
+      );
+      
+      // Execute all operations in parallel using Promise.all
+      const createPromises = servicesToCreate.map(tempService =>
+        makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/footer/services`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: tempService.name }),
+          },
+          'superadmin'
+        ).then(async (response) => {
+          if (!response || !response.ok) {
+            const errorHandled = await handleApiError(response, 'create');
+            if (errorHandled) throw new Error('Create service failed');
+          }
+          const data = await response.json();
+          return { tempService, newService: data.data };
+        })
+      );
+      
+      const updatePromises = servicesToUpdate.map(tempService =>
+        makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/footer/services/${tempService.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: tempService.name }),
+          },
+          'superadmin'
+        ).then(async (response) => {
+          if (!response || !response.ok) {
+            const errorHandled = await handleApiError(response, 'update');
+            if (errorHandled) throw new Error('Update service failed');
+          }
+          return { id: tempService.id, name: tempService.name };
+        })
+      );
+      
+      const deletePromises = servicesToDelete.map(originalService =>
+        makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/footer/services/${originalService.id}`,
+          { method: 'DELETE' },
+          'superadmin'
+        ).then(async (response) => {
+          if (!response || !response.ok) {
+            const errorHandled = await handleApiError(response, 'delete');
+            if (errorHandled) throw new Error('Delete service failed');
+          }
+          return originalService.id;
+        })
+      );
+      
+      // Execute all operations in parallel
+      const [createdServices, updatedServices, deletedIds] = await Promise.all([
+        Promise.all(createPromises),
+        Promise.all(updatePromises),
+        Promise.all(deletePromises)
+      ]);
+      
+      // Build the new services array from tempServices, replacing temp IDs with real ones
+      const newServices = tempServices.map(tempService => {
+        // If it was a new service, find the created one by matching the tempService object
+        if (tempService.isNew || (typeof tempService.id === 'string' && tempService.id.startsWith('temp-'))) {
+          const created = createdServices.find(cs => 
+            cs.tempService.name === tempService.name && 
+            cs.tempService.id === tempService.id
+          );
+          if (created) {
+            return created.newService;
+          }
+        }
+        // If it was updated, merge with existing service data to preserve all properties
+        const updated = updatedServices.find(us => us.id === tempService.id);
+        if (updated) {
+          const existingService = services.find(s => s.id === tempService.id);
+          // Preserve all properties from existing service, update with new data
+          return existingService 
+            ? { ...existingService, id: updated.id, name: updated.name }
+            : { id: updated.id, name: updated.name };
+        }
+        // Otherwise, keep the existing service (with updated name if changed)
+        const existingService = services.find(s => s.id === tempService.id);
+        if (existingService) {
+          return { ...existingService, name: tempService.name };
+        }
+        // Fallback: return tempService as-is (shouldn't happen in normal flow)
+        return tempService;
+      }).filter(service => {
+        // Remove deleted services
+        return service && service.id && !deletedIds.includes(service.id);
+      });
+      
+      // Update state directly (no need to reload)
+      setServices(newServices);
+      setTempServices([...newServices]);
       
       // Invalidate SWR cache
-      await mutate(`${baseUrl}/api/superadmin/footer`);
+      try {
+        await mutate(`${baseUrl}/api/superadmin/footer`);
+      } catch (cacheError) {
+        console.warn('Failed to invalidate cache:', cacheError);
+      }
       
-      // Update the main state
+      // Exit edit mode
       setIsEditingServices(false);
       showSuccessModal('Services updated successfully! The changes will be visible on the public site immediately.');
     } catch (error) {
@@ -778,6 +797,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
       }
       
       showSuccessModal(errorMessage);
+    } finally {
+      setIsUpdatingFooter(false);
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PROGRAM_STATUS, DEFAULT_FORM_DATA, VALIDATION_RULES, ERROR_MESSAGES } from '../constants/programConstants';
+import DOMPurify from 'dompurify';
 
 // Function to calculate status based on dates
 const calculateStatus = (event_start_date, event_end_date, multiple_dates) => {
@@ -186,14 +187,27 @@ export const useProgramForm = (mode = 'create', program = null) => {
   const validateForm = useCallback((imagePreview = null, postActReportFile = null) => {
     const newErrors = {};
     
-    // Validate required text fields
-    const requiredFields = ['title', 'description', 'category'];
-    requiredFields.forEach(field => {
+    // Validate title and category
+    const textFields = ['title', 'category'];
+    textFields.forEach(field => {
       const error = validateField(field, formData[field], VALIDATION_RULES);
       if (error) {
         newErrors[field] = error;
       }
     });
+    
+    // Validate description - check for actual text content (not just HTML tags)
+    if (!formData.description || !formData.description.trim()) {
+      newErrors.description = ERROR_MESSAGES.description?.required || 'Description is required';
+    } else if (typeof document !== 'undefined') {
+      // Check if there's actual text content (strip HTML tags)
+      const textContent = document.createElement('div');
+      textContent.innerHTML = DOMPurify.sanitize(formData.description);
+      const plainText = (textContent.textContent || textContent.innerText || '').trim();
+      if (!plainText) {
+        newErrors.description = ERROR_MESSAGES.description?.required || 'Description is required';
+      }
+    }
 
     // Validate officer fields - required for both create and edit mode
     if (!isEditMode) {

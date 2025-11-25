@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/dateUtils.js'
+import DOMPurify from 'dompurify'
 import logger from '@/utils/logger'
 import styles from './styles/HighlightDetailsModal.module.css'
 
@@ -455,6 +456,15 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                       </div>
                     )}
 
+                    {highlight.year && (
+                      <div className={styles.detailItem}>
+                        <FaCalendar className={styles.detailIcon} />
+                        <span className={styles.detailValue}>
+                          {highlight.year}
+                        </span>
+                      </div>
+                    )}
+
                     {highlight.created_at && (
                       <div className={styles.detailItem}>
                         <FaCalendar className={styles.detailIcon} />
@@ -480,9 +490,14 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
             {/* Description - Full Width Below */}
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Description</h4>
-              <p className={styles.description}>
-                {highlight.description || 'No description provided'}
-              </p>
+              <div 
+                className={styles.description}
+                dangerouslySetInnerHTML={{ 
+                  __html: highlight.description 
+                    ? DOMPurify.sanitize(highlight.description) 
+                    : '<p>No description provided</p>' 
+                }} 
+              />
             </div>
 
             {/* Media Gallery - Full Width Below - Show all media files */}

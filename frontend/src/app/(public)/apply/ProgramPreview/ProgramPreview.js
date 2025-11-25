@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 import styles from './ProgramPreview.module.css';
 import { FaUsers, FaCalendarAlt } from 'react-icons/fa';
 import { formatProgramDates } from '@/utils/dateUtils';
@@ -153,9 +154,14 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
           {/* Program Description */}
           <div className={styles.descriptionSection}>
             <h4 className={styles.sectionTitle}>About This Program</h4>
-            <p className={styles.programDescription}>
-              {selectedProgram.description || 'No description available for this program.'}
-            </p>
+            <div 
+              className={styles.programDescription}
+              dangerouslySetInnerHTML={{ 
+                __html: selectedProgram.description 
+                  ? DOMPurify.sanitize(selectedProgram.description) 
+                  : '<p>No description available for this program.</p>' 
+              }} 
+            />
           </div>
 
           {/* Event Date */}

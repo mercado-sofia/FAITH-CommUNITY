@@ -8,6 +8,7 @@ import { FiTrash2, FiArchive } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import DOMPurify from 'dompurify';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
@@ -380,7 +381,16 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
         </div>
 
         <p className={styles.programDescription}>
-          {normalizedData.description || 'No description provided'}
+          {(() => {
+            if (!normalizedData.description) return 'No description provided';
+            // Strip HTML tags for card preview
+            if (typeof document !== 'undefined') {
+              const textContent = document.createElement('div');
+              textContent.innerHTML = DOMPurify.sanitize(normalizedData.description);
+              return (textContent.textContent || textContent.innerText || '').trim();
+            }
+            return normalizedData.description;
+          })()}
         </p>
 
         {/* Program Status Badge */}

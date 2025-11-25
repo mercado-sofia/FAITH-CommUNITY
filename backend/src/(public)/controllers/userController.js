@@ -2098,7 +2098,6 @@ export const deleteAccount = async (req, res) => {
     // Tables with ON DELETE SET NULL will have user_id set to NULL:
     // - messages (user_id)
     // - program_post_act_reports (uploaded_by_admin_id, reviewed_by_superadmin_id)
-    // Allow all roles (user, admin, superadmin) to delete their accounts
     await db.query(
       'DELETE FROM users WHERE id = ?',
       [userId]

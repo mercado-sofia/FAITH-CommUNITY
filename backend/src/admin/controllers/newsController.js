@@ -281,7 +281,7 @@ function mapNewsToResponse(n) {
     excerpt: n.excerpt || '',
     featured_image: n.featured_image || null,
     published_at: n.published_at || null, // DATETIME - timezone-naive, keep as-is
-    date: n.date || n.created_at || null,
+    date: convertTimestampToISO(n.date || n.created_at), // TIMESTAMP - convert to ISO
     created_at: convertTimestampToISO(n.created_at), // TIMESTAMP - convert to ISO
     updated_at: convertTimestampToISO(n.updated_at), // TIMESTAMP - convert to ISO
     content_updated_at: convertTimestampToISO(n.content_updated_at), // TIMESTAMP - convert to ISO
@@ -1077,7 +1077,7 @@ export const getApprovedNews = async (req, res) => {
               excerpt: row?.excerpt || '',
               featured_image: row?.featured_image || null,
               published_at: row?.published_at || null, // DATETIME - timezone-naive, keep as-is
-              date: row?.date || row?.created_at || null,
+              date: convertTimestampToISO(row?.date || row?.created_at), // TIMESTAMP - convert to ISO
               created_at: convertTimestampToISO(row?.created_at), // TIMESTAMP - convert to ISO
               updated_at: convertTimestampToISO(row?.updated_at), // TIMESTAMP - convert to ISO
               content_updated_at: convertTimestampToISO(row?.content_updated_at), // TIMESTAMP - convert to ISO

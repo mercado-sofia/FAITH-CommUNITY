@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
+import { formatDateShort } from '@/utils/dateUtils'
 import styles from './StarModal.module.css'
 
 // Star Modal Component
@@ -177,12 +178,23 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
     return null
   }
 
-  // Format date
+  // Format date - use formatDateShort and extract month and year
   const formattedDate = highlight.created_at 
-    ? new Date(highlight.created_at).toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      })
+    ? (() => {
+        const formatted = formatDateShort(highlight.created_at);
+        if (formatted === 'Invalid date' || formatted === 'Not specified') {
+          return '';
+        }
+        // Extract month and year from formatDateShort output (e.g., "Sep 18, 2004" -> "Sep 2004")
+        const parts = formatted.split(', ');
+        if (parts.length >= 2) {
+          const datePart = parts[0]; // "Sep 18"
+          const year = parts[1]; // "2004"
+          const month = datePart.split(' ')[0]; // "Sep"
+          return `${month} ${year}`;
+        }
+        return formatted;
+      })()
     : ''
 
   // Get current media item

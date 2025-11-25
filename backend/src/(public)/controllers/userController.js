@@ -2125,11 +2125,12 @@ export const deleteAccount = async (req, res) => {
     }
 
     // Get current password hash and profile photo URL
+    // Allow all roles (user, admin, superadmin) to delete their accounts
     const [users] = await db.query(
       `SELECT u.password_hash, u.is_active, up.profile_photo_url 
        FROM users u
        LEFT JOIN user_profiles up ON u.id = up.user_id
-       WHERE u.id = ? AND u.role = 'user'`,
+       WHERE u.id = ?`,
       [userId]
     );
 
@@ -2178,8 +2179,9 @@ export const deleteAccount = async (req, res) => {
     // Tables with ON DELETE SET NULL will have user_id set to NULL:
     // - messages (user_id)
     // - program_post_act_reports (uploaded_by_admin_id, reviewed_by_superadmin_id)
+    // Allow all roles (user, admin, superadmin) to delete their accounts
     await db.query(
-      'DELETE FROM users WHERE id = ? AND role = \'user\'',
+      'DELETE FROM users WHERE id = ?',
       [userId]
     );
 

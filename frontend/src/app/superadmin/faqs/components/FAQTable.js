@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
 import { ConfirmationModal } from '@/components';
+import { formatDateTime } from '@/utils/dateUtils';
 import styles from './styles/FAQTable.module.css';
 
 export default function FAQTable({ 
@@ -58,21 +59,36 @@ export default function FAQTable({
   // Custom function to preserve exact date/time split format for UI
   const formatDate = (dateString) => {
     if (!dateString) return { datePart: 'N/A', timePart: 'N/A' };
+    
+    // Use formatDateTime which handles invalid dates properly
+    const formatted = formatDateTime(dateString);
+    
+    if (formatted === 'Invalid date' || formatted === 'Not specified') {
+      return { datePart: formatted, timePart: 'N/A' };
+    }
+    
+    // Parse the formatted string to extract date and time parts
+    // formatDateTime returns: "Month Day, Year, Hour:Minute AM/PM"
+    // Example: "September 18, 2004, 9:26 AM"
     try {
-      const date = new Date(dateString);
-      const datePart = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-      const timePart = date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-      return { datePart, timePart };
+      const parts = formatted.split(', ');
+      if (parts.length >= 3) {
+        // Date part: "Month Day, Year" -> "Month Day, Year"
+        const datePart = `${parts[0]}, ${parts[1]}`;
+        // Time part: "Hour:Minute AM/PM"
+        const timePart = parts[2];
+        return { datePart, timePart };
+      } else if (parts.length === 2) {
+        // If only 2 parts, assume date and time are combined differently
+        const datePart = parts[0];
+        const timePart = parts[1];
+        return { datePart, timePart };
+      } else {
+        // Fallback: return the whole string as date part
+        return { datePart: formatted, timePart: 'N/A' };
+      }
     } catch (error) {
-      return { datePart: 'Invalid', timePart: 'Invalid' };
+      return { datePart: formatted, timePart: 'N/A' };
     }
   };
 

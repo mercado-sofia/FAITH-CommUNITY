@@ -6,10 +6,13 @@ The submission system enables admins to propose changes to their organization's 
 ## Submission Types
 
 1. **Programs**: New program submissions
-2. **Post Act Reports**: Post-activity reports for completed programs
+2. **Post Act Reports**: Post-activity reports for completed programs (uploaded as files to AWS S3)
 3. **Highlights**: Organization highlights requiring approval
 
-**Note:** Organization information and news are not part of the admin-to-superadmin submission flow.
+**Note:** 
+- Organization information and news are not part of the admin-to-superadmin submission flow
+- Programs can be archived/unarchived by admins without requiring approval
+- Archived programs are excluded from public program listings
 
 ## Submission Workflow
 

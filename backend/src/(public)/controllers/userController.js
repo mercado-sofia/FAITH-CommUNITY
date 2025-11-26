@@ -2071,7 +2071,8 @@ export const deleteAccount = async (req, res) => {
     }
 
     // Delete profile photo from Cloudinary if it exists
-    if (user.profile_photo_url) {
+    // Robust NULL checking: ensure profile_photo_url is not null/undefined and is a valid string
+    if (user.profile_photo_url && typeof user.profile_photo_url === 'string' && user.profile_photo_url.trim() !== '') {
       try {
         const { deleteFromCloudinary, extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
         const publicId = extractPublicIdFromUrl(user.profile_photo_url);

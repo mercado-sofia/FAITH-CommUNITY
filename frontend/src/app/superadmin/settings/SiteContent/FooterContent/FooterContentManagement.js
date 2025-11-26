@@ -148,10 +148,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
               
               if (insertResponse && insertResponse.ok && isMounted) {
                 // Values already set above
-              } else if (isMounted) {
-                // If auto-insert fails, defaults are already set for display
-                console.warn('Auto-insert contact info failed, using defaults for display');
               }
+              // If auto-insert fails, defaults are already set for display
             } catch (error) {
               if (isMounted) {
                 console.error('Auto-insert contact info error:', error);
@@ -508,7 +506,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
         try {
           await mutate(`${baseUrl}/api/superadmin/footer`);
         } catch (cacheError) {
-          console.warn('Failed to invalidate cache:', cacheError);
+          // Cache invalidation failed - non-critical, continue
         }
         
         // Update the main state with temp data (no need to reload - we already have the response)
@@ -780,7 +778,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
       try {
         await mutate(`${baseUrl}/api/superadmin/footer`);
       } catch (cacheError) {
-        console.warn('Failed to invalidate cache:', cacheError);
+        // Cache invalidation failed - non-critical, continue
       }
       
       // Exit edit mode

@@ -46,20 +46,15 @@ export default function SuperAdminNotificationsPage() {
             if (!isNaN(numericId) && numericId > 0) {
               setSuperAdminId(numericId);
             } else {
-              console.error('Invalid superadmin ID:', id);
               logError(new Error('Invalid superadmin ID'), { context: 'parseSuperAdminData', id });
             }
           } else {
-            console.error('Superadmin ID is missing from localStorage data:', parsedData);
             logError(new Error('Superadmin ID missing'), { context: 'parseSuperAdminData', data: parsedData });
           }
         } catch (error) {
-          console.error('Failed to parse superAdminData:', error);
           logError(error, { context: 'parseSuperAdminData' });
           // Failed to parse superAdminData, will show loading state
         }
-      } else {
-        console.warn('superAdminData not found in localStorage');
       }
     }
   }, []);

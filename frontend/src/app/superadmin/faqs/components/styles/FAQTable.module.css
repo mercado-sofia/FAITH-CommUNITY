@@ -207,62 +207,81 @@
 }
 
 
-/* Action Buttons */
-.actionButtons {
+/* Action Dropdown - Matching approvals table */
+.actionDropdownWrapper {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
   align-items: center;
-  height: 100%;
-  padding: 0.5rem 0;
+  justify-content: center;
+  position: relative;
 }
 
-.actionButton {
+.actionDropdownButtonWrapper {
+  position: relative;
+}
+
+.actionDropdown {
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  border-radius: 4px;
 }
 
-.actionButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.actionDropdown:hover {
+  background-color: #f3f4f6;
 }
 
-.actionButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
+.actionDropdownIcon {
+  color: #0c1b1a;
+  font-size: 16px;
 }
 
-.editButton {
-  color: #1d9782;
-  border-color: #1d9782;
+.actionDropdownOptions {
+  position: absolute;
+  z-index: 10000;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  min-width: 140px;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
-.editButton:hover:not(:disabled) {
-  background: #1d9782;
-  color: white;
-  border-color: #1d9782;
+.actionDropdownOptions li {
+  padding: 0.6rem 1.2rem;
+  color: #000;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
 }
 
-.deleteButton {
-  color: #dc2626;
-  border-color: #dc2626;
+.actionDropdownOptions li:hover {
+  background-color: #f3f3f3;
 }
 
-.deleteButton:hover:not(:disabled) {
-  background: #dc2626;
-  color: white;
-  border-color: #dc2626;
+/* Dropdown positioned above button for bottom rows */
+.actionDropdownOptions.above {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Empty State Cell */

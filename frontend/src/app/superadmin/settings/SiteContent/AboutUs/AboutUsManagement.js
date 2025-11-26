@@ -248,10 +248,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
               } catch (e) {
                 console.error('Error parsing update response:', e);
               }
-            } else {
-              // Image uploaded but failed to update record - still show success but warn
-              console.warn('Image uploaded but failed to update record with image URL');
             }
+            // Image upload succeeded, continue
           } catch (error) {
             console.error('Image upload error:', error);
             // Image upload failed, but description was saved - show warning

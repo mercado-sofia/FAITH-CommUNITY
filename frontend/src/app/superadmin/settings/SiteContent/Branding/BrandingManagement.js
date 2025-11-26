@@ -99,7 +99,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
           await mutate(cacheKey);
         } catch (cacheError) {
-          console.warn('Failed to invalidate branding cache:', cacheError);
+          // Cache invalidation failed - non-critical, continue
         }
         
         // Return the URL for batch uploads
@@ -177,7 +177,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
           await mutate(cacheKey);
         } catch (cacheError) {
-          console.warn('Failed to invalidate branding cache:', cacheError);
+          // Cache invalidation failed - non-critical, continue
         }
         
         // Show correct success message based on delete type
@@ -299,7 +299,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           try {
             await mutate(`${baseUrl}/api/superadmin/branding/public`);
           } catch (cacheError) {
-            console.warn('Failed to invalidate branding cache:', cacheError);
+            // Cache invalidation failed - non-critical, continue
           }
           
           showSuccessModal('Branding updated successfully! The changes will be visible on the public site immediately.');

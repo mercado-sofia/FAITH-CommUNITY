@@ -91,7 +91,7 @@ export default function ApprovalsTable({
               <th className={styles.sectionColumn}>Section</th>
               <th className={styles.dateColumn}>Date</th>
               <th className={styles.statusColumn}>Status</th>
-              <th className={styles.actionsColumn}></th>
+              <th className={styles.actionsColumn}>Actions</th>
             </tr>
           </thead>
           <tbody>

@@ -42,6 +42,7 @@ const authenticateAdmin = (req, res, next) => {
 // Use dynamic middleware based on upload type from query params
 router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
   // Check query params first (since body needs multer to parse)
+  // Note: Body params are not available yet, so we use query params for middleware selection
   const uploadType = req.query.type || 'program';
   
   // Select appropriate multer config based on upload type
@@ -50,6 +51,8 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
     uploadMiddleware = cloudinaryUploadConfigs.highlight.single('file');
   } else if (uploadType === 'program_post_act') {
     // Use S3 upload config for post-act reports
+    // Note: This multer middleware only parses the file into memory (memoryStorage),
+    // it does NOT upload to S3. The actual upload happens later via uploadSingleToS3()
     uploadMiddleware = s3UploadConfigs.postActReport.single('file');
   } else {
     uploadMiddleware = cloudinaryUploadConfigs.programMain.single('file');
@@ -69,14 +72,30 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
     }
     
     // Determine upload type from request body or query params (body is now parsed)
-    const uploadType = req.body.uploadType || req.query.type || 'program';
+    // IMPORTANT: The middleware was selected based on query.type (or default 'program') BEFORE body was parsed
+    // We must ensure body.uploadType matches what the middleware used to avoid configuration mismatch
+    const bodyUploadType = req.body.uploadType;
+    const queryUploadType = req.query.type;
+    const middlewareUploadType = queryUploadType || 'program'; // What middleware actually used for file processing
+    
+    // Validate consistency: if body.uploadType is provided, it must match what middleware used
+    // This prevents the bug where middleware processes with one config but upload logic uses another
+    if (bodyUploadType && bodyUploadType !== middlewareUploadType) {
+      return res.status(400).json({ 
+        error: `Upload type mismatch: middleware was configured for "${middlewareUploadType}" (from query.type="${queryUploadType || 'default'}"), but body.uploadType="${bodyUploadType}". These must match to ensure correct middleware configuration.` 
+      });
+    }
+    
+    // Use body param if provided (takes priority for backward compatibility), otherwise fall back to query param
+    // Since we validated above that body.uploadType matches middleware type, this is safe
+    const uploadType = bodyUploadType || queryUploadType || 'program';
     
     // Handle S3 uploads for post-act reports
     if (uploadType === 'program_post_act') {
       try {
         const { uploadSingleToS3 } = await import('../../utils/s3Upload.js');
         
-        // Upload to S3
+        // Upload to S3 (multer middleware above only parsed the file into memory)
         const uploadResult = await uploadSingleToS3(
           req.file,
           S3_FOLDERS.PROGRAMS.POST_ACT,

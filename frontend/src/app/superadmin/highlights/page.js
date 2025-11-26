@@ -362,7 +362,7 @@ const SuperadminHighlightsPage = () => {
           setFeaturedHighlightsFromApi(data.highlights || [])
         }
       } catch (error) {
-        console.error('Error fetching featured highlights:', error)
+        // Error fetching featured highlights - silently fail, will show empty state
       } finally {
         setIsLoadingFeatured(false)
       }

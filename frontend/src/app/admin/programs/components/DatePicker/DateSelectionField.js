@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import MultiDatePicker from 'react-multi-date-picker';
-import { FaCalendar, FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown } from 'react-icons/fa';
+import { FiCalendar } from 'react-icons/fi';
 import { FiTrash2 } from 'react-icons/fi';
 import { formatDateShort, formatDateForAPI } from '@/utils/dateUtils.js';
 import "react-datepicker/dist/react-datepicker.css";
@@ -319,7 +320,7 @@ const DateSelectionField = ({
           {scheduleType === 'single' && (
             <div className={styles.singleDateContainer}>
               <div className={styles.dateInputWrapper}>
-                <FaCalendar className={styles.dateIcon} />
+                <FiCalendar className={styles.dateIcon} />
                 <DatePicker
                   selected={dateRange[0]}
                   onChange={handleSingleDateChange}
@@ -336,7 +337,7 @@ const DateSelectionField = ({
           {scheduleType === 'range' && (
             <div className={styles.dateRangeContainer}>
               <div className={styles.dateInputWrapper}>
-                <FaCalendar className={styles.dateIcon} />
+                <FiCalendar className={styles.dateIcon} />
                 <DatePicker
                   selectsRange={true}
                   startDate={dateRange[0]}
@@ -355,7 +356,7 @@ const DateSelectionField = ({
           {scheduleType === 'multiple' && (
             <div className={styles.multipleDatesContainer}>
               <div className={styles.dateInputWrapper}>
-                <FaCalendar className={styles.dateIcon} />
+                <FiCalendar className={styles.dateIcon} />
                 <MultiDatePicker
                   value={multipleDates}
                   onChange={handleMultipleDatesChange}

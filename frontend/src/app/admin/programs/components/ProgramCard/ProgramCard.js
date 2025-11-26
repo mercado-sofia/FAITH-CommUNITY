@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers } from 'react-icons/fa';
+import { FaEdit, FaTag, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers } from 'react-icons/fa';
+import { FiCalendar } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2, FiArchive } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
@@ -436,7 +437,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
             </div>
 
             <div className={styles.metaItem}>
-              <FaCalendar className={styles.metaIcon} />
+              <FiCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
                 {formatProgramDatesForCard(normalizedData)}
               </span>
@@ -445,7 +446,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
 
           {normalizedData.created_at && (
             <div className={styles.metaItem}>
-              <FaCalendar className={styles.metaIcon} />
+              <FiCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
                 Created: {formatDateShort(normalizedData.created_at)}
               </span>

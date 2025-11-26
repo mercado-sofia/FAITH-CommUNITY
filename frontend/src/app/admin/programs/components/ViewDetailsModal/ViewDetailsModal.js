@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaCalendar, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle, FaHistory } from 'react-icons/fa';
+import { FaTimes, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle, FaHistory } from 'react-icons/fa';
+import { FiCalendar } from 'react-icons/fi';
 import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
@@ -229,17 +230,14 @@ const ViewDetailsModal = ({
                 <div className={styles.detailsSection}>
                   <div className={styles.detailsGrid}>
                     <div className={styles.detailItem}>
-                      <FaCalendar className={styles.detailIcon} />
-                      <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Date</span>
-                        <span className={styles.detailValue}>
-                          {mode === 'collaboration' ? (
-                            data.event_start_date ? formatDateShort(data.event_start_date) : 'N/A'
-                          ) : (
-                            formatProgramDates(data)
-                          )}
-                        </span>
-                      </div>
+                      <FiCalendar className={styles.detailIcon} />
+                      <span className={styles.detailValue}>
+                        {mode === 'collaboration' ? (
+                          data.event_start_date ? formatDateShort(data.event_start_date) : 'N/A'
+                        ) : (
+                          formatProgramDates(data)
+                        )}
+                      </span>
                     </div>
 
                     {/* Program Status - show in both modes */}

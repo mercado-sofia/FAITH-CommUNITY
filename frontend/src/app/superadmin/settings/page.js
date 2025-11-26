@@ -158,7 +158,6 @@ export default function SuperAdminSettings() {
         }
       } catch (error) {
         // Network errors or other exceptions
-        console.error('Error loading user data:', error);
         showAuthError('Failed to load user data. Please check your connection and try again.');
       } finally {
         setLoading(false);

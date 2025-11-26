@@ -73,15 +73,27 @@ FAITH CommUNITY is a full-stack volunteer management platform built with a moder
 │  │  Core Tables                                         │   │
 │  │  - users (unified: user, admin, superadmin roles)   │   │
 │  │  - user_profiles (public user profile data)         │   │
-│  │  - organizations, programs_projects                 │   │
-│  │  - submissions, admin_notifications                 │   │
-│  │  - volunteers, messages, subscribers               │   │
+│  │  - organizations, programs_projects                   │   │
+│  │  - program_event_dates, program_additional_images    │   │
+│  │  - program_post_act_reports, program_collaborations │   │
+│  │  - submissions, admin_notifications                  │   │
+│  │  - superadmin_notifications, user_notifications     │   │
+│  │  - volunteers, messages, subscribers                 │   │
+│  │  - news, admin_highlights, featured_highlights        │   │
+│  │  - advocacies, competencies, organization_heads      │   │
+│  │  - admin_invitations, faqs                           │   │
+│  │  - branding, site_name, footer_content                │   │
+│  │  - hero_section, hero_section_images                 │   │
+│  │  - about_us, mission_vision, heads_faces              │   │
+│  │  - migrations                                         │   │
 │  └────────────────────────────────────────────────────┘   │
 │  ┌────────────────────────────────────────────────────┐   │
 │  │  Security Tables                                     │   │
 │  │  - refresh_tokens, login_attempts                   │   │
 │  │  - admin_sessions, security_logs                    │   │
 │  │  - password_reset_tokens, email_change_otps         │   │
+│  │  - step_up_challenges, mfa_backup_codes            │   │
+│  │  - audit_logs                                        │   │
 │  └────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```

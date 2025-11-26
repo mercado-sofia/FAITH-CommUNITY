@@ -1277,19 +1277,26 @@ export const getNewsBySlug = async (req, res) => {
           isAdmin = decoded.role === 'admin';
           isSuperadmin = decoded.role === 'superadmin';
           // If token is invalid or user is not admin/superadmin, treat as public request
+          // CRITICAL: Clear decoded and role flags to prevent authorization bypass
           if (!isAdmin && !isSuperadmin) {
             isPublicRequest = true;
             decoded = null;
+            isAdmin = false;
+            isSuperadmin = false;
           }
         } else {
           // Invalid token or unexpected response structure, treat as public request
           isPublicRequest = true;
           decoded = null;
+          isAdmin = false;
+          isSuperadmin = false;
         }
       } catch (authError) {
         // If getOrRefreshAccessToken throws an error, treat as public request
         isPublicRequest = true;
         decoded = null;
+        isAdmin = false;
+        isSuperadmin = false;
       }
     }
 
@@ -2106,33 +2113,45 @@ export const updateNews = async (req, res) => {
       ? ', content_updated_at = CURRENT_TIMESTAMP' 
       : ', content_updated_at = content_updated_at'; // Preserve current value
     
+    // Build featured_image clause if provided
+    const featuredImageClause = featured_image ? ', featured_image = ?' : '';
+    
     if (statusColumnExists) {
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
         // Use NOW() for published_at when publishing immediately
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${contentUpdatedAtClause} WHERE id = ?`;
-        params = [title, slug, content || '', excerpt || '', newStatus, id];
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+        params = [title, slug, content || '', excerpt || '', newStatus];
+        if (featured_image) {
+          params.push(featured_image);
+        }
+        params.push(id);
       } else {
         // For archive and other actions, use the preserved published_at value
         // Handle NULL values properly in SQL
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${contentUpdatedAtClause} WHERE id = ?`;
-        params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+        params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus];
+        if (featured_image) {
+          params.push(featured_image);
+        }
+        params.push(id);
       }
     } else {
       // Fallback: without status column
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW())${contentUpdatedAtClause} WHERE id = ?`;
-        params = [title, slug, content || '', excerpt || '', id];
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW())${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+        params = [title, slug, content || '', excerpt || ''];
+        if (featured_image) {
+          params.push(featured_image);
+        }
+        params.push(id);
       } else {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?${contentUpdatedAtClause} WHERE id = ?`;
-        params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, id];
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+        params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue];
+        if (featured_image) {
+          params.push(featured_image);
+        }
+        params.push(id);
       }
-    }
-    
-    if (featured_image) {
-      // Insert featured_image update before WHERE clause
-      query = query.replace(' WHERE id = ?', ', featured_image = ? WHERE id = ?');
-      const whereIndex = params.length - 1;
-      params.splice(whereIndex, 0, featured_image);
     }
 
     let result;
@@ -2159,18 +2178,19 @@ export const updateNews = async (req, res) => {
           // Retry the update with status column - use same logic as main query
           if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
             // Use NOW() for published_at when publishing immediately
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${contentUpdatedAtClause} WHERE id = ?`;
-            params = [title, slug, content || '', excerpt || '', newStatus, id];
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+            params = [title, slug, content || '', excerpt || '', newStatus];
+            if (featured_image) {
+              params.push(featured_image);
+            }
+            params.push(id);
           } else {
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${contentUpdatedAtClause} WHERE id = ?`;
-            params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
-          }
-          
-          if (featured_image) {
-            // Insert featured_image update before WHERE clause
-            query = query.replace(' WHERE id = ?', ', featured_image = ? WHERE id = ?');
-            const whereIndex = params.length - 1;
-            params.splice(whereIndex, 0, featured_image);
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${featuredImageClause}${contentUpdatedAtClause} WHERE id = ?`;
+            params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus];
+            if (featured_image) {
+              params.push(featured_image);
+            }
+            params.push(id);
           }
           
           [result] = await db.execute(query, params);

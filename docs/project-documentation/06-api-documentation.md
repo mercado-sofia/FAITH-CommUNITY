@@ -45,11 +45,12 @@ All API responses follow this structure:
 - **GET** `/api/organization-advisers` - Get approved organization advisers
 
 ### Programs
-- **GET** `/api/programs` - Get all approved programs
+- **GET** `/api/programs` - Get all approved programs (excludes archived programs)
 - **GET** `/api/programs/featured` - Get featured programs
 - **GET** `/api/programs/org/:orgId` - Get approved programs by organization
 - **GET** `/api/programs/slug/:slug` - Get program by slug
 - **GET** `/api/programs/org/:organizationId/other/:excludeProgramId` - Get related programs by organization
+- **GET** `/api/programs/approved/upcoming` - Get approved upcoming programs (for volunteer applications)
 
 ### News
 - **GET** `/api/news` - Get all approved news
@@ -148,7 +149,7 @@ All API responses follow this structure:
 
 ### Volunteer Applications
 - **POST** `/api/apply` - Submit volunteer application
-- **GET** `/api/programs/approved/upcoming` - Get approved upcoming programs
+- **GET** `/api/programs/approved/upcoming` - Get approved upcoming programs (for volunteer application form)
 
 ---
 
@@ -190,10 +191,13 @@ All API responses follow this structure:
 ### Programs Management
 - **GET** `/api/admin/programs` - Get admin's programs
 - **GET** `/api/admin/programs/:orgId` - Get programs by organization
+- **GET** `/api/admin/programs/:orgId/archived` - Get archived programs by organization
 - **GET** `/api/admin/programs/single/:id` - Get program by ID
 - **PUT** `/api/admin/programs/:id` - Update program
 - **PUT** `/api/admin/programs/:id/mark-active` - Mark program as active
 - **PUT** `/api/admin/programs/:id/toggle-volunteers` - Toggle volunteer acceptance
+- **PUT** `/api/admin/programs/:id/archive` - Archive program
+- **PATCH** `/api/admin/programs/:id/unarchive` - Unarchive program
 - **POST** `/api/admin/programs/:id/post-act-report` - Upload post-act report
 - **DELETE** `/api/admin/programs/:id` - Delete program submission
 - **PUT** `/api/program-projects/:id` - Update program project

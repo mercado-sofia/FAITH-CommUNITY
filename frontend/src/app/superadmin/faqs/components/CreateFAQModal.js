@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import styles from './styles/CreateFAQModal.module.css';
 

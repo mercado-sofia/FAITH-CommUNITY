@@ -114,7 +114,6 @@ const VideoPlayer = ({ videoUrl, media, index }) => {
 
   const handlePlayClick = () => {
     if (!videoUrl) {
-      console.error('No video URL provided');
       setHasError(true);
       return;
     }
@@ -133,26 +132,18 @@ const VideoPlayer = ({ videoUrl, media, index }) => {
             setIsLoading(false);
             setIsPlaying(true);
           })
-          .catch(err => {
-            console.error('Error playing video:', err);
-            console.error('Video element state:', {
-              networkState: videoRef.current.networkState,
-              readyState: videoRef.current.readyState,
-              error: videoRef.current.error
-            });
+          .catch(() => {
             setIsLoading(false);
             setHasError(true);
           });
       } else {
-        console.error('Video element not found after render');
         setIsLoading(false);
         setHasError(true);
       }
     }, 200);
   };
 
-  const handleVideoError = (e) => {
-    console.error('Video playback error:', e);
+  const handleVideoError = () => {
     const errorDetails = {
       code: videoRef.current?.error?.code,
       message: videoRef.current?.error?.message,
@@ -160,7 +151,6 @@ const VideoPlayer = ({ videoUrl, media, index }) => {
       readyState: videoRef.current?.readyState,
       videoUrl: videoUrl
     };
-    console.error('Video error details:', errorDetails);
     setIsLoading(false);
     setHasError(true);
     setIsPlaying(false);

@@ -33,6 +33,10 @@ export default function ManageFaqs() {
   // Bulk actions
   const [selectedItems, setSelectedItems] = useState(new Set());
   
+  // Dropdown state
+  const [showDropdown, setShowDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({});
+  
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingFaq, setEditingFaq] = useState(null);
@@ -231,6 +235,103 @@ export default function ManageFaqs() {
     setCurrentPage(1);
   }, [searchTerm, sortBy, showEntries]);
 
+  // Function to calculate dropdown position
+  const calculateDropdownPosition = useCallback((buttonElement) => {
+    if (!buttonElement || typeof window === 'undefined') {
+      return { position: 'below', top: 0, right: 0 };
+    }
+    
+    const rect = buttonElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const dropdownHeight = 120;
+    const right = 0;
+    
+    // Check if there's enough space below
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    
+    let top, position;
+    
+    // If not enough space below but enough above, show above
+    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+      position = 'above';
+      top = -dropdownHeight - 4; // 4px gap above the button
+    } else {
+      position = 'below';
+      top = rect.height + 4; // 4px gap below the button
+    }
+    
+    return { position, top, right };
+  }, []);
+
+  // Handle click outside for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // Check if target is a valid element with closest method
+      if (!e.target || !e.target.closest) {
+        return;
+      }
+      
+      // Don't close if clicking on SearchAndFilterControls dropdowns
+      if (e.target.closest('[data-search-filter-controls]')) {
+        return;
+      }
+      
+      // Don't close if clicking on dropdown options or inside dropdown containers
+      if (e.target.closest('[data-faq-action-dropdown-options]') ||
+          e.target.closest('[data-faq-action-dropdown]')) {
+        return;
+      }
+      
+      // Close dropdown if clicking outside
+      setShowDropdown(null);
+      setDropdownPosition({});
+    };
+
+    const handleResize = () => {
+      // Close dropdowns on window resize to prevent positioning issues
+      setShowDropdown(null);
+      setDropdownPosition({});
+    };
+
+    const handleScroll = (e) => {
+      // Only close dropdowns if scrolling outside of dropdown containers
+      if (showDropdown) {
+        if (e.target && e.target.closest) {
+          // Check if scrolling inside SearchAndFilterControls dropdowns
+          const searchFilterControls = e.target.closest('[data-search-filter-controls]');
+          if (searchFilterControls) {
+            const optionsList = e.target.closest('[class*="options"]');
+            const dropdownWrapper = e.target.closest('[class*="dropdownWrapper"]');
+            if (optionsList || dropdownWrapper) {
+              return;
+            }
+          }
+          
+          // Check if scrolling inside action dropdowns
+          if (!e.target.closest('[data-faq-action-dropdown]') &&
+              !e.target.closest('[data-search-filter-controls]')) {
+            setShowDropdown(null);
+            setDropdownPosition({});
+          }
+        } else if (e.target && e.target.nodeType === Node.DOCUMENT_NODE) {
+          setShowDropdown(null);
+          setDropdownPosition({});
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [showDropdown]);
+
   // Event handlers
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
@@ -308,8 +409,12 @@ export default function ManageFaqs() {
         onSelectAll={handleSelectAll}
         onSelectItem={handleSelectItem}
         isDeleting={isDeleting}
-        isUpdating={isUpdating}
         startIndex={startIndex}
+        showDropdown={showDropdown}
+        setShowDropdown={setShowDropdown}
+        dropdownPosition={dropdownPosition}
+        setDropdownPosition={setDropdownPosition}
+        calculateDropdownPosition={calculateDropdownPosition}
       />
 
       {/* Pagination */}

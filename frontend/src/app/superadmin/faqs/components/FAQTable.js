@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiTrash2 } from 'react-icons/fi';
+import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { IoCloseOutline } from "react-icons/io5";
 import { ConfirmationModal } from '@/components';
 import { formatDateTime } from '@/utils/shared/dateUtils';
@@ -16,8 +17,12 @@ export default function FAQTable({
   onSelectAll,
   onSelectItem,
   isDeleting,
-  isUpdating,
-  startIndex = 0
+  startIndex = 0,
+  showDropdown = null,
+  setShowDropdown,
+  dropdownPosition = {},
+  setDropdownPosition,
+  calculateDropdownPosition
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
@@ -56,6 +61,25 @@ export default function FAQTable({
     }
   };
 
+  // Helper function to abbreviate month names
+  const abbreviateMonth = (monthName) => {
+    const monthMap = {
+      'January': 'Jan',
+      'February': 'Feb',
+      'March': 'Mar',
+      'April': 'Apr',
+      'May': 'May',
+      'June': 'Jun',
+      'July': 'Jul',
+      'August': 'Aug',
+      'September': 'Sep',
+      'October': 'Oct',
+      'November': 'Nov',
+      'December': 'Dec'
+    };
+    return monthMap[monthName] || monthName;
+  };
+
   // Custom function to preserve exact date/time split format for UI
   const formatDate = (dateString) => {
     if (!dateString) return { datePart: 'N/A', timePart: 'N/A' };
@@ -73,19 +97,47 @@ export default function FAQTable({
     try {
       const parts = formatted.split(', ');
       if (parts.length >= 3) {
-        // Date part: "Month Day, Year" -> "Month Day, Year"
-        const datePart = `${parts[0]}, ${parts[1]}`;
-        // Time part: "Hour:Minute AM/PM"
-        const timePart = parts[2];
-        return { datePart, timePart };
+        // Extract month name and abbreviate it
+        // parts[0] is "Month Day" (e.g., "November 18")
+        const datePartWithMonth = parts[0]; // "November 18"
+        const monthDayMatch = datePartWithMonth.match(/^(\w+)\s+(\d+)$/);
+        
+        if (monthDayMatch) {
+          const fullMonthName = monthDayMatch[1];
+          const day = monthDayMatch[2];
+          const abbreviatedMonth = abbreviateMonth(fullMonthName);
+          // Date part: "Nov 18, Year"
+          const datePart = `${abbreviatedMonth} ${day}, ${parts[1]}`;
+          // Time part: "Hour:Minute AM/PM"
+          const timePart = parts[2];
+          return { datePart, timePart };
+        } else {
+          // Fallback: if pattern doesn't match, try to abbreviate month in the string
+          const abbreviatedDatePart = datePartWithMonth.replace(
+            /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/,
+            (match) => abbreviateMonth(match)
+          );
+          const datePart = `${abbreviatedDatePart}, ${parts[1]}`;
+          const timePart = parts[2];
+          return { datePart, timePart };
+        }
       } else if (parts.length === 2) {
         // If only 2 parts, assume date and time are combined differently
-        const datePart = parts[0];
+        // Try to abbreviate month if present
+        const abbreviatedDatePart = parts[0].replace(
+          /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/,
+          (match) => abbreviateMonth(match)
+        );
+        const datePart = abbreviatedDatePart;
         const timePart = parts[1];
         return { datePart, timePart };
       } else {
-        // Fallback: return the whole string as date part
-        return { datePart: formatted, timePart: 'N/A' };
+        // Fallback: return the whole string as date part with abbreviated month
+        const abbreviatedFormatted = formatted.replace(
+          /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/,
+          (match) => abbreviateMonth(match)
+        );
+        return { datePart: abbreviatedFormatted, timePart: 'N/A' };
       }
     } catch (error) {
       return { datePart: formatted, timePart: 'N/A' };
@@ -211,23 +263,75 @@ export default function FAQTable({
                     </div>
                   </td>
                   <td className={styles.actionsColumn}>
-                    <div className={styles.actionButtons}>
-                      <button
-                        onClick={() => onEdit(faq)}
-                        className={`${styles.actionButton} ${styles.editButton}`}
-                        disabled={isUpdating}
-                        title="Edit FAQ"
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(faq)}
-                        className={`${styles.actionButton} ${styles.deleteButton}`}
-                        disabled={isDeleting}
-                        title="Delete FAQ"
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
+                    <div className={styles.actionDropdownWrapper} data-faq-action-dropdown>
+                      <div className={styles.actionDropdownButtonWrapper}>
+                        <div
+                          className={styles.actionDropdown}
+                          onClick={(e) => {
+                            if (!setShowDropdown || !setDropdownPosition || !calculateDropdownPosition) {
+                              return;
+                            }
+                            const dropdownId = `action-${faq.id}`;
+                            if (showDropdown === dropdownId) {
+                              setShowDropdown(null);
+                            } else {
+                              const position = calculateDropdownPosition(e.currentTarget);
+                              setDropdownPosition(prev => ({
+                                ...prev,
+                                [dropdownId]: position
+                              }));
+                              setShowDropdown(dropdownId);
+                            }
+                          }}
+                        >
+                          <HiOutlineDotsHorizontal className={styles.actionDropdownIcon} />
+                        </div>
+                        {showDropdown === `action-${faq.id}` && (
+                          <ul 
+                            className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${faq.id}`]?.position === 'above' ? styles.above : ''}`}
+                            data-faq-action-dropdown-options
+                            style={{
+                              top: `${dropdownPosition[`action-${faq.id}`]?.top || 0}px`,
+                              right: `${dropdownPosition[`action-${faq.id}`]?.right || 0}px`
+                            }}
+                          >
+                            <li 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (onEdit) {
+                                  onEdit(faq);
+                                }
+                                if (setShowDropdown) {
+                                  setShowDropdown(null);
+                                }
+                                if (setDropdownPosition) {
+                                  setDropdownPosition({});
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Edit
+                            </li>
+                            <li 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteClick(faq);
+                                if (setShowDropdown) {
+                                  setShowDropdown(null);
+                                }
+                                if (setDropdownPosition) {
+                                  setDropdownPosition({});
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Delete
+                            </li>
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

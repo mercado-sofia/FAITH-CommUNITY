@@ -2586,10 +2586,18 @@ export const unarchiveProgram = async (req, res) => {
     }
 
     // Update program status to restored status
-    await db.execute(
+    const [updateResult] = await db.execute(
       "UPDATE programs_projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'archived'",
       [restoreStatus, id]
     );
+
+    // Check if any rows were actually updated
+    if (updateResult.affectedRows === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Program is not in archived status or was already unarchived"
+      });
+    }
 
     res.json({
       success: true,

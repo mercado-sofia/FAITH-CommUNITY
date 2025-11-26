@@ -628,9 +628,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             finalImagesData = finalImagesData.map(img => 
               img.id === imageId ? { ...img, url: null } : img
             );
-          } else {
-            console.warn(`Failed to delete image ${imageId}, continuing with update`);
           }
+          // Continue with update even if deletion fails
         } catch (error) {
           console.error(`Error deleting image ${imageId}:`, error);
           // Continue with update even if deletion fails

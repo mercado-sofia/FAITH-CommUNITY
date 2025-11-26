@@ -317,7 +317,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         try {
           await mutate(`${baseUrl}/api/mission-vision`);
         } catch (cacheError) {
-          console.warn('Failed to invalidate cache:', cacheError);
+          // Cache invalidation failed - non-critical, continue
         }
         
         // Update state with saved data (no need to reload - we already have the response data)

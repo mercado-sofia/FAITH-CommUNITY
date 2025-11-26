@@ -1,78 +1,73 @@
 /* HighlightCard Component Styles */
 .featuredCard {
   background: white;
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .featuredCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
-  border-color: #cbd5e0;
+  border-color: #d1d5db;
 }
 
 .cardImageContainer {
   position: relative;
-  height: 200px;
-  background: #f3f4f6;
+  height: 180px;
+  background: #f9fafb;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .cardImage {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.featuredCard:hover .cardImage {
-  transform: scale(1.05);
+  display: block;
+  z-index: 1;
 }
 
 .imagePlaceholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
   background: #f9fafb;
   color: #6b7280;
   font-size: 14px;
   font-weight: 500;
+  z-index: 0;
 }
 
 .impactBadge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  background-color: #fbbf24;
-  color: #000;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
-  z-index: 2;
-}
-
-.impactLabel {
+  top: 8px;
+  left: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
   font-size: 11px;
-  font-weight: 800;
-  color: #000;
+  font-weight: 700;
+  background-color: #fffef2;
+  color: #f0ac18;
+  text-transform: uppercase;
+  z-index: 2;
+  user-select: none;
 }
 
 .cardContent {
-  padding: 24px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   flex: 1;
 }
 
@@ -80,16 +75,16 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: 8px;
+  margin-bottom: 0;
 }
 
 .cardTitle {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   color: #000;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -98,87 +93,68 @@
   flex: 1;
 }
 
-.cardProgram {
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 400;
-  margin: 8px 0 12px 0;
-  line-height: 1.4;
-}
-
-.programLabel {
-  font-weight: 600;
-  color: #4b5563;
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
 }
 
 .cardOrganization {
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.orgLogo {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.orgName {
+  font-size: 12px;
   color: #6b7280;
   font-weight: 500;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1;
+}
+
+.cardProgram {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
+  margin: 12px 0 2px 0;
+  line-height: 1.4;
+}
+
+.programLabel {
+  font-weight: 500;
+  color: #000;
 }
 
 .cardDescription {
-  font-size: 14px;
+  font-size: 13px;
   color: #4b5563;
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
+  margin-bottom: 10px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.cardFooter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.statusBadgeContainer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.statusBadge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  text-transform: capitalize;
-  font-family: var(--font-inter);
-}
-
-.statusBadge.approved {
-  background-color: #1d9782;
-}
-
-.statusBadge.pending {
-  background-color: #8b8e8d;
-}
-
-.statusBadge.rejected {
-  background-color: #e53e3e;
-}
-
-.cardDate {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-  font-family: var(--font-inter);
+  flex: 1;
 }
 
 .featuredCardFooter {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: auto;
+  padding-top: 12px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -187,30 +163,28 @@
   background: #000;
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
   font-family: var(--font-inter);
 }
 
 .viewDetailsButton:hover {
-  background: #142220;
-  transform: translateY(-1px);
+  background: #1a1a1a;
 }
 
 .viewDetailsButton:active {
-  transform: translateY(0);
+  background: #0d0d0d;
 }
 
 .highlightedText {
   background-color: #fef08a;
   color: #000;
-  padding: 2px 4px;
-  border-radius: 3px;
+  padding: 1px 3px;
+  border-radius: 2px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 

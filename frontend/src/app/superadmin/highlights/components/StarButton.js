@@ -4,8 +4,6 @@ import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
-const MAX_FEATURED_HIGHLIGHTS = 12
-
 const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -69,13 +67,8 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange 
       }
     } catch (error) {
       setIsStarred(false)
-      console.error('Error adding to featured:', error)
       const errorMessage = error?.data?.error || error?.message || 'Failed to add highlight to featured'
-      if (errorMessage.includes('Maximum')) {
-        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights per organization allowed. Please unfeature another highlight first.`)
-      } else {
-        alert(errorMessage)
-      }
+      alert(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -96,7 +89,6 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange 
       }
     } catch (error) {
       setIsStarred(true)
-      console.error('Error removing from featured:', error)
       const errorMessage = error?.data?.error || error?.message || 'Failed to remove highlight from featured'
       alert(errorMessage)
     } finally {

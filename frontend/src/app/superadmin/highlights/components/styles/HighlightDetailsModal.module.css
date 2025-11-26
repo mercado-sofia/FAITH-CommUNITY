@@ -113,7 +113,7 @@
   border-radius: 8px;
   overflow: hidden;
   background: #f9fafb;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
@@ -178,9 +178,9 @@
 .infoGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
-  padding-bottom: 32px;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -219,8 +219,8 @@
 
 /* Description Section */
 .descriptionSection {
-  margin-bottom: 32px;
-  padding-bottom: 32px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -228,7 +228,7 @@
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   font-family: 'Poppins', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -256,7 +256,7 @@
 }
 
 .mediaGallerySection .sectionTitle {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .mediaCount {

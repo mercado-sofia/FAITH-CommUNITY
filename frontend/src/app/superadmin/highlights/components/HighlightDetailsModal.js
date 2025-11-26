@@ -175,12 +175,12 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                   }
                 }
               } catch (e) {
-                console.error('Error parsing submission data:', e)
+                logger.error('Error parsing submission data', e, { context: 'HighlightDetailsModal' })
               }
             }
           }
         } catch (error) {
-          console.error('Error fetching program from submission:', error)
+          logger.error('Error fetching program from submission', error, { context: 'HighlightDetailsModal' })
         } finally {
           setLoadingProgram(false)
         }
@@ -231,21 +231,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
       return
     }
 
-    // Get the first image URL
-    const getImageUrl = () => {
-      if (!highlight.media || highlight.media.length === 0) return null
-      
-      const firstImage = highlight.media.find(item => 
-        item.type === 'image' || 
-        item.mimetype?.startsWith('image/') ||
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url)
-      )
-      
-      return firstImage?.url || firstImage?.filename || null
-    }
-
-    const imageUrl = getImageUrl()
-
     if (highlight?.media && highlight.media.length > 0) {
       const images = highlight.media
         .filter(item => {
@@ -260,12 +245,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           index
         }))
       setAllImages(images)
-    } else if (imageUrl) {
-      setAllImages([{
-        src: imageUrl,
-        alt: highlight.title || 'Highlight image',
-        index: 0
-      }])
     } else {
       setAllImages([])
     }
@@ -325,7 +304,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     if (!impactLevel) return null
     switch (impactLevel.toLowerCase()) {
       case 'low':
-        return 'Low Impact'
+        return 'Small Impact'
       case 'average':
         return 'Average Impact'
       case 'high':

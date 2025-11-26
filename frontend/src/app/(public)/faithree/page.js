@@ -138,10 +138,8 @@ function FAITHreePage() {
         const highlights = data.highlights || [];
         
         // API already returns highlights in order (by display_order)
-        // Limit to 12 just in case
-        const orderedFeaturedHighlights = highlights.slice(0, 12);
-        
-        setFeaturedHighlights(orderedFeaturedHighlights);
+        // No limit - can feature unlimited highlights
+        setFeaturedHighlights(highlights);
       } catch (error) {
         // Enhanced error logging
         if (error.name === 'AbortError') {
@@ -244,10 +242,46 @@ function FAITHreePage() {
     fetchOrganizations();
   }, []);
 
-  // Handle model loading completion
-  const handleModelLoad = useCallback(() => {
-    setIsModelLoading(false);
-  }, []);
+  // Split featured highlights into chunks of 12 for multiple trees
+  const highlightChunks = useMemo(() => {
+    const chunks = [];
+    const chunkSize = 12;
+    for (let i = 0; i < featuredHighlights.length; i += chunkSize) {
+      chunks.push(featuredHighlights.slice(i, i + chunkSize));
+    }
+    // If no highlights, still create one empty chunk to show at least one tree
+    if (chunks.length === 0) {
+      chunks.push([]);
+    }
+    return chunks;
+  }, [featuredHighlights]);
+
+  // Track loaded trees
+  const [loadedTrees, setLoadedTrees] = useState(new Set());
+  
+  // Handle individual tree load
+  const handleTreeLoad = useCallback((treeIndex) => {
+    setLoadedTrees(prev => {
+      const newSet = new Set(prev);
+      newSet.add(treeIndex);
+      // Only set isModelLoading to false when all trees are loaded
+      if (newSet.size === highlightChunks.length && highlightChunks.length > 0) {
+        setIsModelLoading(false);
+      }
+      return newSet;
+    });
+  }, [highlightChunks.length]);
+  
+  // Reset loaded trees when chunks change
+  useEffect(() => {
+    setLoadedTrees(new Set());
+    // If no chunks or empty chunks, set loading to false immediately
+    if (highlightChunks.length === 0 || (highlightChunks.length === 1 && highlightChunks[0].length === 0)) {
+      setIsModelLoading(false);
+    } else {
+      setIsModelLoading(true);
+    }
+  }, [highlightChunks]);
 
   return (
     <>
@@ -341,15 +375,30 @@ function FAITHreePage() {
           </div>
         </div>
         
-        {/* 3D Tree Model */}
+        {/* 3D Tree Models - Multiple trees for chunks of 12 highlights */}
         <div className={styles.floatingGround}>
-          <div className={styles.tree3D}>
-            <TreeModel 
-              theme={theme} 
-              treePosition={[0, -1.8, 0]} 
-              featuredHighlights={featuredHighlights}
-              onLoad={handleModelLoad}
-            />
+          <div className={styles.treesContainer}>
+            {highlightChunks.map((chunk, index) => {
+              // Position trees horizontally: tree 1 at x=0, tree 2 at x=8, tree 3 at x=16, etc.
+              const treeXOffset = index * 8;
+              const chunkOffset = index * 12;
+              
+              return (
+                <div 
+                  key={index} 
+                  className={styles.tree3D}
+                >
+                  <TreeModel 
+                    theme={theme} 
+                    treePosition={[treeXOffset, -1.8, 0]} 
+                    chunkHighlights={chunk}
+                    chunkOffset={chunkOffset}
+                    allFeaturedHighlights={featuredHighlights}
+                    onLoad={() => handleTreeLoad(index)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
         

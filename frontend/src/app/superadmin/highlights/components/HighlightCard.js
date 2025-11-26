@@ -1,23 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo, memo } from 'react'
 import Image from 'next/image'
-import { formatDistanceToNow } from 'date-fns'
 import DOMPurify from 'dompurify'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import StarButton from './StarButton'
 import styles from './styles/HighlightCard.module.css'
 
 const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
   const [imageError, setImageError] = useState(false)
+  const [videoError, setVideoError] = useState(false)
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No date'
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true })
-    } catch {
-      return 'Invalid date'
-    }
-  }
+  // Reset error states when highlight changes
+  useEffect(() => {
+    setImageError(false)
+    setVideoError(false)
+  }, [highlight.id])
 
   const truncateText = (text, maxLength = 120) => {
     if (!text) return ''
@@ -147,7 +145,8 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
     return <>{parts}</>
   }
 
-  const getImageUrl = () => {
+  // Memoize image and video URLs to prevent unnecessary recalculations
+  const imageUrl = useMemo(() => {
     if (!highlight.media || highlight.media.length === 0) return null
     
     // Get the first image from media array
@@ -158,9 +157,9 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
     )
     
     return firstImage?.url || firstImage?.filename || null
-  }
+  }, [highlight.media])
 
-  const getVideoUrl = () => {
+  const videoUrl = useMemo(() => {
     if (!highlight.media || highlight.media.length === 0) return null
     
     // Get the first video from media array
@@ -171,23 +170,14 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
     )
     
     return firstVideo?.url || firstVideo?.filename || null
-  }
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': return '#1d9782'
-      case 'pending': return '#8b8e8d'
-      case 'rejected': return '#e53e3e'
-      default: return '#6b7280'
-    }
-  }
+  }, [highlight.media])
 
   // Get impact level label
-  const getImpactLevelLabel = (impactLevel) => {
-    if (!impactLevel) return null
-    switch (impactLevel.toLowerCase()) {
+  const impactLevelLabel = useMemo(() => {
+    if (!highlight.impact_level) return null
+    switch (highlight.impact_level.toLowerCase()) {
       case 'low':
-        return 'Low Impact'
+        return 'Small Impact'
       case 'average':
         return 'Average Impact'
       case 'high':
@@ -195,16 +185,13 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
       default:
         return null
     }
-  }
+  }, [highlight.impact_level])
 
-  const imageUrl = getImageUrl()
-  const videoUrl = getVideoUrl()
-  const isApproved = highlight.status?.toLowerCase() === 'approved'
-  const impactLevelLabel = getImpactLevelLabel(highlight.impact_level)
+  const isApproved = useMemo(() => highlight.status?.toLowerCase() === 'approved', [highlight.status])
   
   // Determine what to show: image first, then video, then placeholder
   const hasImage = imageUrl && !imageError
-  const hasVideo = videoUrl && !hasImage
+  const hasVideo = videoUrl && !hasImage && !videoError
   const showPlaceholder = !hasImage && !hasVideo
 
   return (
@@ -212,15 +199,18 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
       <div className={styles.cardImageContainer}>
         {hasImage ? (
           <Image 
+            key={`image-${highlight.id}-${imageUrl}`}
             src={imageUrl}
             alt={highlight.title}
             className={styles.cardImage}
             width={300}
             height={200}
             onError={() => setImageError(true)}
+            priority={false}
           />
         ) : hasVideo ? (
           <video
+            key={`video-${highlight.id}-${videoUrl}`}
             className={styles.cardImage}
             src={videoUrl}
             muted
@@ -234,8 +224,8 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
               backgroundColor: '#000'
             }}
             onError={() => {
-              // If video fails to load, show placeholder
-              setImageError(true)
+              // If video fails to load, set video error
+              setVideoError(true)
             }}
             onLoadedMetadata={(e) => {
               // Seek to first frame to show as preview
@@ -250,7 +240,7 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
         {/* Impact Level Badge - Only show for featured highlights */}
         {impactLevelLabel && (
           <div className={styles.impactBadge}>
-            <span className={styles.impactLabel}>{impactLevelLabel}</span>
+            {impactLevelLabel}
           </div>
         )}
         
@@ -277,52 +267,51 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
           </h3>
         </div>
         
-        {/* Associated Program - Display directly under title */}
-        {(highlight.program_title || highlight.program_id) && (
-          <p className={styles.cardProgram}>
-            <span className={styles.programLabel}>Associated Program:</span>{' '}
-            {searchQuery && highlight.program_title 
-              ? highlightText(highlight.program_title, searchQuery)
-              : (highlight.program_title || `Program ID: ${highlight.program_id}`)
+        <div className={styles.cardMeta}>
+        <div className={styles.cardOrganization}>
+          {highlight.organization_logo ? (() => {
+            const logoUrl = getOrganizationImageUrl(highlight.organization_logo, 'logo');
+            if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
+              return (
+                <Image
+                  src={logoUrl}
+                  alt={`${highlight.organization_acronym || highlight.organization_name || 'Organization'} logo`}
+                  width={16}
+                  height={16}
+                  className={styles.orgLogo}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              );
+            }
+            return null;
+          })() : null}
+          <p className={styles.orgName}>
+            {searchQuery 
+              ? highlightText(highlight.organization_name || 'Unknown Organization', searchQuery)
+              : (highlight.organization_name || 'Unknown Organization')
             }
           </p>
-        )}
-
-        {/* Year - Display if available */}
-        {highlight.year && (
-          <p className={styles.cardProgram} style={{ marginTop: '4px' }}>
-            <span className={styles.programLabel}>Year:</span>{' '}
-            {highlight.year}
-          </p>
-        )}
-        
-        <p className={styles.cardOrganization}>
-          {searchQuery 
-            ? highlightText(highlight.organization_name || 'Unknown Organization', searchQuery)
-            : (highlight.organization_name || 'Unknown Organization')
-          }
-        </p>
+        </div>
+          
+          {(highlight.program_title || highlight.program_id) && (
+            <p className={styles.cardProgram}>
+              <span className={styles.programLabel}>Program:</span>{' '}
+              {searchQuery && highlight.program_title 
+                ? highlightText(highlight.program_title, searchQuery)
+                : (highlight.program_title || `ID: ${highlight.program_id}`)
+              }
+            </p>
+          )}
+        </div>
         
         <p className={styles.cardDescription}>
           {searchQuery 
-            ? highlightText(truncateText(highlight.description), searchQuery)
-            : truncateText(highlight.description)
+            ? highlightText(truncateText(highlight.description, 100), searchQuery)
+            : truncateText(highlight.description, 100)
           }
         </p>
-        
-        <div className={styles.cardFooter}>
-          <div className={styles.statusBadgeContainer}>
-            <span 
-              className={`${styles.statusBadge} ${styles[highlight.status?.toLowerCase()]}`}
-              style={{ backgroundColor: getStatusColor(highlight.status) }}
-            >
-              {highlight.status || 'Unknown'}
-            </span>
-          </div>
-          <span className={styles.cardDate}>
-            {formatDate(highlight.created_at)}
-          </span>
-        </div>
         
         {/* View Details Button */}
         <div className={styles.featuredCardFooter}>
@@ -342,5 +331,5 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
   )
 }
 
-export default HighlightCard
+export default memo(HighlightCard)
 

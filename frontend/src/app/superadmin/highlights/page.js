@@ -16,7 +16,6 @@ const SuperadminHighlightsPage = () => {
   const searchParams = useSearchParams()
   const [selectedOrganization, setSelectedOrganization] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [refreshKey, setRefreshKey] = useState(0)
   const [selectedHighlight, setSelectedHighlight] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(null)
@@ -30,19 +29,6 @@ const SuperadminHighlightsPage = () => {
     return 'featured' // Default to 'featured' if no URL parameter or invalid tab
   })
 
-  // Listen for starred highlights changes
-  useEffect(() => {
-    const handleStarredChange = () => {
-      setRefreshKey(prev => prev + 1)
-    }
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('starredHighlightsChanged', handleStarredChange)
-      return () => {
-        window.removeEventListener('starredHighlightsChanged', handleStarredChange)
-      }
-    }
-  }, [])
 
   // Helper function to update URL parameter
   const updateTabUrl = useCallback((tab) => {
@@ -153,7 +139,7 @@ const SuperadminHighlightsPage = () => {
       let hasMatch = false
       
       // Helper function to check if string matches and calculate score
-      const checkMatch = (value, priorityScore, exactBonus = 0, wordMatchBonus = 0, fieldName = '') => {
+      const checkMatch = (value, priorityScore, exactBonus = 0, wordMatchBonus = 0) => {
         // Handle null, undefined, or non-string values
         if (value === null || value === undefined) {
           return false
@@ -259,18 +245,18 @@ const SuperadminHighlightsPage = () => {
       }
       
       // PRIORITY 1: Organization name and acronym (highest priority - 100 points)
-      if (checkMatch(highlight.organization_name, 100, 20, 5, 'organization_name')) {}
-      if (checkMatch(highlight.organization_acronym, 100, 20, 5, 'organization_acronym')) {}
+      checkMatch(highlight.organization_name, 100, 20, 5)
+      checkMatch(highlight.organization_acronym, 100, 20, 5)
       
       // PRIORITY 2: Title (high priority - 80 points)
-      if (checkMatch(highlight.title, 80, 15, 5, 'title')) {}
+      checkMatch(highlight.title, 80, 15, 5)
       
       // PRIORITY 3: Associated Program (high priority - 70 points)
       // Search in program_title field - this is critical for the user's issue
       // Also check alternative field names that might contain program title
       const programTitle = highlight.program_title || highlight.programTitle || highlight.associated_program || highlight.associatedProgram || null
       
-      if (checkMatch(programTitle, 70, 15, 5, 'program_title')) {}
+      checkMatch(programTitle, 70, 15, 5)
       
       // Also search program_id if it's a number that matches
       if (highlight.program_id) {
@@ -288,7 +274,7 @@ const SuperadminHighlightsPage = () => {
       // Search for impact level keywords: "high", "low", "average", "impact"
       if (highlight.impact_level) {
         const impactLevel = highlight.impact_level.toLowerCase()
-        const impactLevelLabel = impactLevel === 'low' ? 'low impact' : 
+        const impactLevelLabel = impactLevel === 'low' ? 'small impact' : 
                                  impactLevel === 'average' ? 'average impact' : 
                                  impactLevel === 'high' ? 'high impact' : ''
         
@@ -296,11 +282,11 @@ const SuperadminHighlightsPage = () => {
         const searchTermLower = searchTerm.toLowerCase()
         const matchesImpact = 
           (searchTermLower === 'high' && impactLevel === 'high') ||
-          (searchTermLower === 'low' && impactLevel === 'low') ||
+          ((searchTermLower === 'low' || searchTermLower === 'small') && impactLevel === 'low') ||
           (searchTermLower === 'average' && impactLevel === 'average') ||
           (searchTermLower === 'impact' && highlight.impact_level) ||
           (searchTermLower.includes('high') && impactLevel === 'high') ||
-          (searchTermLower.includes('low') && impactLevel === 'low') ||
+          ((searchTermLower.includes('low') || searchTermLower.includes('small')) && impactLevel === 'low') ||
           (searchTermLower.includes('average') && impactLevel === 'average') ||
           (impactLevelLabel.includes(searchTermLower))
         
@@ -317,10 +303,10 @@ const SuperadminHighlightsPage = () => {
       }
       
       // PRIORITY 5: Description (lower priority - 30 points)
-      if (checkMatch(highlight.description, 30, 5, 2, 'description')) {}
+      checkMatch(highlight.description, 30, 5, 2)
       
       // PRIORITY 6: Status (lowest priority - 10 points)
-      if (checkMatch(highlight.status, 10, 2, 1, 'status')) {}
+      checkMatch(highlight.status, 10, 2, 1)
       
       // If no matches found, return null to filter out
       if (!hasMatch) return null
@@ -342,18 +328,15 @@ const SuperadminHighlightsPage = () => {
 
   // Get featured highlights - fetch from API
   const [featuredHighlightsFromApi, setFeaturedHighlightsFromApi] = useState([])
-  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false)
 
   useEffect(() => {
     const fetchFeaturedHighlights = async () => {
       try {
-        setIsLoadingFeatured(true)
         const { API_BASE_URL } = await import('@/config/api');
         const response = await fetch(`${API_BASE_URL || ''}/api/admin/highlights/featured`, {
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            // No Authorization header needed - httpOnly cookies handle authentication
           }
         })
         
@@ -363,8 +346,6 @@ const SuperadminHighlightsPage = () => {
         }
       } catch (error) {
         // Error fetching featured highlights - silently fail, will show empty state
-      } finally {
-        setIsLoadingFeatured(false)
       }
     }
 
@@ -391,8 +372,6 @@ const SuperadminHighlightsPage = () => {
   }
 
   // Process highlights based on active tab
-  // Use refreshKey to force re-evaluation when starred highlights change
-  
   // Safety filter: Explicitly ensure only approved highlights are displayed
   // This is a defensive measure in case the API returns unexpected data
   let processedHighlights = highlights.filter(h => h.status === 'approved')
@@ -661,7 +640,7 @@ const SuperadminHighlightsPage = () => {
         {activeTab === 'featured' && (
           <div className={styles.featuredCountInfo}>
             <span className={styles.featuredCountText}>
-              {currentOrgFeaturedCount} / 12 Featured {selectedOrganization !== 'all' ? 'for this organization' : ''}
+              {currentOrgFeaturedCount} Featured {selectedOrganization !== 'all' ? 'for this organization' : ''}
             </span>
             {currentOrgFeaturedCount > 0 && (
               <div className={styles.impactLevelBreakdown}>
@@ -674,7 +653,7 @@ const SuperadminHighlightsPage = () => {
                   <span className={styles.impactBreakdownValue}>{impactLevelCounts.average}</span>
                 </span>
                 <span className={styles.impactBreakdownItem}>
-                  <span className={`${styles.impactBreakdownLabel} ${styles.impactLow}`}>Low:</span> 
+                  <span className={`${styles.impactBreakdownLabel} ${styles.impactLow}`}>Small:</span> 
                   <span className={styles.impactBreakdownValue}>{impactLevelCounts.low}</span>
                 </span>
               </div>

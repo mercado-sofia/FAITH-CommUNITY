@@ -104,7 +104,7 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
     }
   }
 
-  // Map starId (1-8) to array index (0-7) to get the corresponding highlight
+  // Map starId (1-based index) to array index (0-based) to get the corresponding highlight
   const highlight = starId ? featuredHighlights[starId - 1] : null
 
   const handleKeyDown = (e) => {

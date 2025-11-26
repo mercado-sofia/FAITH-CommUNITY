@@ -39,28 +39,34 @@ const UnfeatureConfirmationModal = ({
     <div className={styles.modalOverlay} onClick={handleBackdropClick}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Remove from Featured Highlights</h2>
+          <div className={styles.headerLeft}>
+            <div className={styles.warningIconContainer}>
+              <FiAlertTriangle className={styles.warningIcon} />
+            </div>
+            <h2 className={styles.modalTitle}>Remove from Featured Highlights</h2>
+          </div>
           <button 
             className={styles.closeButton}
             onClick={onClose}
             disabled={isLoading}
+            aria-label="Close"
           >
             ×
           </button>
         </div>
         
         <div className={styles.modalBody}>
-          <div className={styles.warningIcon}>
-            <FiAlertTriangle />
+          {/* Confirmation Section */}
+          <div className={styles.confirmationSection}>
+            <p className={styles.confirmationText}>
+              Are you sure you want to remove <strong>&ldquo;{highlightTitle}&rdquo;</strong> from FAITHree?
+            </p>
+            <div className={styles.infoBox}>
+              <p className={styles.infoText}>
+                This will remove the highlight from FAITHree, but it will remain in the regular Highlights section.
+              </p>
+            </div>
           </div>
-          
-          <p className={styles.confirmationText}>
-            Are you sure you want to remove <strong>&ldquo;{highlightTitle}&rdquo;</strong> from the Featured Highlights section?
-          </p>
-          
-          <p className={styles.warningText}>
-            This action will make the highlight no longer appear in the Featured Highlights section, but it will remain in the regular Highlights section.
-          </p>
         </div>
         
         <div className={styles.modalFooter}>
@@ -76,14 +82,7 @@ const UnfeatureConfirmationModal = ({
             onClick={onConfirm}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <div className={styles.loadingSpinner}></div>
-                Removing...
-              </>
-            ) : (
-              'Remove from Featured'
-            )}
+            {isLoading ? 'Removing...' : 'Remove'}
           </button>
         </div>
       </div>

@@ -104,34 +104,6 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
   )
 }
 
-// Cloud component - loads cloud models (static)
-function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
-  const { scene } = useGLTF(url)
-  
-  const clonedScene = useMemo(() => {
-    const cloned = scene.clone()
-    
-    // Scale the cloud
-    const box = new THREE.Box3().setFromObject(cloned)
-    const size = box.getSize(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const cloudScale = (scale * 2.0) / maxDim
-    cloned.scale.set(cloudScale, cloudScale, cloudScale)
-    
-    // Center the cloud
-    const center = box.getCenter(new THREE.Vector3())
-    cloned.position.set(
-      -center.x * cloudScale + initialPosition[0],
-      -center.y * cloudScale + initialPosition[1],
-      -center.z * cloudScale + initialPosition[2]
-    )
-    
-    return cloned
-  }, [scene, initialPosition, scale])
-  
-  return <primitive object={clonedScene} />
-}
-
 // Component to load and display the GLB model
 function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null }) {
   const { scene } = useGLTF(url)
@@ -204,157 +176,55 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null
   
   // Rotate the tree to face the camera directly (front-on, symmetrical view)
   // Rotate around Y-axis to orient the tree properly
-  // Adjusted to show the front facing left
-  clonedScene.rotation.y = -Math.PI * 1.5 // Rotate to show front facing even more left (-270°)
+  // Adjusted to face front - rotating more
+  clonedScene.rotation.y = Math.PI / 1.6 // Rotate ~120° to face front
   
   return <primitive object={clonedScene} />
 }
 
-// Auto-return controls component
-function AutoReturnControls({ 
+// Static controls component - tree stays fixed, no rotation
+function StaticControls({ 
   treePosition = [0, 0, 0], 
-  cameraOffset = [2.5, 2.2, 7.5],
-  onPositionChange 
+  cameraOffset = [2.5, 2.2, 7.5]
 }) {
   const controlsRef = useRef()
-  const isInteractingRef = useRef(false)
-  const returnTimeoutRef = useRef(null)
-  const lastInteractionTimeRef = useRef(0)
-  const initialPositionSetRef = useRef(false)
 
   useEffect(() => {
-    let cleanup = null
-    // Capture the current timeout ref value at the start of the effect
-    const initialTimeoutId = returnTimeoutRef.current
-    
     // Wait a bit for controls to be ready
     const timer = setTimeout(() => {
       const controls = controlsRef.current
       if (!controls || !controls.domElement) return
 
-      // Load saved camera position from localStorage, or use default
-      // Check if saved position matches old default (x ~= 0.5) and reset if so
-      let idealPos
-      const savedPosition = localStorage.getItem('faithree_camera_position')
-      if (savedPosition) {
-        try {
-          const pos = JSON.parse(savedPosition)
-          // If saved position is close to old default (x ~= 0.5), use new default instead
-          if (Math.abs(pos.x - 0.5) < 0.1) {
-            // Old saved position detected, use new default
-            idealPos = new THREE.Vector3(
-              treePosition[0] + cameraOffset[0],
-              treePosition[1] + cameraOffset[1],
-              treePosition[2] + cameraOffset[2]
-            )
-            // Update localStorage with new default
-            localStorage.setItem('faithree_camera_position', JSON.stringify({
-              x: idealPos.x,
-              y: idealPos.y,
-              z: idealPos.z
-            }))
-          } else {
-            idealPos = new THREE.Vector3(pos.x, pos.y, pos.z)
-          }
-        } catch (e) {
-          // If parsing fails, use default
-          idealPos = new THREE.Vector3(
-            treePosition[0] + cameraOffset[0],
-            treePosition[1] + cameraOffset[1],
-            treePosition[2] + cameraOffset[2]
-          )
-        }
-      } else {
-        // Use default position if no saved position
-        idealPos = new THREE.Vector3(
-          treePosition[0] + cameraOffset[0],
-          treePosition[1] + cameraOffset[1],
-          treePosition[2] + cameraOffset[2]
-        )
-      }
+      // Set camera to default position (no saved position needed since it's static)
+      // Slightly higher Y to see tree top without cutting off
+      const idealPos = new THREE.Vector3(
+        treePosition[0] + cameraOffset[0],
+        treePosition[1] + cameraOffset[1] + 0.3,
+        treePosition[2] + cameraOffset[2]
+      )
       
       controls.object.position.copy(idealPos)
       controls.target.copy(new THREE.Vector3(...treePosition))
       controls.update()
-      initialPositionSetRef.current = true
-
-      const handleStart = () => {
-        isInteractingRef.current = true
-        lastInteractionTimeRef.current = Date.now()
-        if (returnTimeoutRef.current) {
-          clearTimeout(returnTimeoutRef.current)
-        }
-      }
-
-      const handleEnd = () => {
-        lastInteractionTimeRef.current = Date.now()
-        // Update position when interaction ends (after panning)
-        if (controlsRef.current && onPositionChange) {
-          const currentTarget = controlsRef.current.target
-          onPositionChange([currentTarget.x, currentTarget.y, currentTarget.z])
-        }
-        
-        // Save camera position to localStorage when user finishes rotating
-        if (controlsRef.current) {
-          const camera = controlsRef.current.object
-          const savedPosition = {
-            x: camera.position.x,
-            y: camera.position.y,
-            z: camera.position.z
-          }
-          localStorage.setItem('faithree_camera_position', JSON.stringify(savedPosition))
-        }
-        
-        // Keep isInteracting as false so rotation stays where user left it
-        isInteractingRef.current = false
-      }
-
-      // Add event listeners
-      const domElement = controls.domElement
-      domElement.addEventListener('mousedown', handleStart)
-      domElement.addEventListener('mouseup', handleEnd)
-      domElement.addEventListener('touchstart', handleStart)
-      domElement.addEventListener('touchend', handleEnd)
-
-      cleanup = () => {
-        domElement.removeEventListener('mousedown', handleStart)
-        domElement.removeEventListener('mouseup', handleEnd)
-        domElement.removeEventListener('touchstart', handleStart)
-        domElement.removeEventListener('touchend', handleEnd)
-        // Capture the current timeout ref value to avoid stale closure
-        const timeoutId = returnTimeoutRef.current
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
-      }
     }, 100)
 
     return () => {
       clearTimeout(timer)
-      if (cleanup) cleanup()
-      // Use the captured timeout ref value from the start of the effect
-      if (initialTimeoutId) {
-        clearTimeout(initialTimeoutId)
-      }
     }
-  }, [treePosition, cameraOffset, onPositionChange])
+  }, [treePosition, cameraOffset])
 
   useFrame(() => {
     if (!controlsRef.current) return
 
     const controls = controlsRef.current
     
-    // Track the current target position (where the tree is)
+    // Keep target fixed at tree position (prevents tree from moving)
     const currentTarget = controls.target
     const treeTarget = new THREE.Vector3(...treePosition)
     
-    // Keep target fixed at tree position (prevents tree from moving)
     if (currentTarget.distanceTo(treeTarget) > 0.01) {
       currentTarget.copy(treeTarget)
     }
-    
-    // No auto-return - camera stays where user rotates it
-    // The camera position will remain wherever the user rotates it to
     
     // Update controls
     controls.update()
@@ -365,7 +235,7 @@ function AutoReturnControls({
       ref={controlsRef}
       enablePan={false}
       enableZoom={false}
-      enableRotate={true}
+      enableRotate={false}
       minDistance={8.5}
       maxDistance={8.5}
       autoRotate={false}
@@ -374,7 +244,7 @@ function AutoReturnControls({
       minPolarAngle={Math.PI / 2.4}
       minAzimuthAngle={-0.6}
       maxAzimuthAngle={0.6}
-      enableDamping={true}
+      enableDamping={false}
       dampingFactor={0.1}
     />
   )
@@ -401,15 +271,19 @@ export default function TreeModel({
   // Adjusted to shift view right (tree on left, right edge cropped) - matching 2nd picture
   // Camera positioned to the right (positive X) while maintaining same Y elevation
   cameraOffset = [2.5, 2.2, 7.5],
-  // Featured highlights from superadmin (ordered by display_order)
-  featuredHighlights = [],
+  // Chunk of featured highlights for this tree (max 12)
+  chunkHighlights = [],
+  // Offset for this chunk (0 for first tree, 12 for second, etc.)
+  chunkOffset = 0,
+  // All featured highlights (needed for StarModal to find the correct highlight)
+  allFeaturedHighlights = [],
   // Callback when model is loaded
   onLoad = null
 }) {
-  // Debug: Log when featuredHighlights changes
+  // Debug: Log when chunkHighlights changes
   useEffect(() => {
-    // Featured highlights are loaded from parent component
-  }, [featuredHighlights]);
+    // Chunk highlights are loaded from parent component
+  }, [chunkHighlights]);
   
   // Load saved camera position from localStorage
   // Returns null if saved position matches old default (x ~= 0.5) to force reset
@@ -451,11 +325,14 @@ export default function TreeModel({
   // State to track if model is loaded
   const [isModelLoaded, setIsModelLoaded] = useState(false)
 
-  // Handle star click
-  const handleStarClick = useCallback((starId) => {
-    setSelectedStarId(starId)
+  // Handle star click - convert local starId (1-12) to global index
+  const handleStarClick = useCallback((localStarId) => {
+    // Convert local starId (1-12) to global index: chunkOffset + (localStarId - 1)
+    // Then add 1 because StarModal expects starId (1-based index)
+    const globalIndex = chunkOffset + (localStarId - 1)
+    setSelectedStarId(globalIndex + 1)
     setIsModalOpen(true)
-  }, [])
+  }, [chunkOffset])
 
   // Handle star hover state for cursor change
   const handleStarHover = useCallback(() => {
@@ -484,9 +361,6 @@ export default function TreeModel({
   useEffect(() => {
     useGLTF.preload('/models/tree-sunny.glb')
     useGLTF.preload('/models/tree-cloudy.glb')
-    // Preload cloud models
-    useGLTF.preload('/models/clouds.glb')
-    useGLTF.preload('/models/clouds 2.glb')
   }, [])
 
   // Sync treePosition state with prop when it changes
@@ -499,17 +373,6 @@ export default function TreeModel({
     setIsModelLoaded(false)
   }, [theme])
 
-  // Handle position changes from controls
-  const handlePositionChange = useCallback((newPosition) => {
-    setTreePosition(newPosition)
-    // Update camera position based on new tree position
-    setCameraPosition([
-      newPosition[0] + cameraOffset[0],
-      newPosition[1] + cameraOffset[1],
-      newPosition[2] + cameraOffset[2]
-    ])
-  }, [cameraOffset])
-
   // Handle model load callback - memoized to prevent unnecessary re-renders
   const handleModelLoadCallback = useCallback(() => {
     if (!isModelLoaded) {
@@ -517,10 +380,10 @@ export default function TreeModel({
     }
   }, [isModelLoaded])
 
-  // Notify parent when model is fully loaded (including clouds and stars)
+  // Notify parent when model is fully loaded (including stars)
   useEffect(() => {
     if (isModelLoaded && onLoad) {
-      // Additional delay to ensure everything is rendered (clouds, stars, etc.)
+      // Additional delay to ensure everything is rendered (stars, etc.)
       const timer = setTimeout(() => {
         onLoad()
       }, 500)
@@ -544,7 +407,7 @@ export default function TreeModel({
         <Canvas
           camera={{ 
             position: initialCameraPosition, 
-            fov: 65,
+            fov: 66,
             rotation: [0, 0, 0]
           }}
           gl={{ antialias: true }}
@@ -570,57 +433,37 @@ export default function TreeModel({
               onLoad={handleModelLoadCallback}
             />
             
-            {/* Static clouds in the background - only in sunny mode */}
-            {theme === 'morning' && (
-              <>
-                {/* Cloud 1: Back left */}
-                <Cloud 
-                  url="/models/clouds.glb" 
-                  initialPosition={[-3, 1, -4]} 
-                  scale={1.2}
-                />
-                {/* Cloud 2: Front right */}
-                <Cloud 
-                  url="/models/clouds.glb" 
-                  initialPosition={[2.4, 0.8, -2]} 
-                  scale={1.0}
-                />
-                {/* Cloud 3: Back center-right for balance */}
-                <Cloud 
-                  url="/models/clouds 2.glb" 
-                  initialPosition={[-0.8, 1.5, -3]} 
-                  scale={0.9}
-                />
-              </>
-            )}
-            
             {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
-            {/* Only render stars 1 to featuredHighlights.length (based on superadmin's featured highlights) */}
+            {/* Only render stars 1 to chunkHighlights.length (max 12 per tree) */}
             {/* Positions are relative to tree position, all in front (positive Z values) */}
-            {/* Star positions array - indexed by starId - 1 (0-7) */}
+            {/* Star positions array - indexed by starId - 1 (0-11) */}
             {(() => {
               const starPositions = [
                 [-1.4, 2.0, 0.8],   // Star 1
-                [0.8, 1.75, 0.8],   // Star 2
-                [0.2, 1.8, 1.0],    // Star 3
-                [-0.2, 2, 1.0],     // Star 4
-                [-1.1, 1.7, 0.8],   // Star 5
-                [0.6, 2.1, 0.8],    // Star 6
-                [-0.5, 1.7, 0.9],   // Star 7
-                [-0.7, 2.1, 0.85]   // Star 8
+                [0.8, 1.75, 0.8],    // Star 2
+                [0.2, 1.8, 1.0],     // Star 3
+                [-0.2, 2, 1.0],      // Star 4
+                [-1.1, 1.7, 0.8],    // Star 5
+                [0.6, 2.1, 0.8],     // Star 6
+                [-0.5, 1.7, 0.9],    // Star 7
+                [-0.7, 2.1, 0.85],   // Star 8
+                [1.0, 1.9, 0.85],    // Star 9
+                [-1.3, 1.9, 0.9],    // Star 10
+                [0.4, 1.65, 0.9],    // Star 11
+                [-0.9, 1.85, 0.95]   // Star 12
               ]
               
-              // Render stars only for featured highlights (1 to featuredHighlights.length)
+              // Render stars only for chunk highlights (1 to chunkHighlights.length, max 12 per tree)
               const starsToRender = starPositions.map((position, index) => {
-                const starId = index + 1 // 1-8
-                // Only render if there's a corresponding featured highlight
-                if (starId <= featuredHighlights.length) {
+                const localStarId = index + 1 // 1-12 (local to this tree)
+                // Only render if there's a corresponding highlight in this chunk
+                if (localStarId <= chunkHighlights.length) {
                   return (
                     <Star 
-                      key={starId}
+                      key={localStarId}
                       position={position} 
                       treePosition={treePosition}
-                      starId={starId}
+                      starId={localStarId}
                       onStarClick={handleStarClick}
                       onHover={handleStarHover}
                       onHoverOut={handleStarHoverOut}
@@ -633,11 +476,10 @@ export default function TreeModel({
               return starsToRender;
             })()}
             
-            {/* Controls with auto-return - pass treePosition and cameraOffset */}
-            <AutoReturnControls 
+            {/* Static controls - tree stays fixed, no rotation */}
+            <StaticControls 
               treePosition={treePosition} 
               cameraOffset={cameraOffset}
-              onPositionChange={handlePositionChange}
             />
           </Suspense>
         </Canvas>
@@ -648,7 +490,7 @@ export default function TreeModel({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         starId={selectedStarId}
-        featuredHighlights={featuredHighlights}
+        featuredHighlights={allFeaturedHighlights}
       />
     </>
   )

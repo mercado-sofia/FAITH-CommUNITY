@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { FiStar } from 'react-icons/fi'
 import styles from './styles/FeatureConfirmationModal.module.css'
 
 const FeatureConfirmationModal = ({ 
@@ -96,30 +95,33 @@ const FeatureConfirmationModal = ({
             className={styles.closeButton}
             onClick={onClose}
             disabled={isLoading}
+            aria-label="Close"
           >
             ×
           </button>
         </div>
         
         <div className={styles.modalBody}>
-          <div className={styles.successIcon}>
-            <FiStar />
-          </div>
-          
-          <p className={styles.confirmationText}>
-            Are you sure you want to add <strong>&ldquo;{highlightTitle}&rdquo;</strong> to the Featured Highlights section?
-          </p>
-          
-          <p className={styles.infoText}>
-            This will make the highlight appear prominently in the Featured Highlights section, giving it more visibility to users.
-          </p>
-
-          {/* Impact Level Selector */}
-          <div className={styles.impactSelector}>
-            <p className={styles.impactLabel}>Select Impact Level:</p>
-            <p className={styles.impactExplanation}>
-              Choose the impact level to determine how prominently this highlight will be displayed in the Featured Highlights section.
+          {/* Confirmation Section */}
+          <div className={styles.confirmationSection}>
+            <p className={styles.confirmationText}>
+              Are you sure you want to add <strong>&ldquo;{highlightTitle}&rdquo;</strong> to FAITHree?
             </p>
+            <div className={styles.infoBox}>
+              <p className={styles.infoText}>
+                This will make the highlight appear prominently in FAITHree, giving it more visibility to users.
+              </p>
+            </div>
+          </div>
+
+          {/* Impact Level Selector Section */}
+          <div className={styles.impactSelector}>
+            <div className={styles.impactHeader}>
+              <h4 className={styles.impactLabel}>Select Impact Level</h4>
+              <p className={styles.impactExplanation}>
+                Choose how prominently this highlight will be displayed
+              </p>
+            </div>
             <div 
               className={styles.starContainer}
               ref={starContainerRef}
@@ -133,16 +135,17 @@ const FeatureConfirmationModal = ({
                 className={`${styles.starLineProgress} ${isDragging ? styles.dragging : ''}`}
                 style={{
                   width: impactLevel === 'low' 
-                    ? 'calc((100% - 56px) * 0.33)' 
+                    ? '0px' 
                     : impactLevel === 'average' 
-                    ? 'calc((100% - 56px) * 0.66)' 
-                    : 'calc(100% - 56px)'
+                    ? 'calc((100% - 66px) * 0.5)' 
+                    : 'calc(100% - 66px)',
+                  display: impactLevel === 'low' ? 'none' : 'block'
                 }}
               ></div>
               <div 
                 className={`${styles.star} ${styles.starLow} ${impactLevel === 'low' ? styles.active : ''} ${(impactLevel === 'average' || impactLevel === 'high') ? styles.passed : ''}`}
                 onClick={() => handleStarClick('low')}
-                title="Low Impact"
+                title="Small Impact"
               >
                 <span>⭐</span>
               </div>
@@ -161,11 +164,13 @@ const FeatureConfirmationModal = ({
                 <span>⭐</span>
               </div>
             </div>
-            <p className={styles.impactDescription}>
-              {impactLevel === 'low' && 'Low Impact - Standard visibility'}
-              {impactLevel === 'average' && 'Average Impact - Moderate visibility'}
-              {impactLevel === 'high' && 'High Impact - Maximum visibility'}
-            </p>
+            <div className={`${styles.impactDescriptionBox} ${styles[`impact${impactLevel.charAt(0).toUpperCase() + impactLevel.slice(1)}`]}`}>
+              <p className={styles.impactDescription}>
+                {impactLevel === 'low' && 'Small Impact - Standard visibility'}
+                {impactLevel === 'average' && 'Average Impact - Moderate visibility'}
+                {impactLevel === 'high' && 'High Impact - Maximum visibility'}
+              </p>
+            </div>
           </div>
         </div>
         
@@ -182,14 +187,7 @@ const FeatureConfirmationModal = ({
             onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <div className={styles.loadingSpinner}></div>
-                Adding...
-              </>
-            ) : (
-              'Add to Featured'
-            )}
+            {isLoading ? 'Adding...' : 'Confirm'}
           </button>
         </div>
       </div>

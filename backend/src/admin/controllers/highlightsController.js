@@ -597,6 +597,7 @@ export const getAllHighlightsForApproval = async (req, res) => {
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.org_color as organization_color,
+        o.logo as organization_logo,
         a.email as admin_email${programIdSelect}${programTitleSelect}${yearSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
@@ -616,13 +617,22 @@ export const getAllHighlightsForApproval = async (req, res) => {
     const [rows] = await promisePool.execute(query, queryParams);
     
     // Parse JSON media_files and format the data
-    const highlights = rows.map(highlight => ({
-      ...highlight,
-      media: safeParseJSON(highlight.media_files, []),
-      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
-      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
-      year: hasYearColumn ? (highlight.year || null) : null
-    }));
+    const highlights = rows.map(highlight => {
+      // Process organization logo URL
+      let logoUrl = null;
+      if (highlight.organization_logo) {
+        logoUrl = getOrganizationLogoUrl(highlight.organization_logo);
+      }
+      
+      return {
+        ...highlight,
+        media: safeParseJSON(highlight.media_files, []),
+        program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
+        program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+        year: hasYearColumn ? (highlight.year || null) : null,
+        organization_logo: logoUrl
+      };
+    });
     
     res.json({ highlights });
   } catch (error) {
@@ -893,27 +903,10 @@ export const addFeaturedHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Highlight is already featured' });
     }
     
-    // Check current count per organization (max 12 per organization)
-    const [countRows] = await connection.execute(
-      `SELECT COUNT(*) as count 
-       FROM featured_highlights fh
-       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
-       WHERE h.organization_id = ?`,
-      [orgId]
-    );
-    const currentCount = countRows[0].count;
-    
-    if (currentCount >= 12) {
-      return res.status(400).json({ error: 'Maximum of 12 featured highlights per organization allowed' });
-    }
-    
-    // Get next display order for this organization
+    // Get next global display order (not per organization, since we support unlimited highlights)
     const [orderRows] = await connection.execute(
       `SELECT COALESCE(MAX(fh.display_order), 0) as max_order
-       FROM featured_highlights fh
-       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
-       WHERE h.organization_id = ?`,
-      [orgId]
+       FROM featured_highlights fh`
     );
     const displayOrder = (orderRows[0].max_order || 0) + 1;
     

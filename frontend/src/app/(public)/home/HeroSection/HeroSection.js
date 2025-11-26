@@ -7,8 +7,8 @@ import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { FaPlay } from 'react-icons/fa';
 import styles from './HeroSection.module.css';
-import { usePublicHeroSection } from '../../hooks/usePublicData';
-import { storeRedirectUrl } from '@/utils/redirectUtils';
+import { usePublicHeroSection } from '@/hooks/(public)/usePublicData';
+import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
 
 export default function HeroSection() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function HeroSection() {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);

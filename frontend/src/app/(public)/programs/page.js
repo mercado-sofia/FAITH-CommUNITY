@@ -6,9 +6,9 @@ import styles from './programs.module.css';
 import Loader from '../../../components/ui/Loader/Loader';
 import { PageBanner, Pagination } from '../components';
 import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
-import { usePublicPrograms } from '../hooks/usePublicData';
-import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { usePublicPrograms } from '@/hooks/(public)/usePublicData';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 
 const CARDS_PER_PAGE = 6;
 

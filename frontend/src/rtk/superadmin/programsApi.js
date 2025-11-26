@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { getProgramStatusByDates } from "@/utils/programStatusUtils"
+import { getProgramStatusByDates } from "@/utils/shared/programStatusUtils"
 import { API_BASE_URL } from "@/config/api"
 
 // Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)

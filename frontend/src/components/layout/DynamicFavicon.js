@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
-import logger from '../../utils/logger';
+import logger from '@/utils/shared/logger';
 import { API_BASE_URL } from '@/config/api';
 
 // Simple fetcher for public branding API with improved error handling

@@ -6,9 +6,9 @@ import { FaEdit, FaTag, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUser
 import { FiCalendar } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2, FiArchive } from 'react-icons/fi';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
+import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/shared/dateUtils';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 import DOMPurify from 'dompurify';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';

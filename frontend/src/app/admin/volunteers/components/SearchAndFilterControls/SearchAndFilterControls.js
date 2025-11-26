@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { FiChevronDown, FiSearch, FiX } from "react-icons/fi"
 import { BsSortUp, BsSortDown } from "react-icons/bs"
-import { sanitizeInput } from "../../../utils"
+import { sanitizeInput } from "@/utils/admin/formValidation"
 import styles from "./SearchAndFilterControls.module.css"
 
 export default function SearchAndFilterControls({

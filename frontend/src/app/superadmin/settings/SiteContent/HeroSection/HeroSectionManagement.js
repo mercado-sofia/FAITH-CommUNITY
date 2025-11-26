@@ -6,9 +6,9 @@ import { FiTrash2, FiEdit3, FiUpload } from 'react-icons/fi';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
-import { getImageUrl } from '@/utils/uploadPaths';
+import { getImageUrl } from '@/utils/shared/uploadPaths';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
   const [heroData, setHeroData] = useState({

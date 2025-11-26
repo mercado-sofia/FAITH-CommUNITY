@@ -3,9 +3,9 @@
 import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
-import { useFadeIn } from '../../../hooks/useFadeIn';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
 export default function OrgInfoCard({ data }) {
   const { name, acronym, description, facebook, email, logo } = data;

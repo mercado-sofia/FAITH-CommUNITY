@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
-import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
+import { usePublicApprovedPrograms } from "@/hooks/(public)/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
-import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
-import { storeRedirectUrl, isReturningFromLogin, clearReturningFromLogin } from "@/utils/redirectUtils";
-import logger from "@/utils/logger";
+import { useApplyFormPersistence } from "@/hooks/(public)/useApplyFormPersistence";
+import { storeRedirectUrl, isReturningFromLogin, clearReturningFromLogin } from "@/utils/(public)/redirectUtils";
+import logger from "@/utils/shared/logger";
 
 function SubmitStatus({ status }) {
   if (!status.submitted) return null;
@@ -255,7 +255,7 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
     try {
       // Check authentication status before proceeding with submission
       // This ensures non-logged in users see the login modal instead of submitting
-      const { getCurrentUser } = await import('@/utils/authService');
+      const { getCurrentUser } = await import('@/utils/shared/authService');
       const userData = await getCurrentUser();
       
       if (!userData || userData.role !== 'user') {

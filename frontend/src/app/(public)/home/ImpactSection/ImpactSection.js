@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths';
-import { processProjectDates } from '../../utils/dateProcessing';
-import { debounce } from '../../utils/debounce';
+import { getFeaturedProjectImageUrl } from '@/utils/shared/uploadPaths';
+import { processProjectDates } from '@/utils/(public)/dateProcessing';
+import { debounce } from '@/utils/(public)/debounce';
 import styles from './ImpactSection.module.css';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useGetPublicFeaturedProjectsQuery } from '@/rtk/(public)/programsApi';

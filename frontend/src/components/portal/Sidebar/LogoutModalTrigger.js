@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { FiLogOut } from 'react-icons/fi'
-import { logout, USER_TYPES } from '@/utils/authService'
+import { logout, USER_TYPES } from '@/utils/shared/authService'
 import styles from './Sidebar.module.css'
 
 export default function LogoutModalTrigger({ userType = USER_TYPES.ADMIN }) {

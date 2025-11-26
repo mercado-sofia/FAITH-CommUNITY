@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import styles from './OfficerSection.module.css';
-import { usePublicHeadsFaces } from '../../hooks/usePublicData';
+import { usePublicHeadsFaces } from '@/hooks/(public)/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
-import { useFadeIn } from '../../hooks/useFadeIn';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
 export default function OfficerSection() {
   const { headsFacesData, isLoading } = usePublicHeadsFaces();

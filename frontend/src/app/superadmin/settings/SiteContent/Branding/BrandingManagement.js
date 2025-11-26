@@ -6,9 +6,9 @@ import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
 import { mutate } from 'swr';
 import styles from './BrandingManagement.module.css';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
-import { getBrandingImageUrl } from '@/utils/uploadPaths';
+import { getBrandingImageUrl } from '@/utils/shared/uploadPaths';
 import { API_BASE_URL } from '@/config/api';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {

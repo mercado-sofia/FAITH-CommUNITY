@@ -4,8 +4,8 @@ import React from 'react'
 import Image from 'next/image'
 import DOMPurify from 'dompurify'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
-import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
-import { formatDateShort } from '../../../../utils/dateUtils'
+import { getFeaturedProjectImageUrl } from '@/utils/shared/uploadPaths'
+import { formatDateShort } from '@/utils/shared/dateUtils'
 import styles from './featured.module.css'
 
 const FeaturedProjectsPage = () => {

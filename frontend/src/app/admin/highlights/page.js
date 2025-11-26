@@ -6,8 +6,10 @@ import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
-import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '../utils';
-import { useAdminPrograms } from '../hooks/useAdminData';
+import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { handleApiError } from '@/utils/admin/errorHandler';
+import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
+import { useAdminPrograms } from '@/hooks/admin/useAdminData';
 import styles from './highlights.module.css';
 
 export default function AdminHighlightsPage() {

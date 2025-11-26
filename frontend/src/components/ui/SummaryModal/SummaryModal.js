@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Image from "next/image";
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
-import { getOrganizationImageUrl } from "@/utils/uploadPaths";
+import { getOrganizationImageUrl } from "@/utils/shared/uploadPaths";
 import styles from "./SummaryModal.module.css";
 
 export default function SummaryModal({

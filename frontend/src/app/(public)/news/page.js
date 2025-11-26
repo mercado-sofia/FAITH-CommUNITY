@@ -4,12 +4,12 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { usePublicOrganizations, usePublicNews } from "../hooks/usePublicData";
-import { formatDateLong } from "@/utils/dateUtils";
+import { usePublicOrganizations, usePublicNews } from "@/hooks/(public)/usePublicData";
+import { formatDateLong } from "@/utils/shared/dateUtils";
 import styles from "./news.module.css";
 import { Pagination } from "../components";
 import Loader from "../../../components/ui/Loader/Loader";
-import { usePublicPageLoader } from "../hooks/usePublicPageLoader";
+import { usePublicPageLoader } from "@/hooks/(public)/usePublicPageLoader";
 
 export default function AllNewsPage() {
   const searchParams = useSearchParams();

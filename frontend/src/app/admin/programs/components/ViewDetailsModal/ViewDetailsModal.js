@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle, FaHistory } from 'react-icons/fa';
 import { FiCalendar } from 'react-icons/fi';
-import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
-import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
-import { getStatusDisplayText } from '@/utils/collaborationStatusUtils';
+import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveCollaborators } from '@/utils/shared/collaborationStatusUtils';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
+import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/shared/dateUtils';
+import { getStatusDisplayText } from '@/utils/shared/collaborationStatusUtils';
 import DOMPurify from 'dompurify';
 import styles from './ViewDetailsModal.module.css';
 

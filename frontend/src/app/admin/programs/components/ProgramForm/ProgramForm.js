@@ -2,13 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { FaSpinner } from 'react-icons/fa';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
 import { useProgramForm, useImageUpload, useCollaboration } from '../../hooks';
 import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } from './components';
 import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
 import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
-import logger from '@/utils/logger';
+import logger from '@/utils/shared/logger';
 import styles from './ProgramForm.module.css';
 
 const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators, headerTitle }) => {

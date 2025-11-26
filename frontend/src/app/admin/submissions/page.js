@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAdminSubmissions } from '../hooks/useAdminData';
-import { formatDateShort } from '@/utils/dateUtils.js';
+import { useAdminSubmissions } from '@/hooks/admin/useAdminData';
+import { formatDateShort } from '@/utils/shared/dateUtils';
 import { SearchAndFilterControls, SubmissionTable, BulkActionsBar } from './components';
 import { PaginationControls, SkeletonLoader } from '../components';
 import { SuccessModal, ErrorBoundary } from '@/components';
-import { handleApiError, API_CONFIG, PAGINATION, TIMEOUTS } from '../utils';
+import { handleApiError } from '@/utils/admin/errorHandler';
+import { API_CONFIG, PAGINATION, TIMEOUTS } from '@/utils/admin/constants';
 import styles from './submissions.module.css';
 
 export default function SubmissionsPage() {

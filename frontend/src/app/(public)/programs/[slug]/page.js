@@ -8,14 +8,14 @@ import DOMPurify from 'dompurify';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/ui/Loader/Loader';
 import { ContactFormModal } from '../../../../components/ui';
-import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
 import CollaborationDisplay from '../components/CollaborationDisplay/CollaborationDisplay';
 import { RelatedPrograms } from '../components';
-import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
-import { formatDateLong, formatDateShort } from '@/utils/dateUtils';
-import { storeRedirectUrl } from '@/utils/redirectUtils';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
+import { formatDateLong, formatDateShort } from '@/utils/shared/dateUtils';
+import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
 
 // Custom functions to preserve exact date formatting for program details
 const formatEventDateWithWeekday = (dateString) => {
@@ -63,7 +63,7 @@ export default function ProgramDetailsPage() {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);

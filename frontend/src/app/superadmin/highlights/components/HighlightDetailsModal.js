@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
-import { formatDateShort } from '@/utils/dateUtils.js'
+import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
-import logger from '@/utils/logger'
+import logger from '@/utils/shared/logger'
 import styles from './styles/HighlightDetailsModal.module.css'
 
 const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
@@ -320,15 +320,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     return firstImage?.url || firstImage?.filename || null
   }
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': return '#1d9782'
-      case 'pending': return '#8b8e8d'
-      case 'rejected': return '#e53e3e'
-      default: return '#6b7280'
-    }
-  }
-
   // Get impact level label
   const getImpactLevelLabel = (impactLevel) => {
     if (!impactLevel) return null
@@ -345,7 +336,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
   }
 
   const imageUrl = getImageUrl()
-  const statusColor = getStatusColor(highlight.status)
 
   const openImageViewer = (index = 0) => {
     setCurrentImageIndex(index)
@@ -362,7 +352,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Highlight Details</h2>
+          <h2 className={styles.modalTitle}>{highlight.title}</h2>
           <button 
             className={styles.modalCloseButton}
             onClick={onClose}
@@ -373,121 +363,76 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
         </div>
         
         <div className={styles.modalBody}>
-          {/* Details Content */}
           <div className={styles.contentLayout}>
-            {/* Top Section - Image and Highlight Info Side by Side */}
-            <div className={styles.topSection}>
-              {/* Left - Highlight Image */}
+            {/* Image Section - Full Width */}
+            {imageUrl && (
               <div 
                 className={styles.imageSection}
-                onClick={() => imageUrl && openImageViewer(0)}
-                style={{ cursor: imageUrl ? 'pointer' : 'default' }}
+                onClick={() => openImageViewer(0)}
               >
-                {imageUrl ? (
-                  <>
-                    <Image 
-                      src={imageUrl}
-                      alt={highlight.title}
-                      className={styles.highlightImage}
-                      width={400}
-                      height={300}
-                      onError={(e) => {
-                        e.target.style.display = 'none'
-                        e.target.nextSibling.style.display = 'flex'
-                      }}
-                    />
-                    <div className={styles.imageOverlay}>
-                      <FaEye className={styles.imageOverlayIcon} />
-                      <span className={styles.imageOverlayText}>Click to view full screen</span>
-                    </div>
-                  </>
-                ) : null}
-                <div className={styles.imagePlaceholder} style={{ display: imageUrl ? 'none' : 'flex' }}>
+                <Image 
+                  src={imageUrl}
+                  alt={highlight.title}
+                  className={styles.highlightImage}
+                  width={800}
+                  height={450}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.nextSibling.style.display = 'flex'
+                  }}
+                />
+                <div className={styles.imageOverlay}>
+                  <FaEye className={styles.imageOverlayIcon} />
+                  <span className={styles.imageOverlayText}>Click to view full screen</span>
+                </div>
+                <div className={styles.imagePlaceholder} style={{ display: 'none' }}>
                   <FaEye />
                   <span>No image available</span>
                 </div>
               </div>
+            )}
 
-              {/* Right - Highlight Title, Status, Details */}
-              <div className={styles.highlightInfoSection}>
-                <h3 className={styles.highlightTitle}>{highlight.title}</h3>
-                
-                {/* Status Badge */}
-                {highlight.status && (
-                  <div 
-                    className={styles.statusBadge}
-                    style={{ 
-                      backgroundColor: statusColor,
-                      color: 'white'
-                    }}
-                  >
-                    {highlight.status.charAt(0).toUpperCase() + highlight.status.slice(1)}
+            {/* Information Grid - Two Columns */}
+            <div className={styles.infoGrid}>
+              {highlight.organization_name && (
+                <div className={styles.infoItem}>
+                  <div className={styles.infoLabel}>
+                    <FaBuilding className={styles.infoIcon} />
+                    <span>Organization</span>
                   </div>
-                )}
-
-                {/* Impact Level Badge - Only show for featured highlights */}
-                {getImpactLevelLabel(highlight.impact_level) && (
-                  <div className={styles.impactBadge}>
-                    {getImpactLevelLabel(highlight.impact_level)}
-                  </div>
-                )}
-
-                {/* Highlight Details */}
-                <div className={styles.detailsSection}>
-                  <div className={styles.detailsGrid}>
-                    {highlight.organization_name && (
-                      <div className={styles.detailItem}>
-                        <FaBuilding className={styles.detailIcon} />
-                        <span className={styles.detailValue}>
-                          {highlight.organization_name}
-                          {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
-                        </span>
-                      </div>
-                    )}
-
-                    {(highlight.program_title || highlight.program_id || programTitle) && (
-                      <div className={styles.detailItem}>
-                        <FaTag className={styles.detailIcon} />
-                        <span className={styles.detailValue}>
-                          {loadingProgram ? (
-                            'Loading...'
-                          ) : highlight.program_title || programTitle || `Program ID: ${highlight.program_id}`}
-                        </span>
-                      </div>
-                    )}
-
-                    {highlight.year && (
-                      <div className={styles.detailItem}>
-                        <FaCalendar className={styles.detailIcon} />
-                        <span className={styles.detailValue}>
-                          {highlight.year}
-                        </span>
-                      </div>
-                    )}
-
-                    {highlight.created_at && (
-                      <div className={styles.detailItem}>
-                        <FaCalendar className={styles.detailIcon} />
-                        <span className={styles.detailValue}>
-                          {formatDateShort(highlight.created_at)}
-                        </span>
-                      </div>
-                    )}
-
-                    {highlight.media && highlight.media.length > 0 && (
-                      <div className={styles.detailItem}>
-                        <FaTag className={styles.detailIcon} />
-                        <span className={styles.detailValue}>
-                          {highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'}
-                        </span>
-                      </div>
-                    )}
+                  <div className={styles.infoValue}>
+                    {highlight.organization_name}
+                    {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {(highlight.program_title || highlight.program_id || programTitle) && (
+                <div className={styles.infoItem}>
+                  <div className={styles.infoLabel}>
+                    <FaTag className={styles.infoIcon} />
+                    <span>Associated Program</span>
+                  </div>
+                  <div className={styles.infoValue}>
+                    {loadingProgram ? (
+                      'Loading...'
+                    ) : highlight.program_title || programTitle || `Program ID: ${highlight.program_id}`}
+                  </div>
+                </div>
+              )}
+
+              {highlight.year && (
+                <div className={styles.infoItem}>
+                  <div className={styles.infoLabel}>
+                    <FaCalendar className={styles.infoIcon} />
+                    <span>Year</span>
+                  </div>
+                  <div className={styles.infoValue}>{highlight.year}</div>
+                </div>
+              )}
             </div>
 
-            {/* Description - Full Width Below */}
+            {/* Description Section */}
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Description</h4>
               <div 
@@ -495,16 +440,16 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                 dangerouslySetInnerHTML={{ 
                   __html: highlight.description 
                     ? DOMPurify.sanitize(highlight.description) 
-                    : '<p>No description provided</p>' 
+                    : '<p style="color: #9ca3af; font-style: italic;">No description provided</p>' 
                 }} 
               />
             </div>
 
-            {/* Media Gallery - Full Width Below - Show all media files */}
+            {/* Media Gallery Section */}
             {highlight.media && highlight.media.length > 0 && (
               <div className={styles.mediaGallerySection}>
                 <h4 className={styles.sectionTitle}>
-                  Media Gallery
+                  Media Gallery <span className={styles.mediaCount}>({highlight.media.length} {highlight.media.length === 1 ? 'File' : 'Files'})</span>
                 </h4>
                 <div className={styles.mediaGrid}>
                   {highlight.media.map((mediaItem, index) => {
@@ -531,11 +476,9 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                           <div
                             onClick={(e) => {
                               e.stopPropagation()
-                              // Find the index of this image in allImages array
                               const imageIndex = allImages.findIndex(img => {
                                 const imgSrc = img.src
                                 const mediaSrc = mediaUrl
-                                // Compare URLs, handling both relative and absolute paths
                                 return imgSrc === mediaSrc || 
                                        imgSrc?.endsWith(mediaSrc) || 
                                        mediaSrc?.endsWith(imgSrc)
@@ -578,6 +521,11 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
         </div>
 
         <div className={styles.modalFooter}>
+          {highlight.created_at && (
+            <div className={styles.footerDate}>
+              Date Created: {formatDateShort(highlight.created_at)}
+            </div>
+          )}
           <button onClick={onClose} className={styles.closeModalButton}>
             Close
           </button>

@@ -1,81 +1,85 @@
 import { configureStore } from "@reduxjs/toolkit"
 import { setupListeners } from "@reduxjs/toolkit/query/react"
 
-import { applyApi } from "./(public)/applyApi"
-import { programsApi } from "./(public)/programsApi"
-import { organizationsApi } from "./(public)/organizationsApi"
-import { messagesApi } from "./(public)/messagesApi"
-import { userNotificationsApi } from "./(public)/userNotificationsApi"
-import { advocaciesApi } from "./admin/advocaciesApi"
-import { competenciesApi } from "./admin/competenciesApi"
-import { headsApi } from "./admin/headsApi"
-import { organizationApi } from "./admin/organizationApi"
-import { approvalApi } from "./admin/approvalApi"
-import { submissionApi } from "./admin/submissionApi"
-import { volunteersApi } from "./admin/volunteersApi"
-import { adminProgramsApi } from "./admin/adminProgramsApi"
-import { inboxApi } from "./admin/inboxApi"
-import { adminApi } from "./superadmin/adminApi"
-import { invitationsApi } from "./superadmin/invitationsApi"
-import { faqApi } from "./superadmin/faqApi"
-import { superadminProgramsApi } from "./superadmin/programsApi"
-import { superadminHighlightsApi } from "./superadmin/highlightsApi"
-import { dashboardApi } from "./superadmin/dashboardApi"
-import { notificationsApi } from "./admin/notificationsApi"
-import { superadminNotificationsApi } from "./superadmin/superadminNotificationsApi"
-import adminReducer from "./superadmin/adminSlice"
+// Public APIs
+import {
+  applyApi,
+  programsApi,
+  organizationsApi,
+  messagesApi,
+  userNotificationsApi,
+} from "./(public)"
+
+// Admin APIs
+import {
+  advocaciesApi,
+  competenciesApi,
+  headsApi,
+  organizationApi,
+  approvalApi,
+  submissionApi,
+  volunteersApi,
+  adminProgramsApi,
+  inboxApi,
+  notificationsApi,
+} from "./admin"
+
+// Superadmin APIs
+import {
+  adminApi,
+  invitationsApi,
+  faqApi,
+  superadminProgramsApi,
+  superadminHighlightsApi,
+  dashboardApi,
+  superadminNotificationsApi,
+  adminReducer,
+} from "./superadmin"
+
+// Collect all API modules for auto-registration
+const apiModules = [
+  // Public APIs
+  applyApi,
+  programsApi,
+  organizationsApi,
+  messagesApi,
+  userNotificationsApi,
+  // Admin APIs
+  advocaciesApi,
+  competenciesApi,
+  headsApi,
+  organizationApi,
+  approvalApi,
+  submissionApi,
+  volunteersApi,
+  adminProgramsApi,
+  inboxApi,
+  notificationsApi,
+  // Superadmin APIs
+  adminApi,
+  invitationsApi,
+  faqApi,
+  superadminProgramsApi,
+  superadminHighlightsApi,
+  dashboardApi,
+  superadminNotificationsApi,
+]
+
+// Auto-generate reducers from API modules
+const apiReducers = Object.fromEntries(
+  apiModules.map((api) => [api.reducerPath, api.reducer])
+)
+
+// Auto-generate middleware from API modules
+const apiMiddleware = apiModules.map((api) => api.middleware)
 
 export const store = configureStore({
   reducer: {
     admin: adminReducer,
-    [applyApi.reducerPath]: applyApi.reducer,
-    [programsApi.reducerPath]: programsApi.reducer,
-    [organizationsApi.reducerPath]: organizationsApi.reducer,
-    [messagesApi.reducerPath]: messagesApi.reducer,
-    [userNotificationsApi.reducerPath]: userNotificationsApi.reducer,
-    [advocaciesApi.reducerPath]: advocaciesApi.reducer,
-    [competenciesApi.reducerPath]: competenciesApi.reducer,
-    [headsApi.reducerPath]: headsApi.reducer,
-    [organizationApi.reducerPath]: organizationApi.reducer,
-    [approvalApi.reducerPath]: approvalApi.reducer,
-    [submissionApi.reducerPath]: submissionApi.reducer,
-    [volunteersApi.reducerPath]: volunteersApi.reducer,
-    [adminProgramsApi.reducerPath]: adminProgramsApi.reducer,
-    [inboxApi.reducerPath]: inboxApi.reducer,
-    [adminApi.reducerPath]: adminApi.reducer,
-    [invitationsApi.reducerPath]: invitationsApi.reducer,
-    [faqApi.reducerPath]: faqApi.reducer,
-    [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
-    [superadminHighlightsApi.reducerPath]: superadminHighlightsApi.reducer,
-    [dashboardApi.reducerPath]: dashboardApi.reducer,
-    [notificationsApi.reducerPath]: notificationsApi.reducer,
-    [superadminNotificationsApi.reducerPath]: superadminNotificationsApi.reducer,
+    ...apiReducers,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
-      applyApi.middleware,
-      programsApi.middleware,
-      organizationsApi.middleware,
-      messagesApi.middleware,
-      userNotificationsApi.middleware,
-      advocaciesApi.middleware,
-      competenciesApi.middleware,
-      headsApi.middleware,
-      organizationApi.middleware,
-      approvalApi.middleware,
-      submissionApi.middleware,
-      volunteersApi.middleware,
-      adminProgramsApi.middleware,
-      inboxApi.middleware,
-      adminApi.middleware,
-      invitationsApi.middleware,
-      faqApi.middleware,
-      superadminProgramsApi.middleware,
-      superadminHighlightsApi.middleware,
-      dashboardApi.middleware,
-      notificationsApi.middleware,
-      superadminNotificationsApi.middleware,
-    ),
+    getDefaultMiddleware().concat(...apiMiddleware),
 })
 
 setupListeners(store.dispatch)

@@ -8,11 +8,11 @@ import styles from "./login.module.css"
 import { FaUser, FaSpinner } from "react-icons/fa"
 import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
-import { usePublicSiteName } from "@/app/(public)/hooks/usePublicData"
+import { usePublicSiteName } from "@/hooks/(public)/usePublicData"
 import { 
   getRedirectUrlFromParams, 
   prepareRedirectAfterLogin 
-} from "@/utils/redirectUtils"
+} from "@/utils/(public)/redirectUtils"
 
 // Superadmin email constant (must match backend)
 const SUPERADMIN_EMAIL = 'faithcommunityfaces@gmail.com'

@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { FaTimes, FaTag, FaCalendar, FaEye, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
-import { formatDateShort } from '@/utils/dateUtils.js';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { API_CONFIG } from '../../../utils';
+import { formatDateShort } from '@/utils/shared/dateUtils';
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
+import { API_CONFIG } from '@/utils/admin/constants';
 import DOMPurify from 'dompurify';
 import styles from './SubmissionModal.module.css';
 

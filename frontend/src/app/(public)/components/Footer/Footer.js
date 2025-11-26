@@ -35,8 +35,8 @@ import { LuCircleCheck } from "react-icons/lu";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Toast from "../Toast/Toast";
-import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublicData";
-import { storeRedirectUrl } from '@/utils/redirectUtils';
+import { usePublicSiteName, usePublicFooterContent } from "@/hooks/(public)/usePublicData";
+import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
 
 import { API_BASE_URL } from '@/config/api';
 const API_BASE = API_BASE_URL || '';
@@ -99,7 +99,7 @@ export default function Footer() {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);

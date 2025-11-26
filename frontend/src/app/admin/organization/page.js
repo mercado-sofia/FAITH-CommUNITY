@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg, updateAdminLogo } from "@/rtk/superadmin/adminSlice";
-import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../hooks/useAdminData";
+import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "@/hooks/admin/useAdminData";
 import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection } from "./OrgInfo";
 import { Section, SectionEditModal } from "./AdvocacyCompetency";
@@ -11,7 +11,9 @@ import { SummaryModal } from '@/components/ui';
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import { SkeletonLoader } from "../components";
 import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
-import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '../utils';
+import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { handleApiError } from '@/utils/admin/errorHandler';
+import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
 import pageStyles from "./page.module.css";
 
 // Track if organization page has been visited

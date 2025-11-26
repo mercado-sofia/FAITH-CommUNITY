@@ -6,7 +6,7 @@ import MultiDatePicker from 'react-multi-date-picker';
 import { FaChevronDown } from 'react-icons/fa';
 import { FiCalendar } from 'react-icons/fi';
 import { FiTrash2 } from 'react-icons/fi';
-import { formatDateShort, formatDateForAPI } from '@/utils/dateUtils.js';
+import { formatDateShort, formatDateForAPI } from '@/utils/shared/dateUtils';
 import "react-datepicker/dist/react-datepicker.css";
 import './datePickerOverrides.css';
 import styles from './DateSelectionField.module.css';

@@ -54,7 +54,7 @@ export default function DeleteAccount() {
         setDeleteSuccess('Your account has been permanently deleted');
         setTimeout(async () => {
           // Use centralized immediate cleanup for security
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
           clearAuthImmediate(USER_TYPES.PUBLIC);
           if (typeof window !== 'undefined') {
             window.location.href = '/';

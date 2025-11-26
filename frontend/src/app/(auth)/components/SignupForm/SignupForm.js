@@ -6,7 +6,7 @@ import styles from "./SignupForm.module.css"
 import { FaUser, FaLock, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
 import { FiEye, FiEyeOff } from "react-icons/fi"
 import CustomDropdown from "./CustomDropdown"
-import { formatDateForAPI } from "@/utils/dateUtils.js"
+import { formatDateForAPI } from "@/utils/shared/dateUtils"
 
 export default function SignupForm({ onRegistrationSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)

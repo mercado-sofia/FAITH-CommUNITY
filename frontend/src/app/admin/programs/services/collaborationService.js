@@ -1,4 +1,4 @@
-import { API_CONFIG } from '../../utils';
+import { API_CONFIG } from '@/utils/admin/constants';
 
 // Fetch available admins for collaboration
 export const fetchAvailableAdmins = async (isEditMode = false, programId = null) => {

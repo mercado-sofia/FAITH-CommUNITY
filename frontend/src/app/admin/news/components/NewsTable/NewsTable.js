@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiArchive } from "react-icons/fi"
-import { formatDateLong } from '@/utils/dateUtils.js';
+import { formatDateLong } from '@/utils/shared/dateUtils';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import styles from "./NewsTable.module.css"

@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { Loader } from '@/components';
 import { PageBanner as BannerSection } from '../../../components';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
-import { usePublicOrganizationData } from '../../../hooks/usePublicData';
-import { useAuthState } from '@/hooks/useAuthState';
-import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
-import { useFadeIn } from '../../../hooks/useFadeIn';
-import { storeRedirectUrl } from '@/utils/redirectUtils';
+import { usePublicOrganizationData } from '@/hooks/(public)/usePublicData';
+import { useAuthState } from '@/hooks/shared/useAuthState';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
+import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
 import styles from '../org.module.css';
 
 // Volunteer Banner Component with fade-in animation

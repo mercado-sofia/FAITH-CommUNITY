@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { FaEdit, FaEnvelope, FaFacebookF } from 'react-icons/fa'
-import { getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgInfoSection.module.css'
 
 export default function OrgInfoSection({

@@ -8,8 +8,8 @@ import { EmailChange, PasswordChange } from '@/components';
 import { SuccessModal } from '@/components';
 import { SiteNameManagement, FooterContentManagement, BrandingManagement, HeroSectionManagement, MissionVisionManagement, AboutUsManagement, HeadManagement } from './SiteContent';
 import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
-import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';
-import { useScrollPosition } from '@/hooks/useScrollPosition';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/shared/portalAuth';
+import { useScrollPosition } from '@/hooks/shared/useScrollPosition';
 import { SkeletonLoader } from '../components';
 
 // Utility function for password change time

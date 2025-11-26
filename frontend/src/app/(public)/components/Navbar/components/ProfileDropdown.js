@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useDropdown } from '@/hooks/useDropdown';
+import { useDropdown } from '@/hooks/shared/useDropdown';
 import { OptimizedImage } from '@/components';
-import { getProfilePhotoUrl } from '@/utils/uploadPaths';
+import { getProfilePhotoUrl } from '@/utils/shared/uploadPaths';
 import styles from './styles/ProfileDropdown.module.css';
 import { FaChevronRight, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
 

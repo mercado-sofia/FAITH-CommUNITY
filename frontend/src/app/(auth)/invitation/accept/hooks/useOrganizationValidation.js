@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react"
-import logger from "@/utils/logger"
+import logger from "@/utils/shared/logger"
 
 export const useOrganizationValidation = () => {
   const [validationStatus, setValidationStatus] = useState({

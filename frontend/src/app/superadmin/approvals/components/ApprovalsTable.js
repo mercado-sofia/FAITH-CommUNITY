@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
-import { formatDateShort } from '../../../../utils/dateUtils';
-import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { formatDateShort } from '@/utils/shared/dateUtils';
+import { getStatusBadgeConfig } from '@/utils/shared/collaborationStatusUtils';
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import ViewDetailsModal from './ViewDetailsModal';
 import styles from './styles/ApprovalsTable.module.css';
 

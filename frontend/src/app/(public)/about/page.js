@@ -4,7 +4,7 @@ import Loader from '../../../components/ui/Loader/Loader';
 import { PageBanner } from '../components';
 import { MissionAndVision, AboutMore, OrgBanner } from './Sections';
 import OfficerSection from '../home/OfficerSection/OfficerSection';
-import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
 
 export default function AboutPage() {
   // Use centralized page loader hook

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavigationProvider } from "../../contexts/NavigationContext";
-import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
+import { clearAuthImmediate, USER_TYPES } from "@/utils/shared/authService";
 import { Sidebar, superadminNavLinks, TopBar } from "@/components";
 import { Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
@@ -99,8 +99,8 @@ function SuperAdminLayoutContent({ children }) {
         
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
-        const { getCurrentUser } = await import('@/utils/authService');
-        const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
+        const { getValidAccessToken } = await import('@/utils/shared/tokenRefresh');
         let userData = null;
         let retryCount = 0;
         const maxRetries = 5; // Increased retries to handle token refresh

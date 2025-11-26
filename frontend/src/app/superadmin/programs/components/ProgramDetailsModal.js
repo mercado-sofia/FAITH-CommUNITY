@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock } from 'react-icons/fa'
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
-import { getProgramStatusByDates } from '@/utils/programStatusUtils'
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
-import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js'
+import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import styles from './styles/ProgramDetailsModal.module.css'
 

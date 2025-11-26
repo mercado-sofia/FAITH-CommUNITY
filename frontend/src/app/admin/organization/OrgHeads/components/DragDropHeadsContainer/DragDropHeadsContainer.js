@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { FaGripVertical, FaFacebook, FaEnvelope, FaCrown, FaUserTie, FaUser } from 'react-icons/fa'
-import { getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './DragDropHeadsContainer.module.css'
 
 

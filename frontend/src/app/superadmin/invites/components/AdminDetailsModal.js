@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FiX, FiMail, FiHome, FiUser, FiCalendar, FiCheckCircle, FiClock, FiXCircle, FiUserX } from 'react-icons/fi';
-import { formatDateTime } from '../../../../utils/dateUtils';
+import { formatDateTime } from '@/utils/shared/dateUtils';
 import styles from './styles/AdminDetailsModal.module.css';
 
 const AdminDetailsModal = ({ 

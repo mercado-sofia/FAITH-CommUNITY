@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { getStoredRedirectUrl } from '@/utils/redirectUtils';
+import { getStoredRedirectUrl } from '@/utils/(public)/redirectUtils';
 import styles from './GlobalLoginModal.module.css';
 
 export default function GlobalLoginModal() {

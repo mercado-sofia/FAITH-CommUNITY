@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Inter, Poppins, Urbanist, Roboto } from "next/font/google";
 import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider, ReduxProvider } from "@/components";
-import '../utils/devTools';
+import '@/utils/shared/devTools';
 
 const inter = Inter({ 
   subsets: ["latin"], 

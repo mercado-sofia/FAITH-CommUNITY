@@ -1,6 +1,6 @@
 import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked, MdOutlineCancel } from 'react-icons/md';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 import styles from './ProgramActions.module.css';
 
 const ProgramActions = ({

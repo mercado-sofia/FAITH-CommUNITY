@@ -5,10 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
 import { SuccessModal, ConfirmationModal, ErrorBoundary } from '@/components'
-import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData'
+import { useAdminVolunteers, useAdminPrograms } from '@/hooks/admin/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
-import { getAdminTokenOrRedirect, handleApiError, RATE_LIMITS, API_CONFIG, STATUS, sanitizeInput } from '../utils'
+import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { handleApiError } from '@/utils/admin/errorHandler';
+import { RATE_LIMITS, API_CONFIG, STATUS } from '@/utils/admin/constants';
+import { sanitizeInput } from '@/utils/admin/formValidation';
 import styles from './volunteers.module.css'
 
 // Validate status

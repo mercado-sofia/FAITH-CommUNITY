@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { formatDateTime } from '@/utils/dateUtils.js';
+import { formatDateTime } from '@/utils/shared/dateUtils';
 import { 
   useGetMessagesQuery, 
   useGetUnreadCountQuery,
@@ -15,7 +15,7 @@ import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal } from '@/components';
-import { getErrorMessage } from '../utils';
+import { getErrorMessage } from '@/utils/admin/errorHandler';
 import styles from './inbox.module.css';
 
 export default function InboxPage() {

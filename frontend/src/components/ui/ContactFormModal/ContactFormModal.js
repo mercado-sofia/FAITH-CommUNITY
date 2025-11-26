@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import logger from '@/utils/logger';
+import logger from '@/utils/shared/logger';
 import styles from './ContactFormModal.module.css';
 import { API_BASE_URL } from '@/config/api';
 

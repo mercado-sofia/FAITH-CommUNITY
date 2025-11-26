@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile, FaPlay } from 'react-icons/fa';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
-import { formatDateTime, formatDateShort } from '../../../../utils/dateUtils';
-import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
+import { formatDateTime, formatDateShort } from '@/utils/shared/dateUtils';
+import { getStatusBadgeConfig } from '@/utils/shared/collaborationStatusUtils';
 import DOMPurify from 'dompurify';
-import logger from '@/utils/logger';
+import logger from '@/utils/shared/logger';
 import styles from './styles/ViewDetailsModal.module.css';
 
 // Helper function to calculate program status from dates (for program details)

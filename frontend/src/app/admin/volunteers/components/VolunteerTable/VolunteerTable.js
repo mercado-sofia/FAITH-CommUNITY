@@ -9,9 +9,9 @@ import { FaUser } from "react-icons/fa";
 import Image from "next/image";
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import ViewDetailsModal from "../ViewDetailsModal/ViewDetailsModal"
-import { getProfilePhotoUrl } from "@/utils/uploadPaths"
-import { formatDateShort } from "@/utils/dateUtils"
-import { sanitizeInput } from "../../../utils"
+import { getProfilePhotoUrl } from "@/utils/shared/uploadPaths"
+import { formatDateShort } from "@/utils/shared/dateUtils"
+import { sanitizeInput } from "@/utils/admin/formValidation"
 import styles from "./VolunteerTable.module.css"
 
 const validateVolunteerData = (volunteer) => {

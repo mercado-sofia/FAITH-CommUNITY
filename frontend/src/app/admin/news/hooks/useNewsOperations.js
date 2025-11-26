@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { invalidateNewsCache } from '../../utils/cacheInvalidator';
+import { invalidateNewsCache } from '@/utils/admin/cacheInvalidator';
 import { API_BASE_URL } from '@/config/api';
 
 /**

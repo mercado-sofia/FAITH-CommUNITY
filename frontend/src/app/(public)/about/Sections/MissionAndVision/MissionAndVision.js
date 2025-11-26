@@ -1,7 +1,7 @@
 import styles from './MissionAndVision.module.css';
 import { FaRegHeart } from 'react-icons/fa';
 import { MdPersonOutline } from 'react-icons/md';
-import { usePublicMissionVision } from '../../../hooks/usePublicData';
+import { usePublicMissionVision } from '@/hooks/(public)/usePublicData';
 
 export default function MissionAndVision() {
   const { missionVisionData, isLoading, error } = usePublicMissionVision();

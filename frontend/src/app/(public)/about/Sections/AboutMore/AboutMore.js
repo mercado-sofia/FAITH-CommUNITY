@@ -1,9 +1,9 @@
 import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
-import { usePublicAboutUs } from '../../../hooks/usePublicData';
+import { usePublicAboutUs } from '@/hooks/(public)/usePublicData';
 import { Loader } from '@/components';
-import { getImageUrl } from '@/utils/uploadPaths';
+import { getImageUrl } from '@/utils/shared/uploadPaths';
 
 export default function AboutMore() {
   const { aboutUsData, isLoading } = usePublicAboutUs();

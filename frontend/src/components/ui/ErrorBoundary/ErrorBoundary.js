@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FaExclamationTriangle, FaRedo } from 'react-icons/fa';
-import logger from '@/utils/logger';
+import logger from '@/utils/shared/logger';
 import styles from './ErrorBoundary.module.css';
 
 class ErrorBoundary extends React.Component {

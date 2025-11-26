@@ -1,7 +1,7 @@
 'use client';
 
 import { IoClose } from 'react-icons/io5';
-import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
+import { formatDateLong, formatDateTime } from '@/utils/shared/dateUtils';
 import { API_BASE_URL } from '@/config/api';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';

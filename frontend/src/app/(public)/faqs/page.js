@@ -3,10 +3,10 @@
 import { useState, useMemo, useEffect } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { FiSearch, FiX } from "react-icons/fi"
-import { usePublicFAQs, usePublicSiteName } from "../hooks/usePublicData"
+import { usePublicFAQs, usePublicSiteName } from "@/hooks/(public)/usePublicData"
 import { PageBanner } from "../components"
 import Loader from "../../../components/ui/Loader/Loader"
-import { usePublicPageLoader } from "../hooks/usePublicPageLoader"
+import { usePublicPageLoader } from "@/hooks/(public)/usePublicPageLoader"
 import styles from "./faqs.module.css"
 
 export default function FaqPage() {

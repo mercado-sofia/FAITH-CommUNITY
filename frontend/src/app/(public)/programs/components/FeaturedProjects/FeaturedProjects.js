@@ -3,9 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { usePublicPrograms } from '../../../hooks/usePublicData';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { usePublicPrograms } from '@/hooks/(public)/usePublicData';
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 import styles from './FeaturedProjects.module.css';
 
 export default function FeaturedProjects({ orgID }) {
@@ -20,7 +20,7 @@ export default function FeaturedProjects({ orgID }) {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);

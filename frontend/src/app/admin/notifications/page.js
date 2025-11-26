@@ -15,7 +15,7 @@ import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal, ErrorBoundary } from '@/components';
-import { handleApiError } from '../utils';
+import { handleApiError } from '@/utils/admin/errorHandler';
 import { logError } from '@/config/api';
 import InfiniteScrollNotifications from './components/InfiniteScrollNotifications';
 import styles from './notifications.module.css';

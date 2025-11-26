@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { getProgramImageUrl } from '@/utils/uploadPaths'
-import { formatProgramDatesForCard } from '@/utils/dateUtils.js'
-import { getProgramStatusByDates } from '@/utils/programStatusUtils'
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths'
+import { formatProgramDatesForCard } from '@/utils/shared/dateUtils'
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils'
 import DOMPurify from 'dompurify'
 import StarButton from './StarButton'
 import CollaborationBadge from '@/app/admin/programs/components/CollaborationBadge/CollaborationBadge'

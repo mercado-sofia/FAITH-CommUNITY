@@ -5,9 +5,9 @@ import styles from './OrgHeadsCarousel.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
-import { useFadeIn } from '../../../hooks/useFadeIn';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
 export default function OrgHeadsCarousel({ heads }) {
   const scrollRef = useRef(null);

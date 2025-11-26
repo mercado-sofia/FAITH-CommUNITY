@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './OrgAdviserSection.module.css';
 import { FaChevronLeft, FaChevronRight, FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
-import { usePublicOrganizationAdvisers } from '../../hooks/usePublicData';
+import { usePublicOrganizationAdvisers } from '@/hooks/(public)/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
 
 export default function OrgAdviserSection() {

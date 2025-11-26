@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { API_CONFIG } from '../../utils';
+import { API_CONFIG } from '@/utils/admin/constants';
 
 // Fetch collaboration requests
 const fetchCollaborationRequests = async () => {

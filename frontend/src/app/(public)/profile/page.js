@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './NavTabs';
 import { ErrorBoundary, Loader } from '@/components';
 import { ToastContainer, useToast } from '../components/Toast';
-import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -91,7 +91,7 @@ export default function ProfilePage() {
     const checkAuth = async () => {
       try {
         // Check auth status from backend (reads from httpOnly cookie)
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const userData = await getCurrentUser();
         
         if (userData && userData.role === 'user') {

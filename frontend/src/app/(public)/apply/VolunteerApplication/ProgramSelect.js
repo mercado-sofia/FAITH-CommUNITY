@@ -3,7 +3,7 @@
 import { useEffect, useRef, forwardRef } from "react";
 import styles from "./ProgramSelect.module.css";
 import { FaChevronDown } from "react-icons/fa";
-import { getProgramStatusByDates } from "@/utils/programStatusUtils";
+import { getProgramStatusByDates } from "@/utils/shared/programStatusUtils";
 
 const ProgramSelect = forwardRef(function ProgramSelect(
   {

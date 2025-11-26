@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa'
 import { FiImage } from 'react-icons/fi'
-import { getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgHeadModal.module.css'
 import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '../../utils'
-import { getAdminTokenOrRedirect, API_CONFIG, handleApiError } from '../../../utils'
+import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { API_CONFIG } from '@/utils/admin/constants';
+import { handleApiError } from '@/utils/admin/errorHandler';
 import LazyImage from '../components/LazyImage/LazyImage'
 
 export default function OrgHeadsEditModal({

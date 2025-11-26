@@ -22,8 +22,8 @@ import {
   useGetSuperAdminUnreadCountQuery, 
   useMarkSuperAdminAsReadMutation 
 } from '@/rtk/superadmin/superadminNotificationsApi';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
-import { USER_TYPES } from '@/utils/authService';
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
+import { USER_TYPES } from '@/utils/shared/authService';
 import { getBreadcrumbParts, adminBreadcrumbConfig, superadminBreadcrumbConfig } from './breadcrumbConfig';
 import styles from './TopBar.module.css';
 

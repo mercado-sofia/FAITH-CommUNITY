@@ -4,8 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
-import { formatDateShort } from '../../../../utils/dateUtils';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { formatDateShort } from '@/utils/shared/dateUtils';
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './styles/RecentApprovalsTable.module.css';
 import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 

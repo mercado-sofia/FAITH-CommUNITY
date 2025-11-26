@@ -6,8 +6,8 @@ import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import styles from './ProgramPreview.module.css';
 import { FaUsers, FaCalendarAlt } from 'react-icons/fa';
-import { formatProgramDates } from '@/utils/dateUtils';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { formatProgramDates } from '@/utils/shared/dateUtils';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
 
 export default function ProgramPreview({ selectedProgram, isLoading }) {

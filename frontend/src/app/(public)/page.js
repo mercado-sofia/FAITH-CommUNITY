@@ -2,7 +2,7 @@
 
 import Loader from '../../components/ui/Loader/Loader';
 import { HeroSection, AboutSection, ImpactSection, NewsSection, BannerSection, OfficerSection, OrgAdviserSection } from './home';
-import { usePublicPageLoader } from './hooks/usePublicPageLoader';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
 
 export default function PublicHomePage() {
   // Use centralized page loader hook

@@ -28,7 +28,7 @@ import {
 } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
 import { mutate } from 'swr';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
 import styles from './FooterContentManagement.module.css';
 

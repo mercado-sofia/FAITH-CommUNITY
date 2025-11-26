@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { OptimizedImage } from '@/components';
-import { getProfilePhotoUrl } from '@/utils/uploadPaths';
+import { getProfilePhotoUrl } from '@/utils/shared/uploadPaths';
 import styles from './styles/MobileSidebar.module.css';
 import { FaChevronRight, FaChevronDown, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { useAdminNews } from '../hooks/useAdminData';
+import { useAdminNews } from '@/hooks/admin/useAdminData';
 import { useNewsOperations, useNewsFilters, useNewsModals, useNewsURL } from './hooks';
 import { NewsTable, CreatePostForm, SearchAndFilterControls, ViewDetailsModal } from './components';
 import { ErrorBoundary, SuccessModal } from '@/components';

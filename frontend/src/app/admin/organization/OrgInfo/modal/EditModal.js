@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Image from 'next/image'
 import { FaCamera } from 'react-icons/fa'
-import { getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import { useModalScrollLock, useModalMessage, useFormChanges } from '../../hooks'
 import styles from './EditModal.module.css'
 

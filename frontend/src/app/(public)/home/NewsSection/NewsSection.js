@@ -4,9 +4,9 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './NewsSection.module.css';
-import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
-import { formatDateLong } from '@/utils/dateUtils';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { usePublicOrganizations, usePublicNews } from '@/hooks/(public)/usePublicData';
+import { formatDateLong } from '@/utils/shared/dateUtils';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
 
 export default function NewsSection() {

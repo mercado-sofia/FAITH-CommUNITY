@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { makeAuthenticatedRequest } from '../../utils/profileApi';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useAuthState } from '@/hooks/useAuthState';
+import { useNotifications } from '@/hooks/shared/useNotifications';
+import { useAuthState } from '@/hooks/shared/useAuthState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './Notifications.module.css';
 

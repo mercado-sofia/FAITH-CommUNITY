@@ -3,13 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
-import { formatDateLong } from '@/utils/dateUtils';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
+import { formatDateLong } from '@/utils/shared/dateUtils';
 import { UnavailableImagePlaceholder } from '@/components';
 import DOMPurify from 'dompurify';
 import styles from './ProgramCard.module.css';
-import logger from '@/utils/logger';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import logger from '@/utils/shared/logger';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {

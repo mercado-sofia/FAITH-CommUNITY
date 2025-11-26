@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiUpload } from 'react-icons/fi';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './HeadManagement.module.css';
 
 export default function HeadManagement({ showSuccessModal }) {

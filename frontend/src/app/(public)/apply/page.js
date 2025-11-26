@@ -7,8 +7,8 @@ import { PageBanner } from '../components';
 import SimplifiedVolunteerForm from './VolunteerApplication/VolunteerForm';
 import ProgramPreview from './ProgramPreview/ProgramPreview';
 import ApplicationSteps from './ApplicationSteps/ApplicationSteps';
-import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
-import { useApplyFormPersistence } from '../hooks/useApplyFormPersistence';
+import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
+import { useApplyFormPersistence } from '@/hooks/(public)/useApplyFormPersistence';
 import styles from './apply.module.css';
 
 export default function ApplyPage() {
@@ -40,7 +40,7 @@ export default function ApplyPage() {
     const checkAuth = async () => {
       try {
         // Check auth status from backend (reads from httpOnly cookie)
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const userData = await getCurrentUser();
       
         if (userData && userData.role === 'user') {

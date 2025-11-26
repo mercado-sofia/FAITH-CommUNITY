@@ -3,11 +3,11 @@
 import { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaLock, FaBuilding } from 'react-icons/fa';
-import { useAdminProfile } from '../hooks/useAdminProfile';
+import { useAdminProfile } from '@/hooks/admin/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
 import { SkeletonLoader } from '../components';
 import { EmailChange, PasswordChange, SuccessModal } from '@/components';
-import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/shared/portalAuth';
 import styles from './adminSettings.module.css';
 
 // Utility function for password change time

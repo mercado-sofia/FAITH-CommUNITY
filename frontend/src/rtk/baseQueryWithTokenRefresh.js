@@ -5,7 +5,7 @@
 
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/config/api';
-import { getValidAccessToken } from '@/utils/tokenRefresh';
+import { getValidAccessToken } from '@/utils/shared/tokenRefresh';
 
 /**
  * Custom base query that handles token refresh for public users

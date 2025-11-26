@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useAdminNotifications } from '@/hooks/useAdminNotifications';
-import { useDropdown } from '@/hooks/useDropdown';
-import { useAuthState } from '@/hooks/useAuthState';
+import { useNotifications } from '@/hooks/shared/useNotifications';
+import { useAdminNotifications } from '@/hooks/shared/useAdminNotifications';
+import { useDropdown } from '@/hooks/shared/useDropdown';
+import { useAuthState } from '@/hooks/shared/useAuthState';
 import { selectCurrentAdmin, selectUserType } from '@/rtk/superadmin/adminSlice';
 import styles from './styles/NotificationsDropdown.module.css';
 import { FaBell } from 'react-icons/fa';

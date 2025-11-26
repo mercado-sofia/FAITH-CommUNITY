@@ -1,7 +1,7 @@
 'use client';
 
 import { SWRConfig } from 'swr';
-import logger from '../../utils/logger';
+import logger from '@/utils/shared/logger';
 
 export default function SWRProvider({ children }) {
   return (

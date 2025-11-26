@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
-import { getImageUrl } from '@/utils/uploadPaths';
+import { getImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
@@ -416,7 +416,7 @@ export default function AboutUsManagement({ showSuccessModal }) {
         // Handle 401/403 responses - try token refresh
         if (response.status === 401 || response.status === 403) {
           try {
-            const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+            const { getValidAccessToken } = await import('@/utils/shared/tokenRefresh');
             const refreshed = await getValidAccessToken(true);
             if (refreshed) {
               // Retry upload with refreshed token

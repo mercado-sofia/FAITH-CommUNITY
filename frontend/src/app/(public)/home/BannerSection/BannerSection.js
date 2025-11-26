@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './BannerSection.module.css';
-import { useFadeIn } from '../../hooks/useFadeIn';
-import { storeRedirectUrl } from '@/utils/redirectUtils';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
+import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
 
 export default function BannerSection() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function BannerSection() {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);

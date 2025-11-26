@@ -4,10 +4,10 @@ import { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { usePublicNewsArticle } from "../../hooks/usePublicData";
-import { formatDateLong } from "@/utils/dateUtils";
+import { usePublicNewsArticle } from "@/hooks/(public)/usePublicData";
+import { formatDateLong } from "@/utils/shared/dateUtils";
 import Loader from "../../../../components/ui/Loader/Loader";
-import { usePublicPageLoader } from "../../hooks/usePublicPageLoader";
+import { usePublicPageLoader } from "@/hooks/(public)/usePublicPageLoader";
 import styles from "../news.module.css";
 
 export default function NewsDetailPage({ params }) {

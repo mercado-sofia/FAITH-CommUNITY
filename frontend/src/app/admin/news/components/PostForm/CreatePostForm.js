@@ -8,7 +8,7 @@ import { ContentEditor } from '@/app/admin/components';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import UnsaveChangesModal from '../UnsaveChangesModal/UnsaveChangesModal';
 import DOMPurify from 'dompurify';
-import { formatDateTimeForInput, formatDateTime, getRelativeTime } from '@/utils/dateUtils.js';
+import { formatDateTimeForInput, formatDateTime, getRelativeTime } from '@/utils/shared/dateUtils';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 

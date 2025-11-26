@@ -3,8 +3,8 @@
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
-import { usePublicSiteName, usePublicMissionVision, usePublicAboutUs } from '../../hooks/usePublicData';
-import { useFadeIn } from '../../hooks/useFadeIn';
+import { usePublicSiteName, usePublicMissionVision, usePublicAboutUs } from '@/hooks/(public)/usePublicData';
+import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
 function AboutSection() {
   const { siteNameData } = usePublicSiteName();

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { formatDateShort } from '@/utils/dateUtils.js'
-import { getProfilePhotoUrl } from '@/utils/uploadPaths'
+import { formatDateShort } from '@/utils/shared/dateUtils'
+import { getProfilePhotoUrl } from '@/utils/shared/uploadPaths'
 import { FaUser } from 'react-icons/fa'
 
 import styles from './ViewDetailsModal.module.css'

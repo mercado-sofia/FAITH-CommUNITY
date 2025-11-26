@@ -1,7 +1,7 @@
 'use client';
 
 import { FaUsers, FaCrown, FaEye } from 'react-icons/fa';
-import { hasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
+import { hasActiveCollaborations, getActiveCollaborators } from '@/utils/shared/collaborationStatusUtils';
 import styles from './CollaborationBadge.module.css';
 
 const CollaborationBadge = ({ 

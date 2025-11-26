@@ -6,9 +6,9 @@ import { FaEdit, FaPlus, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaU
 import { FaListUl } from 'react-icons/fa6'
 import { BsFillGrid3X3GapFill } from 'react-icons/bs'
 import { FiTrash2 } from 'react-icons/fi'
-import { getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgHeadsSection.module.css'
-import { sortHeadsByOrder, filterHeads } from '../../utils'
+import { sortHeadsByOrder, filterHeads } from '../../utils/roleHierarchy'
 import DragDropHeadsContainer from '../components/DragDropHeadsContainer/DragDropHeadsContainer'
 
 export default function OrgHeadsSection({

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
 import styles from './SiteNameManagement.module.css';
 

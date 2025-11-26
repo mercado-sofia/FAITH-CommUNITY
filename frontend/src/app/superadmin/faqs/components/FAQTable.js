@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
 import { ConfirmationModal } from '@/components';
-import { formatDateTime } from '@/utils/dateUtils';
+import { formatDateTime } from '@/utils/shared/dateUtils';
 import styles from './styles/FAQTable.module.css';
 
 export default function FAQTable({ 

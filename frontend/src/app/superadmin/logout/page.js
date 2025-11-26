@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiLogOut } from 'react-icons/fi'
-import { logout, USER_TYPES } from '@/utils/authService'
+import { logout, USER_TYPES } from '@/utils/shared/authService'
 import styles from '@/components/portal/Sidebar/Sidebar.module.css'
 
 export default function LogoutModalTrigger() {

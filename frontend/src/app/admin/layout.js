@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
-import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
+import { clearAuthImmediate, USER_TYPES } from "@/utils/shared/authService";
 import { Sidebar, adminNavLinks, TopBar } from "@/components";
 import { ErrorBoundary, Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
-import styles from "./dashboard/styles/dashboard.module.css";
-import logger from '../../utils/logger.js';
+import styles from "./dashboard/dashboard.module.css";
+import logger from '@/utils/shared/logger';
 
 // Track if admin has been initialized
 let adminInitialized = false;
@@ -106,7 +106,7 @@ function AdminLayoutContent({ children }) {
         
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         let userData = null;
         let retryCount = 0;
         const maxRetries = 3;

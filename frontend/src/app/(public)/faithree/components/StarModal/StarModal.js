@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { formatDateShort } from '@/utils/dateUtils'
+import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import styles from './StarModal.module.css'
 

@@ -1,5 +1,5 @@
 // API configuration utility for profile components
-import { authenticatedFetch } from '@/utils/apiClient';
+import { authenticatedFetch } from '@/utils/shared/apiClient';
 
 export const getApiUrl = (endpoint) => {
   return endpoint; // authenticatedFetch handles full URL construction

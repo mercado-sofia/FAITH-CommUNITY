@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { filterAndSortPrograms, filterAndSortCollaborations } from '../../utils/programUtils';
-import { getEffectiveStatus } from '@/utils/collaborationStatusUtils';
+import { filterAndSortPrograms, filterAndSortCollaborations } from '@/utils/admin/programUtils';
+import { getEffectiveStatus } from '@/utils/shared/collaborationStatusUtils';
 
 export const useProgramFilters = (programs, collaborations) => {
   const router = useRouter();

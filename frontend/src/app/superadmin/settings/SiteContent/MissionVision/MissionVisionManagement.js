@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FiTarget, FiEye, FiEdit3 } from 'react-icons/fi';
 import { mutate } from 'swr';
-import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
 import styles from './MissionVisionManagement.module.css';
 

@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
-import { formatDateLong } from '@/utils/dateUtils.js';
+import { formatDateLong } from '@/utils/shared/dateUtils';
 import SubmissionModal from '../modals/SubmissionModal';
 import { ConfirmationModal, SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
-import { API_CONFIG } from '../../../utils';
+import { API_CONFIG } from '@/utils/admin/constants';
 
 export default function SubmissionTable({ 
   submissions = [], 

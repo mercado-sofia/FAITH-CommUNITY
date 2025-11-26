@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useGetSuperAdminNotificationsQuery } from '../../../../rtk/superadmin/superadminNotificationsApi';
 import { FiTrash2, FiEye, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import { SkeletonLoader } from '../../components';
 import { logError } from '@/config/api';
 import styles from '../notifications.module.css';

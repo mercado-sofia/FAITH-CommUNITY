@@ -7,7 +7,7 @@ import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useGetNotificationsQuery } from '@/rtk/admin/notificationsApi';
 import { FiTrash2, FiEye } from 'react-icons/fi';
 import SkeletonLoader from '../../components/SkeletonLoader/SkeletonLoader';
-import { getErrorMessage } from '../../utils';
+import { getErrorMessage } from '@/utils/admin/errorHandler';
 import styles from '../notifications.module.css';
 
 export default function InfiniteScrollNotifications({ 

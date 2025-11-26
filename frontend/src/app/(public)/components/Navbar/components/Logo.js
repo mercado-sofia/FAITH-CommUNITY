@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePublicBranding } from '../../../hooks/usePublicData';
-import { getBrandingImageUrl } from '@/utils/uploadPaths';
+import { usePublicBranding } from '@/hooks/(public)/usePublicData';
+import { getBrandingImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './styles/Logo.module.css';
 
 export default function Logo() {

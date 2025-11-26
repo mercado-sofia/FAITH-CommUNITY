@@ -34,7 +34,7 @@ export default function FloatingMessage() {
     const checkAuth = async () => {
       // Check authentication using the auth service instead of localStorage
       try {
-        const { getCurrentUser } = await import('@/utils/authService');
+        const { getCurrentUser } = await import('@/utils/shared/authService');
         const user = await getCurrentUser();
         if (user && user.role) {
           // Only treat as logged in if the user has role 'user' (public user)

@@ -12,7 +12,7 @@ import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { SkeletonLoader } from '../components';
 import { API_BASE_URL, logError } from '@/config/api';
-import { clearAuthImmediate, USER_TYPES } from '@/utils/authService';
+import { clearAuthImmediate, USER_TYPES } from '@/utils/shared/authService';
 import { useDispatch } from 'react-redux';
 import { superadminHighlightsApi } from '@/rtk/superadmin/highlightsApi';
 import styles from './approvals.module.css';

@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
 import styles from './RelatedPrograms.module.css';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
+import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 
 
 const getStatusClass = (status) => {

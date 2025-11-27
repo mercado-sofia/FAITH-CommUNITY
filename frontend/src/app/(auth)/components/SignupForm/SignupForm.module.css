@@ -334,6 +334,17 @@
   text-align: left;
 }
 
+/* Reduce spacing when error message is followed by button group */
+.errorMessage + .buttonGroup {
+  margin-top: 0.3rem;
+}
+
+/* Reduce spacing for inputGroup directly followed by buttonGroup (no error message) */
+.inputGroup:has(+ .buttonGroup),
+.inputGroup:has(+ .errorMessage + .buttonGroup) {
+  margin-bottom: 0.8rem;
+}
+
 .passwordRequirements {
   margin: 0.65rem 0 1rem;
   padding: 0;
@@ -386,7 +397,7 @@
 .buttonGroup {
   display: flex;
   gap: 1rem;
-  margin-top: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 .nextBtn,
@@ -477,6 +488,22 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Tablet and smaller screens */
+@media (max-width: 768px) {
+  .stepIndicator {
+    justify-content: center;
+  }
+
+  .step {
+    font-size: 12px;
+  }
+
+  .stepDivider {
+    width: 30px;
+    margin: 0 8px;
+  }
+}
+
 @media (max-width: 480px) {
   .form {
     gap: 1rem;
@@ -484,10 +511,6 @@
 
   .title {
     font-size: 1.5rem;
-  }
-
-  .stepSubheading {
-    margin-bottom: 0.5rem;
   }
 
   .inputGroup input,
@@ -499,5 +522,81 @@
 
   .buttonGroup {
     flex-direction: column;
+  }
+
+  /* Reduce vertical spacing between form fields on mobile */
+  .inputGroup {
+    margin-bottom: 0.9rem;
+  }
+
+  .nameRow {
+    margin-bottom: 0.7rem;
+  }
+
+  .nameRow .inputGroup {
+    margin-bottom: 0;
+  }
+
+  .genderBirthDateRow {
+    margin: 0.3rem 0 0.2rem;
+  }
+
+  .errorMessage {
+    margin-bottom: 0.6rem;
+  }
+
+  .stepSubheading {
+    margin-bottom: 0.8rem;
+  }
+
+  .passwordRequirements {
+    margin: 0.5rem 0 0.8rem;
+  }
+
+  /* Mobile-specific step indicator styles */
+  .stepIndicator {
+    justify-content: center;
+    margin: 1.5rem 0;
+    gap: 0.5rem;
+  }
+
+  .step {
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .step span {
+    display: none; /* Hide text labels on mobile */
+  }
+
+  .stepNumber {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    margin-right: 0;
+  }
+
+  .stepDivider {
+    width: 20px;
+    margin: 0 4px;
+  }
+}
+
+/* Additional mobile styles for very small screens */
+@media (max-width: 360px) {
+  .stepIndicator {
+    margin: 1.2rem 0;
+    gap: 0.3rem;
+  }
+
+  .stepNumber {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  .stepDivider {
+    width: 15px;
+    margin: 0 3px;
   }
 }

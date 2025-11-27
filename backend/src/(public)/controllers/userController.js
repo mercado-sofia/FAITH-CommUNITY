@@ -19,7 +19,6 @@ import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 import { logError } from '../../utils/logger.js';
 
-// User registration
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -33,7 +32,6 @@ export const registerUser = async (req, res) => {
       password
     } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !contactNumber || !gender || !address || !birthDate || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -44,18 +42,15 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Validate password length
     if (password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
-    // Validate gender
     const validGenders = ['Male', 'Female', 'Other'];
     if (!validGenders.includes(gender)) {
       return res.status(400).json({ error: 'Invalid gender value' });
     }
 
-    // Check if email already exists in unified users table
     const [existingUser] = await db.query(
       'SELECT id, role FROM users WHERE email = ?',
       [email]
@@ -72,33 +67,27 @@ export const registerUser = async (req, res) => {
       }
     }
 
-    // Hash password
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Convert birth date from MM/DD/YYYY to YYYY-MM-DD format for MySQL
     let formattedBirthDate = null;
     if (birthDate && birthDate.trim()) {
-      // Check if it's already in ISO format (YYYY-MM-DD)
       if (birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // Validate the date components
         const [year, month, day] = birthDate.split('-');
         const yearNum = parseInt(year, 10);
         const monthNum = parseInt(month, 10);
         const dayNum = parseInt(day, 10);
         
         if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= new Date().getFullYear()) {
-          formattedBirthDate = birthDate; // Already in correct format
+          formattedBirthDate = birthDate;
         } else {
           return res.status(400).json({ error: 'Invalid birth date' });
         }
-      } else {
-        // Handle legacy MM/DD/YYYY format for backward compatibility
-        const dateParts = birthDate.split('/');
-        if (dateParts.length === 3) {
-          const [month, day, year] = dateParts;
-          // Validate date components
-          const monthNum = parseInt(month, 10);
+        } else {
+          const dateParts = birthDate.split('/');
+          if (dateParts.length === 3) {
+            const [month, day, year] = dateParts;
+            const monthNum = parseInt(month, 10);
           const dayNum = parseInt(day, 10);
           const yearNum = parseInt(year, 10);
           
@@ -116,9 +105,8 @@ export const registerUser = async (req, res) => {
     }
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Insert new user into unified users table with verification token
     const [result] = await db.query(
       `INSERT INTO users (
         email, password_hash, role, verification_token, 
@@ -129,7 +117,6 @@ export const registerUser = async (req, res) => {
 
     const userId = result.insertId;
 
-    // Insert profile data into user_profiles table
     await db.query(
       `INSERT INTO user_profiles (
         user_id, first_name, last_name, contact_number, gender, 
@@ -204,7 +191,6 @@ export const registerUser = async (req, res) => {
       });
 
     } catch (emailError) {
-      
       res.status(201).json({
         message: 'Registration successful! However, we could not send the verification email. Please contact support to verify your account.',
         user: {
@@ -223,7 +209,6 @@ export const registerUser = async (req, res) => {
     }
 
   } catch (error) {
-    // Handle specific database errors
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
@@ -258,7 +243,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find user by email with profile data (case-insensitive comparison)
     const [users] = await db.query(
       `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
               up.address, up.birth_date, up.occupation, up.citizenship, 
@@ -305,7 +289,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Check if email is verified
     if (!user.email_verified) {
       return res.status(401).json({ 
         error: 'Please verify your email address before logging in. Check your email for a verification link.',
@@ -313,7 +296,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Issue short-lived access token and refresh token
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: 'user' })
     const { token: refreshToken, expiresAt } = await issueRefreshToken(user.id, {
       userAgent: req.headers['user-agent'],
@@ -329,17 +311,12 @@ export const loginUser = async (req, res) => {
       [user.id]
     );
 
-    // Set both tokens as httpOnly cookies (secure - not accessible to JavaScript)
-    // Pass req to cookie options functions so they can use forwarded host for domain
     const accessCookieOptions = getAccessTokenCookieOptions(req);
     const refreshCookieOptions = getRefreshCookieOptions(req);
     
-    // Set both tokens as httpOnly cookies
-    // Express will automatically overwrite existing cookies with the same name
     res.cookie('access_token', accessToken, accessCookieOptions)
     res.cookie('refresh_token', refreshToken, refreshCookieOptions)
     
-    // Don't return token in response body - it's in httpOnly cookie now
     res.json({
       message: 'Login successful',
       user: {
@@ -367,7 +344,6 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// Get user profile
 export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -413,7 +389,6 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -428,7 +403,6 @@ export const updateUserProfile = async (req, res) => {
       citizenship
     } = req.body;
 
-    // Update user profile in user_profiles table
     await db.query(
       `UPDATE user_profiles SET 
         first_name = ?, last_name = ?, contact_number = ?, 
@@ -438,7 +412,6 @@ export const updateUserProfile = async (req, res) => {
       [firstName, lastName, contactNumber, gender, address, birthDate, occupation, citizenship, userId]
     );
 
-    // Update users table updated_at
     await db.query(
       `UPDATE users SET updated_at = NOW() WHERE id = ?`,
       [userId]
@@ -451,34 +424,28 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// Upload profile photo
 export const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Check if file exists
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    // Check if file buffer exists
     if (!req.file.buffer) {
       return res.status(400).json({ error: 'File buffer not found' });
     }
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'];
     if (!allowedTypes.includes(req.file.mimetype)) {
       return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, GIF, WebP, AVIF, and SVG images are allowed' });
     }
 
-    // Validate file size (3MB limit)
-    const maxSize = 3 * 1024 * 1024; // 3MB
+    const maxSize = 3 * 1024 * 1024;
     if (req.file.size > maxSize) {
       return res.status(400).json({ error: 'File too large. Maximum size is 3MB' });
     }
 
-    // Import Cloudinary utilities
     const { 
       deleteFromCloudinary, 
       extractPublicIdFromUrl,
@@ -486,7 +453,6 @@ export const uploadProfilePhoto = async (req, res) => {
     } = await import('../../utils/cloudinaryConfig.js');
     const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
 
-    // Get current user to check for existing profile photo
     let users;
     try {
       [users] = await db.query(
@@ -506,7 +472,6 @@ export const uploadProfilePhoto = async (req, res) => {
     
     const user = users[0];
 
-    // Delete old profile photo from Cloudinary if it exists
     if (user.profile_photo_url) {
       const oldPublicId = extractPublicIdFromUrl(user.profile_photo_url);
       if (oldPublicId) {
@@ -517,7 +482,6 @@ export const uploadProfilePhoto = async (req, res) => {
       }
     }
 
-    // Upload new profile photo to Cloudinary
     let uploadResult;
     try {
       uploadResult = await uploadSingleToCloudinary(
@@ -531,13 +495,11 @@ export const uploadProfilePhoto = async (req, res) => {
 
     const profilePhotoUrl = uploadResult.url;
 
-    // Update user's profile_photo_url in user_profiles table
     try {
       await db.query(
         'UPDATE user_profiles SET profile_photo_url = ?, updated_at = NOW() WHERE user_id = ?',
         [profilePhotoUrl, userId]
       );
-      // Update users table updated_at
       await db.query(
         'UPDATE users SET updated_at = NOW() WHERE id = ?',
         [userId]
@@ -546,7 +508,6 @@ export const uploadProfilePhoto = async (req, res) => {
       throw new Error(`Database update failed: ${dbError.message}`);
     }
     
-    // Get updated user data
     let updatedUsers;
     try {
       [updatedUsers] = await db.query(
@@ -590,7 +551,6 @@ export const uploadProfilePhoto = async (req, res) => {
     });
 
   } catch (error) {
-    // Provide more specific error messages
     let errorMessage = 'Internal server error';
     if (error.message.includes('Cloudinary')) {
       errorMessage = 'Failed to upload to cloud storage';
@@ -604,12 +564,10 @@ export const uploadProfilePhoto = async (req, res) => {
   }
 };
 
-// Remove profile photo
 export const removeProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Get current profile photo URL
     const [users] = await db.query(
       `SELECT up.profile_photo_url 
        FROM users u
@@ -624,7 +582,6 @@ export const removeProfilePhoto = async (req, res) => {
     
     const currentPhotoUrl = users[0].profile_photo_url;
     
-    // Delete the photo from Cloudinary if it exists
     if (currentPhotoUrl) {
       const { deleteFromCloudinary, extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
       
@@ -637,18 +594,15 @@ export const removeProfilePhoto = async (req, res) => {
       }
     }
     
-    // Update user's profile_photo_url to null in user_profiles table
     await db.query(
       'UPDATE user_profiles SET profile_photo_url = NULL, updated_at = NOW() WHERE user_id = ?',
       [userId]
     );
-    // Update users table updated_at
     await db.query(
       'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
     
-    // Get updated user data
     const [updatedUsers] = await db.query(
       `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
               up.address, up.birth_date, up.occupation, up.citizenship, 
@@ -683,7 +637,6 @@ export const removeProfilePhoto = async (req, res) => {
   }
 };
 
-// Change email - Step 1: Request email change with password verification
 export const requestEmailChange = async (req, res) => {
   try {
     
@@ -700,7 +653,6 @@ export const requestEmailChange = async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Get current user data
     const [users] = await db.query(
       `SELECT u.email, u.password_hash, up.first_name, up.last_name 
        FROM users u
@@ -715,18 +667,15 @@ export const requestEmailChange = async (req, res) => {
 
     const user = users[0];
 
-    // Check if new email is different from current email
     if (newEmail === user.email) {
       return res.status(400).json({ error: 'New email must be different from current email' });
     }
 
-    // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Check if new email is already taken
     const [existingUsers] = await db.query(
       'SELECT id FROM users WHERE email = ? AND id != ?',
       [newEmail, userId]
@@ -736,7 +685,6 @@ export const requestEmailChange = async (req, res) => {
       return res.status(400).json({ error: 'Email is already taken by another user' });
     }
 
-    // Create OTP and send verification email
     const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
     const userName = `${user.first_name} ${user.last_name}`.trim();
     
@@ -759,7 +707,6 @@ export const requestEmailChange = async (req, res) => {
   }
 };
 
-// Change email - Step 2: Verify OTP and complete email change
 export const verifyEmailChangeOTP = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -769,7 +716,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
       return res.status(400).json({ error: 'Token and OTP are required' });
     }
 
-    // Verify OTP
     const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
     const verificationResult = await EmailChangeOTP.verifyOTP(token, otp, userId, 'user');
 
@@ -777,13 +723,11 @@ export const verifyEmailChangeOTP = async (req, res) => {
       return res.status(400).json({ error: verificationResult.error });
     }
 
-    // Update email in database
     await db.query(
       'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
       [verificationResult.newEmail, userId]
     );
 
-    // Get updated user data for new token
     const [updatedUsers] = await db.query(
       'SELECT * FROM users WHERE id = ?',
       [userId]
@@ -795,14 +739,12 @@ export const verifyEmailChangeOTP = async (req, res) => {
 
     const updatedUser = updatedUsers[0];
 
-    // Generate new access token with updated email
     const newAccessToken = signAccessToken({ 
       id: updatedUser.id, 
       email: updatedUser.email, 
       role: 'user' 
     });
 
-    // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
     res.json({ 
@@ -826,14 +768,12 @@ export const verifyEmailChangeOTP = async (req, res) => {
     });
 
   } catch (error) {
-    // Log the actual error for debugging
     logError('Error verifying user email change OTP', error, {
       context: 'user_controller',
       userId: req.user?.id,
       errorStack: error.stack
     });
     
-    // Return error message (hide details in production for security)
     const errorMessage = process.env.NODE_ENV === 'development' 
       ? error.message 
       : 'Internal server error';
@@ -843,7 +783,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
 };
 
 
-// Change password
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -853,7 +792,6 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ error: 'Current and new password are required' });
     }
 
-    // Enhanced password complexity validation
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
@@ -864,7 +802,6 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // Get current password hash and user details
     const [users] = await db.query(
       `SELECT u.password_hash, u.email, up.first_name, up.last_name 
        FROM users u
@@ -877,32 +814,26 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ error: 'User not found or inactive' });
     }
 
-    // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password_hash);
     if (!isCurrentPasswordValid) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
     const saltRounds = 12;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    // Update password
     await db.query(
       'UPDATE users SET password_hash = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?',
       [hashedNewPassword, userId]
     );
 
-    // Revoke all existing refresh tokens and clear both cookies
     try {
       await revokeAllUserRefreshTokens(userId)
     } catch {}
-    // Clear both cookies using the same domain logic as cookie setting
     const clearCookieOptions = getClearCookieOptions(req);
     res.clearCookie('access_token', clearCookieOptions)
     res.clearCookie('refresh_token', clearCookieOptions)
 
-    // Send password change notification
     try {
       const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
       const userName = users[0].first_name && users[0].last_name ? 
@@ -913,7 +844,6 @@ export const changePassword = async (req, res) => {
         'user'
       );
     } catch (notificationError) {
-      // Continue with success response even if notification fails
     }
 
     res.json({ message: 'Password changed successfully' });
@@ -923,7 +853,6 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// Subscribe to newsletter (for logged-in users)
 export const subscribeToNewsletter = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -952,13 +881,11 @@ export const subscribeToNewsletter = async (req, res) => {
       'UPDATE user_profiles SET newsletter_subscribed = 1, updated_at = NOW() WHERE user_id = ?',
       [userId]
     );
-    // Update users table updated_at
     await db.query(
       'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
-    // Also add to subscribers table for consistency
     const verifyToken = crypto.randomBytes(24).toString("hex");
     const unsubscribeToken = crypto.randomBytes(24).toString("hex");
 
@@ -983,7 +910,6 @@ export const subscribeToNewsletter = async (req, res) => {
   }
 };
 
-// Unsubscribe from newsletter (for logged-in users)
 export const unsubscribeFromNewsletter = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1012,13 +938,11 @@ export const unsubscribeFromNewsletter = async (req, res) => {
       'UPDATE user_profiles SET newsletter_subscribed = 0, updated_at = NOW() WHERE user_id = ?',
       [userId]
     );
-    // Update users table updated_at
     await db.query(
       'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
-    // Also remove from subscribers table for consistency
     await db.query(
       'DELETE FROM subscribers WHERE email = ?',
       [user.email]
@@ -1034,7 +958,6 @@ export const unsubscribeFromNewsletter = async (req, res) => {
   }
 };
 
-// Get newsletter subscription status
 export const getNewsletterStatus = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1060,29 +983,22 @@ export const getNewsletterStatus = async (req, res) => {
   }
 };
 
-// Unified logout - works for all roles (user, admin, superadmin)
 export const logoutUser = async (req, res) => {
   try {
-    // Get user from token (works for all roles with unified users table)
     const userId = req.user?.id || req.admin?.id || req.superadmin?.id;
     
     if (userId) {
-      // Update last login timestamp (optional)
       await db.query(
         'UPDATE users SET last_login = NOW() WHERE id = ?',
         [userId]
       );
     }
 
-    // Revoke presented refresh token cookie if present
     const presented = req.cookies?.refresh_token
     if (presented) {
       await revokeRefreshToken(presented)
     }
 
-    // Clear both cookies (works for all roles)
-    // IMPORTANT: Must specify same domain that was used to set the cookie
-    // Use the shared utility function that matches getAccessTokenCookieOptions/getRefreshCookieOptions
     const clearCookieOptions = getClearCookieOptions(req);
     res.clearCookie('access_token', clearCookieOptions)
     res.clearCookie('refresh_token', clearCookieOptions)
@@ -1093,7 +1009,6 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-// Unified refresh access token - works for all roles (user, admin, superadmin)
 export const refreshAccessToken = async (req, res) => {
   try {
     const presented = req.cookies?.refresh_token
@@ -1102,7 +1017,6 @@ export const refreshAccessToken = async (req, res) => {
     const record = await findValidRefreshToken(presented)
     if (!record) return res.status(401).json({ error: 'Invalid or expired refresh token' })
 
-    // Get user from unified users table - works for all roles!
     const [users] = await db.query(
       'SELECT id, email, role, organization_id FROM users WHERE id = ?',
       [record.user_id]
@@ -1118,7 +1032,6 @@ export const refreshAccessToken = async (req, res) => {
       ipAddress: getClientIpAddress(req),
     })
 
-    // Generate access token based on role (unified approach!)
     let accessTokenPayload = {
       id: user.id,
       email: user.email,
@@ -1158,22 +1071,18 @@ export const refreshAccessToken = async (req, res) => {
   }
 }
 
-// Verify email address
 export const verifyEmail = async (req, res) => {
   try {
-    // Trim and validate token to handle any whitespace or encoding issues
     const token = req.query?.token?.trim();
 
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
-    // Validate token format (should be 64 hex characters from crypto.randomBytes(32))
     if (!/^[a-f0-9]{64}$/i.test(token)) {
       return res.status(400).json({ error: 'Invalid verification token format' });
     }
 
-    // Find user with this verification token
     const [users] = await db.query(
       'SELECT id, email, verification_token, verification_token_expires, email_verified FROM users WHERE verification_token = ? AND role = \'user\'',
       [token]
@@ -1185,17 +1094,14 @@ export const verifyEmail = async (req, res) => {
 
     const user = users[0];
 
-    // Check if email is already verified
     if (user.email_verified) {
       return res.status(400).json({ error: 'Email is already verified. You can log in to your account.' });
     }
 
-    // Check if token has expired
     if (new Date() > new Date(user.verification_token_expires)) {
       return res.status(400).json({ error: 'Verification token has expired. Please request a new one.' });
     }
 
-    // Update user to verified and clear verification token
     await db.query(
       'UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL, updated_at = NOW() WHERE id = ?',
       [user.id]
@@ -1211,7 +1117,6 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-// Resend verification email
 export const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -1220,7 +1125,6 @@ export const resendVerificationEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Find user by email
     const [users] = await db.query(
       `SELECT u.id, up.first_name, u.email, u.email_verified 
        FROM users u
@@ -1239,11 +1143,9 @@ export const resendVerificationEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email is already verified' });
     }
 
-    // Generate new verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Update user with new verification token
     await db.query(
       'UPDATE users SET verification_token = ?, verification_token_expires = ?, updated_at = NOW() WHERE id = ?',
       [verificationToken, verificationExpires, user.id]
@@ -1313,15 +1215,12 @@ export const resendVerificationEmail = async (req, res) => {
   }
 };
 
-// Check authentication status (for frontend to verify if user is logged in)
-// Works for all roles (user, admin, superadmin) using unified users table
 export const checkAuthStatus = async (req, res) => {
   try {
     const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
     
     if (!token) {
       
-      // If no access token but refresh token exists, try to refresh
       const refreshToken = req.cookies?.refresh_token;
       if (refreshToken) {
         try {
@@ -1364,16 +1263,12 @@ export const checkAuthStatus = async (req, res) => {
               
               const accessToken = signAccessToken(accessTokenPayload);
               
-              // Get cookie options and log them BEFORE setting cookies
               const accessCookieOpts = getAccessTokenCookieOptions(req);
               const refreshCookieOpts = getRefreshCookieOptions(req);
               
-              // Set both new tokens as httpOnly cookies
-              // Express will automatically overwrite existing cookies with the same name
               res.cookie('access_token', accessToken, accessCookieOpts);
               res.cookie('refresh_token', newRefresh, refreshCookieOpts);
               
-              // Get user data (same logic as below)
               let userData = { id: user.id, email: user.email, role: user.role };
               
               if (user.role === 'user') {
@@ -1434,7 +1329,6 @@ export const checkAuthStatus = async (req, res) => {
         audience: process.env.JWT_AUD || 'faith-community-client'
       });
       
-      // Get user from unified table
       const [users] = await db.query(
         'SELECT id, email, role, organization_id FROM users WHERE id = ?',
         [decoded.id]
@@ -1447,7 +1341,6 @@ export const checkAuthStatus = async (req, res) => {
       const user = users[0];
       let userData = { id: user.id, email: user.email, role: user.role };
 
-      // Get role-specific data
       if (user.role === 'user') {
         const [profiles] = await db.query(
           `SELECT first_name, last_name, contact_number, gender, address, 
@@ -1492,7 +1385,6 @@ export const checkAuthStatus = async (req, res) => {
         user: userData
       });
     } catch (error) {
-      // Token invalid or expired - try to refresh automatically
       const refreshToken = req.cookies?.refresh_token;
       if (refreshToken) {
         try {
@@ -1535,12 +1427,9 @@ export const checkAuthStatus = async (req, res) => {
               
               const accessToken = signAccessToken(accessTokenPayload);
               
-              // Set both new tokens as httpOnly cookies
-              // Pass req to cookie options functions so they can use forwarded host for domain
               res.cookie('access_token', accessToken, getAccessTokenCookieOptions(req));
               res.cookie('refresh_token', newRefresh, getRefreshCookieOptions(req));
               
-              // Get user data (same logic as above)
               let userData = { id: user.id, email: user.email, role: user.role };
               
               if (user.role === 'user') {
@@ -1589,7 +1478,6 @@ export const checkAuthStatus = async (req, res) => {
             }
           }
         } catch (refreshError) {
-          // Refresh failed - return not authenticated
         }
       }
       return res.json({ authenticated: false });
@@ -1599,10 +1487,8 @@ export const checkAuthStatus = async (req, res) => {
   }
 };
 
-// Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
-    // Try cookie first (more secure), then header (for backward compatibility)
     const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
     
     if (!token) {
@@ -1614,7 +1500,6 @@ export const verifyToken = async (req, res, next) => {
       audience: process.env.JWT_AUD || 'faith-community-client'
     });
     
-    // Set user based on role (unified approach!)
     req.user = decoded;
     if (decoded.role === 'admin') {
       req.admin = decoded;
@@ -1635,7 +1520,6 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
-// User notification functions
 export const getUserNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1780,9 +1664,6 @@ export const deleteNotification = async (req, res) => {
   }
 };
 
-// Helper function to create notification (used by other controllers)
-// Returns the notification ID if successful, null otherwise
-// Note: section and relatedId parameters are accepted for backward compatibility but not currently stored
 export const createUserNotification = async (userId, type, title, message, section = null, relatedId = null) => {
   try {
     const [result] = await db.execute(
@@ -1792,14 +1673,10 @@ export const createUserNotification = async (userId, type, title, message, secti
     );
     return result.insertId;
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error creating user notification:', error);
-    }
     return null;
   }
 };
 
-// Forgot password - send reset email for users
 export const forgotPasswordUser = async (req, res) => {
   const { email } = req.body
 
@@ -1808,28 +1685,23 @@ export const forgotPasswordUser = async (req, res) => {
   }
 
   try {
-    // Check if user exists with this email (only for role='user')
     const [userRows] = await db.query(
       'SELECT id, email FROM users WHERE email = ? AND role = \'user\'',
       [email]
     )
 
     if (userRows.length === 0) {
-      // Don't reveal if email exists or not for security
       return res.json({ message: "If an account with that email exists, a password reset link has been sent." })
     }
 
-    // Generate reset token
     const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
-    // Store token in password_reset_tokens table
     await db.query(
       'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
       [email, token, expiresAt]
     )
 
-    // Send email with reset link
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}&type=user`
     
     const { sendMail } = await import('../../utils/mailer.js')
@@ -1883,7 +1755,6 @@ export const forgotPasswordUser = async (req, res) => {
   }
 }
 
-// Reset password with token for users
 export const resetPasswordUser = async (req, res) => {
   const { token, newPassword } = req.body
 
@@ -1891,7 +1762,6 @@ export const resetPasswordUser = async (req, res) => {
     return res.status(400).json({ error: "Token and new password are required" })
   }
 
-  // Validate password requirements (matching frontend)
   if (newPassword.length < 8) {
     return res.status(400).json({ error: "Password must be at least 8 characters long" })
   }
@@ -1906,7 +1776,6 @@ export const resetPasswordUser = async (req, res) => {
   }
 
   try {
-    // Find valid token
     const [tokenRows] = await db.execute(
       'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
       [token]
@@ -1918,23 +1787,19 @@ export const resetPasswordUser = async (req, res) => {
 
     const tokenData = tokenRows[0]
 
-    // Hash new password
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
-    // Update user password in unified users table (only for role='user')
     await db.execute(
       'UPDATE users SET password_hash = ?, password_changed_at = NOW() WHERE email = ? AND role = \'user\'',
       [hashedPassword, tokenData.email]
     )
 
-    // Delete used token
     await db.execute(
       'DELETE FROM password_reset_tokens WHERE token = ?',
       [token]
     )
 
-    // Send confirmation email
     const { sendMail } = await import('../../utils/mailer.js')
     const { getSiteName } = await import('../../utils/siteName.js')
     const siteName = await getSiteName()
@@ -1984,7 +1849,6 @@ export const resetPasswordUser = async (req, res) => {
   }
 }
 
-// Validate reset token without using it
 export const validateResetToken = async (req, res) => {
   const { token } = req.body
 
@@ -1993,7 +1857,6 @@ export const validateResetToken = async (req, res) => {
   }
 
   try {
-    // Check if token exists and is not expired
     const [tokenRows] = await db.query(
       'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
       [token]
@@ -2009,7 +1872,6 @@ export const validateResetToken = async (req, res) => {
   }
 }
 
-// Check if email exists in user system
 export const checkEmailUser = async (req, res) => {
   const { email } = req.body
 
@@ -2033,7 +1895,6 @@ export const checkEmailUser = async (req, res) => {
   }
 }
 
-// Delete account (hard delete - permanently removes account and related data)
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2043,8 +1904,6 @@ export const deleteAccount = async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Get current password hash and profile photo URL
-    // Allow all roles (user, admin, superadmin) to delete their accounts
     const [users] = await db.query(
       `SELECT u.password_hash, u.is_active, up.profile_photo_url 
        FROM users u
@@ -2059,19 +1918,15 @@ export const deleteAccount = async (req, res) => {
 
     const user = users[0];
 
-    // Check if account is already deactivated (safety check)
     if (!user.is_active) {
       return res.status(400).json({ error: 'Account is already deactivated. Please contact support if you need assistance.' });
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       return res.status(400).json({ error: 'Incorrect password, please try again' });
     }
 
-    // Delete profile photo from Cloudinary if it exists
-    // Robust NULL checking: ensure profile_photo_url is not null/undefined and is a valid string
     if (user.profile_photo_url && typeof user.profile_photo_url === 'string' && user.profile_photo_url.trim() !== '') {
       try {
         const { deleteFromCloudinary, extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
@@ -2080,25 +1935,10 @@ export const deleteAccount = async (req, res) => {
           await deleteFromCloudinary(publicId);
         }
       } catch (photoError) {
-        // Log error but continue with account deletion even if photo deletion fails
-        console.error('Error deleting profile photo from Cloudinary:', photoError);
+        // Continue with account deletion even if photo deletion fails
       }
     }
 
-    // Hard delete: Permanently delete the user record
-    // Related data will be automatically deleted via CASCADE foreign keys:
-    // - user_profiles (ON DELETE CASCADE)
-    // - user_notifications (ON DELETE CASCADE)
-    // - volunteers/applications (ON DELETE CASCADE)
-    // - submissions (ON DELETE CASCADE)
-    // - admin_notifications (ON DELETE CASCADE) if user was admin
-    // - superadmin_notifications (ON DELETE CASCADE) if user was superadmin
-    // - program_collaborations (ON DELETE CASCADE)
-    // - admin_highlights (ON DELETE CASCADE)
-    // 
-    // Tables with ON DELETE SET NULL will have user_id set to NULL:
-    // - messages (user_id)
-    // - program_post_act_reports (uploaded_by_admin_id, reviewed_by_superadmin_id)
     await db.query(
       'DELETE FROM users WHERE id = ?',
       [userId]
@@ -2110,12 +1950,10 @@ export const deleteAccount = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error deleting account:', error);
     res.status(500).json({ error: 'An error occurred while deleting your account' });
   }
 };
 
-// Get user applications (volunteer applications)
 export const getUserApplications = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2145,24 +1983,18 @@ export const getUserApplications = async (req, res) => {
       [userId]
     );
 
-    // Get multiple dates for each program
     const applicationsWithDates = await Promise.all(applications.map(async (application) => {
       let multipleDates = [];
       
-      // If program has event_start_date and event_end_date, check if they're the same (single day)
       if (application.programStartDate && application.programEndDate) {
         if (application.programStartDate === application.programEndDate) {
-          // Single day program
           multipleDates = [application.programStartDate];
         } else {
-          // Date range - include both dates
           multipleDates = [application.programStartDate, application.programEndDate];
         }
       } else if (application.programStartDate) {
-        // Only start date
         multipleDates = [application.programStartDate];
       } else {
-        // Check for multiple dates in program_event_dates table
         const [dateRows] = await db.execute(
           'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
           [application.program_id]
@@ -2195,7 +2027,6 @@ export const getUserApplications = async (req, res) => {
     };
     
     const transformedApplications = applicationsWithDates.map(application => {
-      // Construct proper organization logo URL
       let orgLogoUrl = null;
       if (application.orgLogo) {
         orgLogoUrl = getOrganizationLogoUrl(application.orgLogo);
@@ -2208,19 +2039,19 @@ export const getUserApplications = async (req, res) => {
         programDescription: application.programDescription,
         programImage: application.programImage,
         programSlug: application.programSlug,
-        programLocation: null, // Location not available in current database structure
+        programLocation: null,
         programStartDate: application.programStartDate,
         programEndDate: application.programEndDate,
-        multiple_dates: application.multiple_dates, // Include multiple dates array
+        multiple_dates: application.multiple_dates,
         organizationId: application.organization_id,
         organizationName: application.organizationName,
         organizationAcronym: application.organizationAcronym,
         orgLogo: orgLogoUrl,
         reason: application.reason,
         status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
-        appliedAt: convertTimestampToISO(application.appliedAt), // TIMESTAMP - convert to ISO
-        notes: application.reason, // Using reason as notes for now
-        feedback: null // This could be added later if feedback system is implemented
+        appliedAt: convertTimestampToISO(application.appliedAt),
+        notes: application.reason,
+        feedback: null
       };
     });
 
@@ -2229,7 +2060,6 @@ export const getUserApplications = async (req, res) => {
       applications: transformedApplications
     });
   } catch (error) {
-    // Error fetching user applications
     res.status(500).json({
       success: false,
       message: 'Failed to fetch applications',
@@ -2238,7 +2068,6 @@ export const getUserApplications = async (req, res) => {
   }
 };
 
-// Get individual application details by ID
 export const getApplicationDetails = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2287,23 +2116,17 @@ export const getApplicationDetails = async (req, res) => {
 
     const application = results[0];
     
-    // Get multiple dates for this program
     let multipleDates = [];
     
-    // If program has event_start_date and event_end_date, check if they're the same (single day)
     if (application.programStartDate && application.programEndDate) {
       if (application.programStartDate === application.programEndDate) {
-        // Single day program
         multipleDates = [application.programStartDate];
       } else {
-        // Date range - include both dates
         multipleDates = [application.programStartDate, application.programEndDate];
       }
     } else if (application.programStartDate) {
-      // Only start date
       multipleDates = [application.programStartDate];
     } else {
-      // Check for multiple dates in program_event_dates table
       const [dateRows] = await db.execute(
         'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
         [application.program_id]
@@ -2311,8 +2134,6 @@ export const getApplicationDetails = async (req, res) => {
       multipleDates = dateRows.map(row => row.event_date);
     }
     
-    // Transform the data to match frontend expectations
-    // Convert TIMESTAMP fields to ISO format with timezone info
     const convertTimestampToISO = (timestamp) => {
       if (!timestamp) return null;
       if (timestamp instanceof Date) {
@@ -2339,7 +2160,7 @@ export const getApplicationDetails = async (req, res) => {
       programSlug: application.programSlug,
       programStartDate: application.programStartDate,
       programEndDate: application.programEndDate,
-      multiple_dates: multipleDates, // Include multiple dates array
+      multiple_dates: multipleDates,
       organizationId: application.organization_id,
       organizationName: application.organizationName,
       organizationAcronym: application.organizationAcronym,
@@ -2347,10 +2168,10 @@ export const getApplicationDetails = async (req, res) => {
       organizationColor: application.organizationColor,
       reason: application.reason,
       status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
-      appliedAt: convertTimestampToISO(application.appliedAt), // TIMESTAMP - convert to ISO
-      updatedAt: convertTimestampToISO(application.updatedAt), // TIMESTAMP - convert to ISO
+      appliedAt: convertTimestampToISO(application.appliedAt),
+      updatedAt: convertTimestampToISO(application.updatedAt),
       notes: application.reason,
-      feedback: null // This could be added later if feedback system is implemented
+      feedback: null
     };
 
     res.json({
@@ -2366,7 +2187,6 @@ export const getApplicationDetails = async (req, res) => {
   }
 };
 
-// Cancel user application
 export const cancelApplication = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2394,7 +2214,6 @@ export const cancelApplication = async (req, res) => {
 
     const application = existingApp[0];
 
-    // Check if application can be cancelled (not already cancelled or rejected)
     if (application.status === 'Cancelled') {
       return res.status(400).json({
         success: false,
@@ -2409,7 +2228,6 @@ export const cancelApplication = async (req, res) => {
       });
     }
 
-    // Update the application status to 'Cancelled'
     await db.query(
       'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
       ['Cancelled', id, userId]
@@ -2428,7 +2246,6 @@ export const cancelApplication = async (req, res) => {
   }
 };
 
-// Delete user application
 export const deleteApplication = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2456,9 +2273,7 @@ export const deleteApplication = async (req, res) => {
 
     const application = existingApp[0];
 
-    // Handle different statuses appropriately
     if (application.status === 'Approved') {
-      // For approved applications, change status to 'Cancelled' instead of deleting
       await db.query(
         'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
         ['Cancelled', id, userId]
@@ -2485,7 +2300,6 @@ export const deleteApplication = async (req, res) => {
       });
     }
 
-    // Delete the application (for pending or declined applications only)
     await db.query(
       'DELETE FROM volunteers WHERE id = ? AND user_id = ?',
       [id, userId]
@@ -2504,7 +2318,6 @@ export const deleteApplication = async (req, res) => {
   }
 };
 
-// Complete user application
 export const completeApplication = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2532,7 +2345,6 @@ export const completeApplication = async (req, res) => {
 
     const application = existingApp[0];
 
-    // Check if application can be marked as completed (only approved applications)
     if (application.status !== 'Approved') {
       return res.status(400).json({
         success: false,
@@ -2540,7 +2352,6 @@ export const completeApplication = async (req, res) => {
       });
     }
 
-    // Update the application status to 'Completed'
     await db.query(
       'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
       ['Completed', id, userId]

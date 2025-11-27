@@ -7,7 +7,7 @@ import { useGetArchivedProgramsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import ProgramCard from '../components/ProgramCard'
 import ProgramDetailsModal from '../components/ProgramDetailsModal'
-import RestoreConfirmationModal from '../components/RestoreConfirmationModal'
+import { ConfirmationModal } from '@/components'
 import SearchBar from '../components/SearchBar'
 import { SkeletonLoader } from '../../components'
 import { useUnarchiveProgramMutation } from '@/rtk/superadmin/programsApi'
@@ -441,16 +441,22 @@ const ArchiveProgramsPage = () => {
       />
 
       {/* Restore Confirmation Modal */}
-      <RestoreConfirmationModal
+      <ConfirmationModal
         isOpen={restoreModalOpen}
-        onClose={() => {
+        onCancel={() => {
           setRestoreModalOpen(false)
           setProgramToAction(null)
         }}
         onConfirm={handleRestore}
-        programTitle={programToAction?.title || ''}
-        organizationName={programToAction?.organization_name || programToAction?.organization_acronym || ''}
+        itemName={programToAction?.title || ''}
+        itemType="program"
+        actionType="unarchive"
         isLoading={isRestoring}
+        customMessage={
+          programToAction?.organization_name || programToAction?.organization_acronym
+            ? `Are you sure you want to unarchive this program? Organization: ${programToAction.organization_name || programToAction.organization_acronym}. It will be restored and visible on the website again.`
+            : undefined
+        }
       />
     </div>
   )

@@ -113,7 +113,6 @@ async function getOrRefreshAccessToken(req, res) {
 
     return { token: newAccessToken, decoded, refreshed: true };
   } catch (refreshError) {
-    console.error('[getOrRefreshAccessToken] Token refresh error:', refreshError);
     return { token: null, decoded: null, refreshed: false };
   }
 }
@@ -178,21 +177,9 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
       checkParams.push(slug);
     }
     
-    // Log scheduled items for debugging (always log, not just in development)
     try {
-      const [scheduledItems] = await db.execute(checkQuery, checkParams);
-      if (process.env.NODE_ENV === 'development' && scheduledItems.length > 0) {
-        console.log('[autoUpdateScheduledNews] Checking scheduled items:', scheduledItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          published_at: item.published_at,
-          server_now: item.server_now,
-          seconds_diff: item.seconds_diff
-        })));
-      }
+      await db.execute(checkQuery, checkParams);
     } catch (checkError) {
-      // Don't fail the whole operation if the check query fails
-      console.error('[autoUpdateScheduledNews] Error checking scheduled items:', checkError);
     }
     
     // Compare published_at with UTC_TIMESTAMP() - both in UTC
@@ -227,8 +214,6 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
       updatedCount: result.affectedRows
     };
   } catch (error) {
-    // Log error but don't throw - this is a background operation
-      console.error('[autoUpdateScheduledNews] Error auto-publishing scheduled news:', error);
     return {
       success: false,
       error: error.message
@@ -251,9 +236,6 @@ function mapNewsToResponse(n) {
     try {
       logoUrl = getOrganizationLogoUrl(n.orgLogo);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error getting organization logo URL:', error);
-      }
       logoUrl = `/logo/faith_community_logo.png`;
     }
   } else {
@@ -486,24 +468,7 @@ export const createNews = async (req, res) => {
         });
       }
       
-      // Get timezone offset from request body (sent by frontend)
-      // Format: "+08:00" or "-05:00" (offset from UTC)
-      // IMPORTANT: Log all req.body fields to debug FormData parsing
-      // Check both camelCase and lowercase versions (multer might normalize field names)
       const timezoneOffsetRaw = req.body.timezoneOffset || req.body.timezoneoffset || req.body['timezoneOffset'] || req.body['timezone-offset'] || null;
-      
-      console.log('[createNews] REQUEST BODY DEBUG:', {
-        hasTimezoneOffset: !!req.body.timezoneOffset,
-        timezoneOffset: req.body.timezoneOffset,
-        timezoneoffset: req.body.timezoneoffset,
-        timezoneOffsetRaw: timezoneOffsetRaw,
-        published_at: req.body.published_at,
-        action: req.body.action,
-        allBodyKeys: Object.keys(req.body),
-        allBodyValues: Object.entries(req.body).map(([k, v]) => ({ key: k, value: typeof v === 'string' ? v.substring(0, 50) : v })),
-        timestamp: new Date().toISOString()
-      });
-      
       const timezoneOffset = timezoneOffsetRaw || null;
       
       // Validate timezone offset if provided
@@ -514,71 +479,31 @@ export const createNews = async (req, res) => {
         });
       }
       
-      // CRITICAL: timezoneOffset is REQUIRED for schedule action
-      // Without it, we cannot convert local time to UTC correctly
       if (!timezoneOffset && normalizedAction === 'schedule') {
-        console.error('[createNews] ERROR: timezoneOffset is REQUIRED for schedule action!', {
-          published_at: normalizedPublishedAt,
-          action: normalizedAction,
-          allBodyKeys: Object.keys(req.body),
-          timestamp: new Date().toISOString()
-        });
         return res.status(400).json({ 
           success: false, 
           message: "Timezone offset is required for scheduling. Please refresh the page and try again." 
         });
       }
       
-      // Use centralized timezone conversion utility
-      // This converts user's local time to UTC for database storage
       try {
-        // Log input for debugging
-        console.log('[createNews] SCHEDULING INPUT:', {
-          receivedLocalTime: normalizedPublishedAt,
-          receivedTimezoneOffset: timezoneOffset,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Convert local time to UTC using the utility function
         const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
         
         if (!utcDate || isNaN(utcDate.getTime())) {
-          console.error('[createNews] Invalid UTC conversion:', {
-            localTime: normalizedPublishedAt,
-            timezoneOffset,
-            utcDate,
-            error: 'convertLocalToUTC returned null or invalid date'
-          });
           return res.status(400).json({ 
             success: false, 
             message: "Invalid date and time format or missing timezone information. Please provide a valid date and time." 
           });
         }
         
-        // Format UTC date for MySQL DATETIME storage
         finalPublishedAt = formatUTCDateForDatabase(utcDate);
         
         if (!finalPublishedAt) {
-          console.error('[createNews] Failed to format UTC date:', { utcDate });
           return res.status(400).json({ 
             success: false, 
             message: "Failed to format date for database storage." 
           });
         }
-        
-        // Log conversion result for debugging
-        console.log('[createNews] SCHEDULING CONVERSION:', {
-          inputLocalTime: normalizedPublishedAt,
-          inputTimezoneOffset: timezoneOffset,
-          convertedUTCDate: utcDate.toISOString(),
-          storedInDatabase: finalPublishedAt,
-          utcYear: utcDate.getUTCFullYear(),
-          utcMonth: utcDate.getUTCMonth() + 1,
-          utcDay: utcDate.getUTCDate(),
-          utcHour: utcDate.getUTCHours(),
-          utcMinute: utcDate.getUTCMinutes(),
-          timestamp: new Date().toISOString()
-        });
         
         // Validate that scheduled date is in the future
         // Compare UTC times to ensure consistency
@@ -835,11 +760,9 @@ export const createNews = async (req, res) => {
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
 
-  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
   const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    console.error('[getNewsByOrg] No token provided');
     return res.status(401).json({ success: false, message: "Access token required" });
   }
 
@@ -851,7 +774,6 @@ export const getNewsByOrg = async (req, res) => {
     });
     req.admin = decoded;
   } catch (err) {
-    console.error('[getNewsByOrg] Token verification failed:', err.message);
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
   }
 
@@ -2088,23 +2010,7 @@ export const updateNews = async (req, res) => {
         // Parse and format the datetime, converting to UTC
         const normalizedPublishedAt = published_at.trim();
         
-        // Get timezone offset from request body (sent by frontend)
-        // IMPORTANT: Log all req.body fields to debug FormData parsing
-        // Check both camelCase and lowercase versions (multer might normalize field names)
         const timezoneOffsetRaw = req.body.timezoneOffset || req.body.timezoneoffset || req.body['timezoneOffset'] || req.body['timezone-offset'] || null;
-        
-        console.log('[updateNews] REQUEST BODY DEBUG:', {
-          hasTimezoneOffset: !!req.body.timezoneOffset,
-          timezoneOffset: req.body.timezoneOffset,
-          timezoneoffset: req.body.timezoneoffset,
-          timezoneOffsetRaw: timezoneOffsetRaw,
-          published_at: req.body.published_at,
-          action: req.body.action,
-          allBodyKeys: Object.keys(req.body),
-          allBodyValues: Object.entries(req.body).map(([k, v]) => ({ key: k, value: typeof v === 'string' ? v.substring(0, 50) : v })),
-          timestamp: new Date().toISOString()
-        });
-        
         const timezoneOffset = timezoneOffsetRaw || null;
         
         // Validate timezone offset if provided
@@ -2115,72 +2021,33 @@ export const updateNews = async (req, res) => {
           });
         }
         
-        // CRITICAL: timezoneOffset is REQUIRED for schedule action
-        // Without it, we cannot convert local time to UTC correctly
         if (!timezoneOffset && normalizedAction === 'schedule') {
-          console.error('[updateNews] ERROR: timezoneOffset is REQUIRED for schedule action!', {
-            published_at: normalizedPublishedAt,
-            action: normalizedAction,
-            allBodyKeys: Object.keys(req.body),
-            timestamp: new Date().toISOString()
-          });
           return res.status(400).json({ 
             success: false, 
             message: "Timezone offset is required for scheduling. Please refresh the page and try again." 
           });
         }
         
-        // Use centralized timezone conversion utility (same as createNews)
         try {
-          // Log input for debugging
-          console.log('[updateNews] SCHEDULING INPUT:', {
-            receivedLocalTime: normalizedPublishedAt,
-            receivedTimezoneOffset: timezoneOffset,
-            timestamp: new Date().toISOString()
-          });
-          
-          // Convert local time to UTC using the utility function
           const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
           
           if (!utcDate || isNaN(utcDate.getTime())) {
-            console.error('[updateNews] Invalid UTC conversion:', {
-              localTime: normalizedPublishedAt,
-              timezoneOffset,
-              utcDate
-            });
             return res.status(400).json({ 
               success: false, 
               message: "Invalid date and time format. Please provide a valid date and time." 
             });
           }
           
-          // Format UTC date for MySQL DATETIME storage
           finalPublishedAt = formatUTCDateForDatabase(utcDate);
           
           if (!finalPublishedAt) {
-            console.error('[updateNews] Failed to format UTC date:', { utcDate });
             return res.status(400).json({ 
               success: false, 
               message: "Failed to format date for database storage." 
             });
           }
           
-          // Extract date portion for date column
           dateValue = finalPublishedAt.split(' ')[0];
-          
-          // Log conversion result for debugging
-          console.log('[updateNews] SCHEDULING CONVERSION:', {
-            inputLocalTime: normalizedPublishedAt,
-            inputTimezoneOffset: timezoneOffset,
-            convertedUTCDate: utcDate.toISOString(),
-            storedInDatabase: finalPublishedAt,
-            utcYear: utcDate.getUTCFullYear(),
-            utcMonth: utcDate.getUTCMonth() + 1,
-            utcDay: utcDate.getUTCDate(),
-            utcHour: utcDate.getUTCHours(),
-            utcMinute: utcDate.getUTCMinutes(),
-            timestamp: new Date().toISOString()
-          });
           
           // Validate that scheduled date is in the future
           const now = new Date();

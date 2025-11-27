@@ -1,5 +1,3 @@
-//db table: subscribers
-
 import crypto from "crypto";
 import db from "../../database.js";
 import { sendMail } from "../../utils/mailer.js";
@@ -126,7 +124,6 @@ export async function unsubscribe(req, res) {
   }
 }
 
-// Core reusable sender
 export async function sendToSubscribers({ subject, html, text }) {
   if (!subject) throw new Error("subject is required");
   if (!html && !text) throw new Error("html or text is required");
@@ -196,7 +193,6 @@ export async function sendToSubscribers({ subject, html, text }) {
   };
 }
 
-// HTTP wrapper
 export async function notifySubscribers(req, res) {
   try {
     const result = await sendToSubscribers({

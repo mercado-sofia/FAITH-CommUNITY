@@ -1,14 +1,12 @@
-// db table: submissions
 import db from "../../database.js"
 import SuperAdminNotificationController from "../../superadmin/controllers/superadminNotificationController.js"
 
-// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
 const safeParseJSON = (value, defaultValue = null) => {
   if (!value) return defaultValue;
-  if (typeof value === 'object') return value; // Already parsed by typeCast
+  if (typeof value === 'object') return value;
   if (typeof value === 'string') {
     try {
-      return JSON.parse(value); // Still a string, parse it
+      return JSON.parse(value);
     } catch (e) {
       return defaultValue;
     }
@@ -16,8 +14,6 @@ const safeParseJSON = (value, defaultValue = null) => {
   return value;
 };
 
-// Helper function to extract minimal metadata from submission data for list views
-// This prevents large payloads when fetching all submissions
 const extractMinimalSubmissionData = (data, section) => {
   if (!data || typeof data !== 'object') {
     return { _hasData: !!data };
@@ -25,56 +21,45 @@ const extractMinimalSubmissionData = (data, section) => {
 
   const minimal = {};
 
-  // For programs section, keep only essential fields
   if (section === 'programs') {
     if (data.title) minimal.title = data.title;
     if (data.category) minimal.category = data.category;
     if (data.event_start_date) minimal.event_start_date = data.event_start_date;
     if (data.event_end_date) minimal.event_end_date = data.event_end_date;
     if (data.multiple_dates) minimal.multiple_dates = data.multiple_dates;
-    // Keep collaborator count only, not full data
     if (Array.isArray(data.collaborators)) {
       minimal.collaborators_count = data.collaborators.length;
     }
-    // Indicate if post-act report exists without including the full data
     if (data.postActReport) {
       minimal.has_post_act_report = true;
     }
-    // Indicate if images exist without including URLs
     if (data.image) minimal.has_image = true;
     if (Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
       minimal.additional_images_count = data.additionalImages.length;
     }
   }
-  // For highlights section, keep only essential fields
   else if (section === 'highlights') {
     if (data.title) minimal.title = data.title;
     if (data.program_id) minimal.program_id = data.program_id;
     if (data.program_title) minimal.program_title = data.program_title;
-    // Keep media count only, not full data
     if (Array.isArray(data.media_files)) {
       minimal.media_files_count = data.media_files.length;
     } else if (Array.isArray(data.media)) {
       minimal.media_files_count = data.media.length;
     }
   }
-  // For Post Act Report section, keep only essential fields
   else if (section === 'Post Act Report') {
     if (data.program_id) minimal.program_id = data.program_id;
     if (data.report_id) minimal.report_id = data.report_id;
-    // Indicate file exists without including URL
     if (data.file_url) minimal.has_file = true;
   }
-  // For other sections, keep a minimal representation
   else {
-    // Just indicate that data exists
     minimal._hasData = true;
   }
 
   return minimal;
 };
 
-// Validation helper for submission data
 const validateSubmissionItem = (item) => {
   const errors = []
 
@@ -95,16 +80,11 @@ const validateSubmissionItem = (item) => {
     errors.push("submitted_by is required")
   }
 
-  // Validate section types
-  // Note: advocacy and competency are no longer submitted through this workflow
-  // They are saved directly via their respective endpoints
-  // Note: organization and org_heads are not part of the admin-to-superadmin submission flow
   const validSections = ["programs", "highlights", "Post Act Report"]
   if (item.section && !validSections.includes(item.section)) {
     errors.push(`Invalid section. Must be one of: ${validSections.join(", ")}`)
   }
   
-  // Reject advocacy, competency, organization, and org_heads submissions
   if (item.section === 'advocacy' || item.section === 'competency' || item.section === 'organization' || item.section === 'org_heads') {
     errors.push(`${item.section} should not be submitted through this workflow. Please use the appropriate endpoints.`)
   }
@@ -115,7 +95,6 @@ const validateSubmissionItem = (item) => {
 export const submitChanges = async (req, res) => {
   const { submissions } = req.body
 
-  // Input validation
   if (!submissions || !Array.isArray(submissions) || submissions.length === 0) {
     return res.status(400).json({
       success: false,
@@ -123,7 +102,6 @@ export const submitChanges = async (req, res) => {
     })
   }
 
-  // Validate each submission item
   const validationErrors = []
   submissions.forEach((item, index) => {
     const itemErrors = validateSubmissionItem(item)
@@ -141,13 +119,10 @@ export const submitChanges = async (req, res) => {
   }
 
   try {
-    // Start transaction
     await db.query("START TRANSACTION")
 
-    // Get unique organization identifiers from submissions
     const orgIdentifiers = [...new Set(submissions.map((item) => item.organization_id))]
     
-    // Query organizations table to get numeric IDs for both numeric IDs and acronyms
     const placeholders = orgIdentifiers.map(() => "?").join(",")
     
     const [orgCheck] = await db.execute(
@@ -155,14 +130,12 @@ export const submitChanges = async (req, res) => {
       [...orgIdentifiers, ...orgIdentifiers]
     )
     
-    // Create mapping from identifier to numeric ID
     const orgIdMap = new Map()
     orgCheck.forEach(org => {
       orgIdMap.set(org.id.toString(), org.id)
       orgIdMap.set(org.org, org.id)
     })
     
-    // Check if all identifiers were found
     const missingOrgs = orgIdentifiers.filter(id => !orgIdMap.has(id.toString()))
     
     if (missingOrgs.length > 0) {
@@ -174,10 +147,9 @@ export const submitChanges = async (req, res) => {
       })
     }
 
-    // Filter out advocacy and competency submissions - they should be saved directly
     const validSubmissions = submissions.filter(item => {
       if (item.section === 'advocacy' || item.section === 'competency') {
-        return false; // Skip these - they should be saved directly
+        return false;
       }
       return true;
     });
@@ -190,11 +162,9 @@ export const submitChanges = async (req, res) => {
       })
     }
     
-    // Insert submissions with converted numeric organization IDs and collect their IDs
     const insertPromises = validSubmissions.map(async (item) => {
       const numericOrgId = orgIdMap.get(item.organization_id.toString())
       
-      // Validate and stringify JSON data
       let proposedDataStr;
       
       try {
@@ -234,7 +204,6 @@ export const submitChanges = async (req, res) => {
     const [superadminRows] = await db.execute("SELECT id FROM users WHERE role = 'superadmin' LIMIT 1")
     const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null
 
-    // Create superadmin notifications for each submission
     if (superadminId) {
       for (const insertedSubmission of insertedSubmissions) {
         const { submissionId, item, numericOrgId } = insertedSubmission

@@ -808,10 +808,6 @@ export const updateProgram = async (req, res) => {
           editedByName = adminHeadRows[0].head_name || null;
         }
       } catch (headError) {
-        // If query fails, just continue with null - not critical
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to fetch admin head info:', headError);
-        }
       }
     }
     
@@ -828,10 +824,6 @@ export const updateProgram = async (req, res) => {
           editedByRole = adminHeadRows[0].role || null;
         }
       } catch (headError) {
-        // If query fails, just continue with null - not critical
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to fetch admin head info:', headError);
-        }
       }
     }
     
@@ -851,10 +843,6 @@ export const updateProgram = async (req, res) => {
       hasEditedByName = editColumns.some(col => col.COLUMN_NAME === 'edited_by_name');
       hasEditedByRole = editColumns.some(col => col.COLUMN_NAME === 'edited_by_role');
     } catch (columnCheckError) {
-      // If column check fails, assume columns don't exist and continue without them
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to check edited_by columns:', columnCheckError);
-      }
       hasEditedByName = false;
       hasEditedByRole = false;
     }
@@ -1023,10 +1011,6 @@ export const updateProgram = async (req, res) => {
                   id
                 );
               } catch (notificationError) {
-                // Don't fail the main operation if notification fails
-                if (process.env.NODE_ENV === 'development') {
-                  console.error('Failed to send collaborator notification:', notificationError);
-                }
               }
             }
           }
@@ -1201,9 +1185,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
             );
             multipleDates = dateRows.map(row => row.event_date);
           } catch (dateError) {
-            if (process.env.NODE_ENV === 'development') {
-              console.error(`Error fetching dates for featured program ${program.id}:`, dateError);
-            }
             multipleDates = [];
           }
         }
@@ -1217,9 +1198,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
           );
           additionalImages = imageRows.map(row => row.image_data);
         } catch (imageError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error(`Error fetching images for featured program ${program.id}:`, imageError);
-          }
           additionalImages = [];
         }
 
@@ -1309,18 +1287,12 @@ export const getAllFeaturedPrograms = async (req, res) => {
                   };
                 }
               } catch (collabError) {
-                if (process.env.NODE_ENV === 'development') {
-                  console.error(`Error processing collaborator for featured program ${program.id}:`, collabError);
-                }
                 return null;
               }
             }));
             
             collaborators = collaboratorsWithAdmins.filter(c => c !== null);
           } catch (collabError) {
-            if (process.env.NODE_ENV === 'development') {
-              console.error(`Error fetching collaborators for featured program ${program.id}:`, collabError);
-            }
             collaborators = [];
           }
         }
@@ -1332,9 +1304,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
           collaborators: collaborators
         };
       } catch (programError) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`Error processing featured program ${program.id}:`, programError);
-        }
         // Return a minimal program object to prevent breaking the entire request
         return {
           ...program,
@@ -1385,10 +1354,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in getAllFeaturedPrograms:', error);
-      console.error('Error stack:', error.stack);
-    }
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
@@ -1916,10 +1881,6 @@ export const addProgramProject = async (req, res) => {
         );
       }
     } catch (notificationError) {
-      // Don't fail the main operation if notification fails
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to send superadmin notification:', notificationError);
-      }
     }
 
     // Note: Email subscribers notification removed - should only be sent after superadmin approval
@@ -2117,9 +2078,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
               );
               multipleDates = dateRows.map((row) => row.event_date);
             } catch (dateError) {
-              if (process.env.NODE_ENV === 'development') {
-                console.error(`Error fetching dates for program ${program.id}:`, dateError);
-              }
               multipleDates = [];
             }
           }
@@ -2133,9 +2091,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
             );
             additionalImages = imageRows.map(row => row.image_data);
           } catch (imageError) {
-            if (process.env.NODE_ENV === 'development') {
-              console.error(`Error fetching images for program ${program.id}:`, imageError);
-            }
             additionalImages = [];
           }
 
@@ -2228,18 +2183,12 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
                     };
                   }
                 } catch (collabError) {
-                  if (process.env.NODE_ENV === 'development') {
-                    console.error(`Error processing collaborator for program ${program.id}:`, collabError);
-                  }
                   return null;
                 }
               }));
               
               collaborators = collaboratorsWithAdmins.filter(c => c !== null);
             } catch (collabError) {
-              if (process.env.NODE_ENV === 'development') {
-                console.error(`Error fetching collaborators for program ${program.id}:`, collabError);
-              }
               collaborators = [];
             }
           }
@@ -2275,9 +2224,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
             accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
           };
         } catch (programError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error(`Error processing program ${program.id}:`, programError);
-          }
           // Return a minimal program object to prevent breaking the entire request
           return {
             ...program,
@@ -2300,10 +2246,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
       data: programsWithDates,
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in getAllProgramsForSuperadmin:', error);
-      console.error('Error stack:', error.stack);
-    }
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs by organization',

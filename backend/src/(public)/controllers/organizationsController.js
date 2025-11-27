@@ -4,8 +4,6 @@ import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 export const getAllOrganizations = async (req, res) => {
   try {
-    // Fetch only ACTIVE organizations with required fields
-    // This ensures inactive organizations don't appear on the public website
     const [rows] = await db.execute(`
       SELECT 
         o.id, 
@@ -22,7 +20,6 @@ export const getAllOrganizations = async (req, res) => {
       ORDER BY o.org ASC
     `);
 
-    // Format the data for the frontend
     const formattedData = rows.map(row => {
       let logoUrl;
       if (row.logo) {
@@ -45,9 +42,6 @@ export const getAllOrganizations = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[getAllOrganizations] Error:', error);
-    }
     res.status(500).json({
       success: false,
       message: 'Failed to fetch organizations',
@@ -56,10 +50,8 @@ export const getAllOrganizations = async (req, res) => {
   }
 };
 
-// Get approved organization advisers
 export const getApprovedOrganizationAdvisers = async (req, res) => {
   try {
-    // Fetch all approved organization advisers with role containing "organization adviser"
     const [rows] = await db.execute(`
       SELECT 
         oh.id,
@@ -81,19 +73,15 @@ export const getApprovedOrganizationAdvisers = async (req, res) => {
       ORDER BY oh.priority ASC, oh.display_order ASC, oh.id ASC
     `);
 
-    // Format the data for the frontend
     const formattedData = rows.map(row => {
       let photoUrl;
       if (row.photo) {
-        // If photo is a Cloudinary URL, use it directly
         if (row.photo.startsWith('http')) {
           photoUrl = row.photo;
         } else {
-          // If it's a filename, construct the proper URL
           photoUrl = getOrganizationLogoUrl(row.photo);
         }
       } else {
-        // Fallback to default photo
         photoUrl = '/defaults/default-profile.png';
       }
       
@@ -124,17 +112,13 @@ export const getApprovedOrganizationAdvisers = async (req, res) => {
   }
 };
 
-// Get hero section data for public interface
 export const getHeroSection = async (req, res) => {
   try {
-    // Get main hero section data
     const [heroRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
     
-    // Get hero section images
     const [imageRows] = await db.query('SELECT * FROM hero_section_images ORDER BY display_order ASC');
     
     if (heroRows.length === 0) {
-      // Return default data if no hero section exists
       return res.json({
         success: true,
         data: {
@@ -154,7 +138,6 @@ export const getHeroSection = async (req, res) => {
 
     const heroData = heroRows[0];
     
-    // Format images data to match frontend expectations
     const images = imageRows.map(row => ({
       id: row.image_id,
       url: row.image_url,

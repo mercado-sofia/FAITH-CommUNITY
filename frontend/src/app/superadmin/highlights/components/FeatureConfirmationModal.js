@@ -207,4 +207,3 @@ const FeatureConfirmationModal = ({
 }
 
 export default FeatureConfirmationModal
-

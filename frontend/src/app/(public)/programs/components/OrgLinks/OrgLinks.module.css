@@ -25,7 +25,7 @@
 .orgItem {
   background: none;
   border: none;
-  text-decoration: none;
+  text-decoration: underline;
   color: #22c55e;
   font-weight: 600;
   cursor: pointer;
@@ -36,7 +36,6 @@
  
 .orgItem:hover {
   color: #15803d;
-  text-decoration: underline;
 }
 
 .loadingText {

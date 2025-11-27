@@ -1,20 +1,17 @@
-// Program collaboration management controller
 import db from '../../database.js';
 import NotificationController from './notificationController.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 
-// Get all available admins (for new program creation)
 export const getAllAvailableAdmins = async (req, res) => {
   try {
     const currentAdminId = req.admin?.id || req.superadmin?.id;
-    // Get all active admins except the current admin
     const [availableAdmins] = await db.execute(`
       SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
       FROM users u
       LEFT JOIN organizations o ON u.organization_id = o.id
       WHERE u.role = 'admin' AND u.is_active = TRUE 
       AND u.id != ?
-      ORDER BY o.orgName ASC, a.email ASC
+      ORDER BY o.orgName ASC, u.email ASC
     `, [currentAdminId]);
 
     res.json({
@@ -30,16 +27,13 @@ export const getAllAvailableAdmins = async (req, res) => {
   }
 };
 
-// Get available admins to invite (existing admins only)
 export const getAvailableAdmins = async (req, res) => {
   try {
     const { programId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
-    // Build query based on whether programId is provided
     let query, params;
     
     if (programId && programId !== 'null') {
-      // For existing programs, exclude already invited/accepted collaborators
       query = `
         SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
         FROM users u
@@ -55,7 +49,6 @@ export const getAvailableAdmins = async (req, res) => {
       `;
       params = [currentAdminId, programId];
     } else {
-      // For new programs, just exclude current admin
       query = `
         SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
         FROM users u
@@ -82,16 +75,12 @@ export const getAvailableAdmins = async (req, res) => {
   }
 };
 
-// Invite collaborator to program
 export const inviteCollaborator = async (req, res) => {
   try {
     const { programId } = req.params;
     const { collaboratorAdminId } = req.body;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
 
-    // Verify the program exists, is approved, and current admin is the creator
-    // CRITICAL: Only allow inviting collaborators to APPROVED programs
-    // Collaborators should NOT be invited until superadmin approves the program
     const [programRows] = await db.execute(`
       SELECT p.id, p.title, p.organization_id, p.is_approved, u.organization_id as admin_org_id
       FROM programs_projects p
@@ -108,10 +97,8 @@ export const inviteCollaborator = async (req, res) => {
 
     const program = programRows[0];
     
-    // Check if program is already posted (approved)
     const isProgramPosted = program.is_approved === 1;
 
-    // Prevent self-collaboration
     if (collaboratorAdminId === currentAdminId) {
       return res.status(400).json({
         success: false,
@@ -119,7 +106,6 @@ export const inviteCollaborator = async (req, res) => {
       });
     }
 
-    // Check if collaboration already exists
     const [existingCollaboration] = await db.execute(`
       SELECT id, status FROM program_collaborations 
       WHERE program_id = ? AND collaborator_admin_id = ?
@@ -138,7 +124,6 @@ export const inviteCollaborator = async (req, res) => {
           message: 'Admin has previously opted out of this collaboration'
         });
       }
-      // If status is 'pending', the invitation already exists - just return it
       if (collaboration.status === 'pending') {
         return res.status(200).json({
           success: true,
@@ -149,12 +134,8 @@ export const inviteCollaborator = async (req, res) => {
       }
     }
 
-    // Always set status to 'pending' - collaborator must accept first
-    // The only difference for posted programs is that notification is sent immediately
-    // (no superadmin approval wait), but status is still 'pending'
     const collaborationStatus = 'pending';
 
-    // Create collaboration invitation
     const [result] = await db.execute(`
       INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
       VALUES (?, ?, ?, ?)
@@ -163,13 +144,9 @@ export const inviteCollaborator = async (req, res) => {
     // Update program to mark as collaborative
     await db.execute(`
       UPDATE programs_projects SET is_collaborative = TRUE WHERE id = ?
-    `, [programId]);
+      `, [programId]);
 
-    // Notify collaborator about the collaboration request
-    // For posted programs, notification is sent immediately (no superadmin approval wait)
-    // For non-posted programs, notification will be sent after superadmin approval
     if (isProgramPosted) {
-      // Program is already posted, send notification immediately
       try {
         const NotificationController = (await import('./notificationController.js')).default;
         await NotificationController.createNotification(
@@ -181,10 +158,8 @@ export const inviteCollaborator = async (req, res) => {
           programId
         );
       } catch (notificationError) {
-        // Don't fail the main operation if notification fails
       }
     }
-    // For non-posted programs, notification will be sent during superadmin approval process
 
     res.status(201).json({
       success: true,
@@ -203,15 +178,11 @@ export const inviteCollaborator = async (req, res) => {
   }
 };
 
-// Get program collaborators
 export const getProgramCollaborators = async (req, res) => {
   try {
     const { programId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
 
-    // Verify the program exists and current admin has access
-    // CRITICAL: Only show approved programs to collaborators
-    // Collaborators must NOT see programs until superadmin approves
     const [programRows] = await db.execute(`
       SELECT p.id, p.title, p.organization_id, p.is_approved
       FROM programs_projects p
@@ -231,20 +202,19 @@ export const getProgramCollaborators = async (req, res) => {
       });
     }
 
-    // Get all collaborators with all statuses (pending, accepted, declined)
     const [collaborators] = await db.execute(`
       SELECT 
         pc.id,
         pc.status,
         pc.invited_at,
         pc.responded_at,
-        a.id as admin_id,
-        a.email,
+        u.id as admin_id,
+        u.email,
         o.orgName as organization_name,
         o.org as organization_acronym
       FROM program_collaborations pc
       LEFT JOIN users u ON pc.collaborator_admin_id = u.id AND u.role = 'admin'
-      LEFT JOIN organizations o ON a.organization_id = o.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       WHERE pc.program_id = ?
       ORDER BY pc.invited_at DESC
     `, [programId]);
@@ -262,13 +232,11 @@ export const getProgramCollaborators = async (req, res) => {
   }
 };
 
-// Remove collaborator from program
 export const removeCollaborator = async (req, res) => {
   try {
     const { programId, adminId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
 
-    // Verify the program exists and current admin is the creator
     const [programRows] = await db.execute(`
       SELECT id, title, organization_id 
       FROM programs_projects 
@@ -284,7 +252,6 @@ export const removeCollaborator = async (req, res) => {
       });
     }
 
-    // Check if collaboration exists before attempting to delete
     const [existingCollaboration] = await db.execute(`
       SELECT id, status, collaborator_admin_id, program_id
       FROM program_collaborations 
@@ -298,7 +265,6 @@ export const removeCollaborator = async (req, res) => {
       });
     }
 
-    // Remove collaboration
     const [result] = await db.execute(`
       DELETE FROM program_collaborations 
       WHERE program_id = ? AND collaborator_admin_id = ?
@@ -311,13 +277,11 @@ export const removeCollaborator = async (req, res) => {
       });
     }
 
-    // Check if there are any remaining collaborators
     const [remainingCollaborations] = await db.execute(`
       SELECT COUNT(*) as count FROM program_collaborations 
       WHERE program_id = ? AND status = 'accepted'
-    `, [programId]);
+      `, [programId]);
 
-    // If no collaborators left, mark program as non-collaborative
     if (remainingCollaborations[0].count === 0) {
       await db.execute(`
         UPDATE programs_projects SET is_collaborative = FALSE WHERE id = ?
@@ -337,15 +301,11 @@ export const removeCollaborator = async (req, res) => {
   }
 };
 
-// Note: acceptCollaboration function removed - not needed in auto-accept model
-
-// Opt out of collaboration (for auto-accepted collaborations)
 export const optOutCollaboration = async (req, res) => {
   try {
     const { collaborationId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
 
-    // Get collaboration details first with more comprehensive data
     const [collaborationRows] = await db.execute(`
       SELECT 
         pc.id, 
@@ -353,12 +313,12 @@ export const optOutCollaboration = async (req, res) => {
         pc.submission_id,
         pp.title as program_title,
         pp.organization_id as program_org_id,
-        a.email as admin_email,
+        u.email as admin_email,
         o.orgName as admin_org_name
       FROM program_collaborations pc
       LEFT JOIN programs_projects pp ON pc.program_id = pp.id
       LEFT JOIN users u ON pc.collaborator_admin_id = u.id AND u.role = 'admin'
-      LEFT JOIN organizations o ON a.organization_id = o.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status IN ('accepted', 'pending')
     `, [collaborationId, currentAdminId]);
 
@@ -371,7 +331,6 @@ export const optOutCollaboration = async (req, res) => {
 
     const collaboration = collaborationRows[0];
 
-    // Update collaboration status to declined
     const [result] = await db.execute(`
       UPDATE program_collaborations 
       SET status = 'declined', responded_at = NOW()
@@ -385,20 +344,17 @@ export const optOutCollaboration = async (req, res) => {
       });
     }
 
-    // Check if there are any remaining active collaborators
     const [remainingCollaborations] = await db.execute(`
       SELECT COUNT(*) as count FROM program_collaborations 
       WHERE program_id = ? AND status = 'accepted'
-    `, [collaboration.program_id]);
+      `, [collaboration.program_id]);
 
-    // If no collaborators left, mark program as non-collaborative
     if (remainingCollaborations[0].count === 0) {
       await db.execute(`
         UPDATE programs_projects SET is_collaborative = FALSE WHERE id = ?
       `, [collaboration.program_id]);
     }
 
-    // Log the opt-out action for audit purposes
     try {
       const { logAuditEvent } = await import('../../utils/audit.js');
       await logAuditEvent({
@@ -416,7 +372,6 @@ export const optOutCollaboration = async (req, res) => {
         userAgent: req.get('User-Agent')
       });
     } catch (auditError) {
-      // Don't fail the opt-out if audit logging fails
     }
 
     res.json({
@@ -432,22 +387,15 @@ export const optOutCollaboration = async (req, res) => {
   }
 };
 
-// Note: declineCollaboration function removed - not needed in auto-accept model
-
-// Get collaboration requests for the current admin (both sent and received)
 export const getCollaborationRequests = async (req, res) => {
   try {
     const currentAdminId = req.admin?.id || req.superadmin?.id;
     
-    // Fetching collaboration requests
-    
-    // Get admin's organization
     const [adminRows] = await db.execute(`
       SELECT organization_id, email FROM users WHERE id = ? AND role = 'admin'
     `, [currentAdminId]);
     
     if (adminRows.length === 0) {
-      // Admin not found
       return res.status(404).json({
         success: false,
         message: 'Admin not found'
@@ -455,11 +403,7 @@ export const getCollaborationRequests = async (req, res) => {
     }
     
     const adminOrgId = adminRows[0].organization_id;
-    // Admin found
     
-    // Get all collaboration requests where the current admin is either creator or collaborator
-    // This includes both pending submissions and existing programs
-    // Also includes programs where the creator is waiting for responses from other admins
     const [allCollaborations] = await db.execute(`
       SELECT DISTINCT
         p.id as program_id,
@@ -526,11 +470,7 @@ export const getCollaborationRequests = async (req, res) => {
       ORDER BY p.created_at DESC
     `, [currentAdminId, currentAdminId, currentAdminId, currentAdminId, adminOrgId]);
     
-    // Found collaborative programs
-    
-    // Process each program to get collaboration details
     const processedCollaborations = await Promise.all(allCollaborations.map(async (program) => {
-      // Get all collaboration records for this program/submission
       const [allCollaborators] = await db.execute(`
         SELECT 
           pc.id as collaboration_id,
@@ -561,31 +501,22 @@ export const getCollaborationRequests = async (req, res) => {
         ORDER BY pc.invited_at DESC
       `, [currentAdminId, currentAdminId, program.program_id, program.submission_id]);
       
-      // Find the most relevant collaboration for this admin
       const relevantCollab = allCollaborators.find(c => 
         c.collaborator_admin_id == currentAdminId || c.invited_by_admin_id == currentAdminId
       ) || allCollaborators[0];
       
-      // Use the collaboration data from the main query if available
       const mainCollab = {
         collaboration_id: program.collaboration_id,
         status: program.collaboration_status,
         request_type: relevantCollab?.request_type || (isCreator ? 'sent' : 'received')
       };
       
-      // Processing program collaborators
-      
-      // Determine if this admin is the creator or collaborator
       const isCreator = program.program_org_id == adminOrgId;
       
-      // Check if there are any pending collaboration requests for this program
       const hasPendingCollaborations = allCollaborators.some(c => c.status === 'pending');
       
-      // Check if all collaborators have declined (making it a solo program)
       const allCollaboratorsDeclined = allCollaborators.length > 0 && allCollaborators.every(c => c.status === 'declined');
       
-      // Determine if this program should be shown in collaborations tab
-      // Show if: current admin is involved (but not if they opted out) OR there are pending collaborations OR not all have declined
       const currentAdminOptedOut = relevantCollab && relevantCollab.status === 'declined';
       const shouldShowInCollaborations = (
         (relevantCollab && !currentAdminOptedOut) || // Current admin is involved but hasn't opted out
@@ -631,12 +562,9 @@ export const getCollaborationRequests = async (req, res) => {
       };
     }));
     
-    // Filter to only show programs that should be displayed in collaborations tab
     const filteredCollaborations = processedCollaborations.filter(program => 
       program.should_show_in_collaborations
     );
-    
-    // Processed collaborations
     
     res.json({
       success: true,
@@ -651,7 +579,6 @@ export const getCollaborationRequests = async (req, res) => {
   }
 };
 
-// Accept collaboration request
 export const acceptCollaborationRequest = async (req, res) => {
   try {
     const { collaborationId } = req.params;
@@ -664,8 +591,6 @@ export const acceptCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Get collaboration details - CRITICAL: Only allow accepting collaborations for APPROVED programs
-    // Collaborators must NOT be able to accept/decline until superadmin approves the program
     const [collaborationRows] = await db.execute(`
       SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id,
              p.is_approved as program_is_approved
@@ -685,8 +610,6 @@ export const acceptCollaborationRequest = async (req, res) => {
     
     const collaboration = collaborationRows[0];
     
-    // CRITICAL: Only allow accepting collaborations for approved programs
-    // The program must be approved by superadmin before collaborators can accept
     if (!collaboration.program_id || !collaboration.program_is_approved) {
       return res.status(403).json({
         success: false,
@@ -694,7 +617,6 @@ export const acceptCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Update collaboration status to accepted
     await db.execute(`
       UPDATE program_collaborations 
       SET status = 'accepted', responded_at = NOW()
@@ -733,7 +655,6 @@ export const acceptCollaborationRequest = async (req, res) => {
       }
     }
     
-    // Notify the creator organization about the acceptance
     try {
       const NotificationController = (await import('./notificationController.js')).default;
       await NotificationController.createNotification(
@@ -745,7 +666,6 @@ export const acceptCollaborationRequest = async (req, res) => {
         collaboration.program_id
       );
     } catch (notificationError) {
-      // Don't fail the operation if notification fails
     }
     
     res.json({
@@ -761,13 +681,10 @@ export const acceptCollaborationRequest = async (req, res) => {
   }
 };
 
-// Decline collaboration request
 export const declineCollaborationRequest = async (req, res) => {
   try {
     const { collaborationId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
-    
-    // Declining collaboration
     
     if (!collaborationId) {
       return res.status(400).json({
@@ -776,8 +693,6 @@ export const declineCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Get collaboration details - CRITICAL: Only allow declining collaborations for APPROVED programs
-    // Collaborators must NOT be able to accept/decline until superadmin approves the program
     const [collaborationRows] = await db.execute(`
       SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id,
              p.is_approved as program_is_approved
@@ -797,8 +712,6 @@ export const declineCollaborationRequest = async (req, res) => {
     
     const collaboration = collaborationRows[0];
     
-    // CRITICAL: Only allow declining collaborations for approved programs
-    // The program must be approved by superadmin before collaborators can decline
     if (!collaboration.program_id || !collaboration.program_is_approved) {
       return res.status(403).json({
         success: false,
@@ -806,7 +719,6 @@ export const declineCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Update collaboration status to declined
     await db.execute(`
       UPDATE program_collaborations 
       SET status = 'declined', responded_at = NOW()
@@ -845,7 +757,6 @@ export const declineCollaborationRequest = async (req, res) => {
       }
     }
     
-    // Notify the creator organization about the decline
     try {
       const NotificationController = (await import('./notificationController.js')).default;
       await NotificationController.createNotification(
@@ -857,7 +768,6 @@ export const declineCollaborationRequest = async (req, res) => {
         collaboration.program_id
       );
     } catch (notificationError) {
-      // Don't fail the operation if notification fails
     }
     
     res.json({

@@ -170,13 +170,13 @@
 /* Responsive design */
 @media (max-width: 640px) {
   .modalOverlay {
-    padding: 0.5rem;
+    padding: 1.5rem;
     align-items: center;
     justify-content: center;
   }
 
   .modalContent {
-    padding: 1.25rem;
+    padding: 2.25rem;
     margin: 0;
     width: 100%;
     max-width: 100%;
@@ -243,12 +243,13 @@
 
 @media (max-width: 480px) {
   .modalOverlay {
+    padding: 1.5rem;
     align-items: center;
     justify-content: center;
   }
 
   .modalContent {
-    padding: 1rem;
+    padding: 2rem;
     border-radius: 16px;
   }
 

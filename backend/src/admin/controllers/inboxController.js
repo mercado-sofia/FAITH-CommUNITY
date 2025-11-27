@@ -1,9 +1,6 @@
-//db table: messages
-
 import db from "../../database.js";
 import { logError } from "../../utils/logger.js";
 
-// Get messages for a specific organization (admin inbox)
 export const getMessagesByOrg = async (req, res) => {
   const { organization_id } = req.params;
   const { page = 1, limit = 10, unread_only = false } = req.query;
@@ -16,7 +13,6 @@ export const getMessagesByOrg = async (req, res) => {
   }
 
   try {
-    // First, try to find the organization by ID or org
     let [orgResult] = await db.execute(
       "SELECT id FROM organizations WHERE id = ?",
       [organization_id]
@@ -39,7 +35,6 @@ export const getMessagesByOrg = async (req, res) => {
 
     const actualOrgId = orgResult[0].id;
     
-    // Validate and convert limit and offset to numbers
     const limitNum = parseInt(limit, 10);
     const pageNum = parseInt(page, 10);
     
@@ -59,7 +54,6 @@ export const getMessagesByOrg = async (req, res) => {
     
     const offsetNum = (pageNum - 1) * limitNum;
     
-    // Build query based on filters
     let query = `
       SELECT 
         m.*,
@@ -83,13 +77,10 @@ export const getMessagesByOrg = async (req, res) => {
       query += " AND m.is_read = FALSE";
     }
     
-    // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
-    // This is safe because we've already validated limitNum and offsetNum are valid numbers
     query += ` ORDER BY m.created_at DESC LIMIT ${limitNum} OFFSET ${offsetNum}`;
 
     const [messages] = await db.execute(query, queryParams);
 
-    // Get total count for pagination
     let countQuery = "SELECT COUNT(*) as total FROM messages WHERE organization_id = ?";
     const countParams = [actualOrgId];
     

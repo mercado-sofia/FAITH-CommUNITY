@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock, FaArchive } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock } from 'react-icons/fa'
+import { FiArchive } from 'react-icons/fi'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils'
 import { useGetProgramByIdQuery, useArchiveProgramMutation } from '@/rtk/superadmin/programsApi'
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
-import ArchiveConfirmationModal from './ArchiveConfirmationModal'
+import { ConfirmationModal } from '@/components'
 import styles from './styles/ProgramDetailsModal.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose, onActionComplete }) => {
@@ -500,13 +501,19 @@ const ProgramDetailsModal = ({ program, isOpen, onClose, onActionComplete }) => 
         </div>
 
         {/* Archive Confirmation Modal */}
-        <ArchiveConfirmationModal
+        <ConfirmationModal
           isOpen={archiveModalOpen}
-          onClose={() => setArchiveModalOpen(false)}
+          onCancel={() => setArchiveModalOpen(false)}
           onConfirm={handleArchive}
-          programTitle={programData?.title}
-          organizationName={programData?.organization_name}
+          itemName={programData?.title}
+          itemType="program"
+          actionType="archive"
           isLoading={isArchiving}
+          customMessage={
+            programData?.organization_name
+              ? `Are you sure you want to archive this program? Organization: ${programData.organization_name}. This will remove it from the website display.`
+              : undefined
+          }
         />
 
         <div className={styles.modalFooter}>
@@ -524,7 +531,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose, onActionComplete }) => 
                  className={styles.archiveButton}
                  disabled={isArchiving}
                >
-                 <FaArchive style={{ marginRight: '0.5rem' }} />
+                 <FiArchive style={{ marginRight: '0.5rem' }} />
                  Archive
                </button>
              )}

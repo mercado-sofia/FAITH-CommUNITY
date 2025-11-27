@@ -1,16 +1,12 @@
-//db table: admin_notifications
-
 import db from '../../database.js';
 import { logError } from '../../utils/logger.js';
 
 class NotificationController {
-  // Get all notifications for an admin
   static async getNotifications(req, res) {
     try {
       const { adminId } = req.params;
       const { limit = 10, offset = 0, tab = 'all' } = req.query;
 
-      // Validate adminId
       if (!adminId || isNaN(parseInt(adminId))) {
         return res.status(400).json({
           success: false,
@@ -18,7 +14,6 @@ class NotificationController {
         });
       }
 
-      // Validate and convert limit and offset to numbers
       const limitNum = parseInt(limit, 10);
       const offsetNum = parseInt(offset, 10);
       
@@ -36,7 +31,6 @@ class NotificationController {
         });
       }
 
-      // Build WHERE clause based on tab
       let whereClause = 'admin_id = ?';
       let queryParams = [adminId];
 
@@ -54,19 +48,13 @@ class NotificationController {
             whereClause += ' AND type = ?';
             queryParams.push('message');
             break;
-          // For 'all' tab, no additional filtering needed
         }
       }
 
-      // Get total count first
       const countQuery = `SELECT COUNT(*) as total FROM admin_notifications WHERE ${whereClause}`;
       const [countResult] = await db.execute(countQuery, queryParams);
       const total = countResult[0].total;
 
-      // Get notifications with pagination
-      // For message notifications, join with messages and users to get the correct sender name dynamically
-      // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
-      // This is safe because we've already validated limitNum and offsetNum are valid numbers
       const query = `
         SELECT 
           an.id, 
@@ -77,8 +65,6 @@ class NotificationController {
           an.submission_id, 
           an.is_read, 
           an.created_at,
-          -- For message notifications, get sender name from user_profiles table
-          -- Try to find user by user_id first, then by email if user_id is null or name is empty
           CASE 
             WHEN an.type = 'message' THEN
               COALESCE(

@@ -385,8 +385,10 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
     }
   }
 
-  // Only show archive/delete buttons if highlight is approved (not already archived)
+  // Only show archive button if highlight is approved (not already archived)
   const showActions = highlight?.status === 'approved'
+  // Show delete button for both approved and archived highlights
+  const showDelete = highlight?.status === 'approved' || highlight?.status === 'archived'
 
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
@@ -568,24 +570,24 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
           )}
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             {showActions && (
-              <>
-                <button
-                  onClick={() => setArchiveModalOpen(true)}
-                  className={styles.archiveButton}
-                  disabled={isArchiving || isDeleting}
-                >
-                  <FaArchive style={{ marginRight: '0.5rem' }} />
-                  Archive
-                </button>
-                <button
-                  onClick={() => setDeleteModalOpen(true)}
-                  className={styles.deleteButton}
-                  disabled={isArchiving || isDeleting}
-                >
-                  <FaTrash style={{ marginRight: '0.5rem' }} />
-                  Delete
-                </button>
-              </>
+              <button
+                onClick={() => setArchiveModalOpen(true)}
+                className={styles.archiveButton}
+                disabled={isArchiving || isDeleting}
+              >
+                <FaArchive style={{ marginRight: '0.5rem' }} />
+                Archive
+              </button>
+            )}
+            {showDelete && (
+              <button
+                onClick={() => setDeleteModalOpen(true)}
+                className={styles.deleteButton}
+                disabled={isArchiving || isDeleting}
+              >
+                <FaTrash style={{ marginRight: '0.5rem' }} />
+                Delete
+              </button>
             )}
             <button onClick={onClose} className={styles.closeModalButton}>
               Close

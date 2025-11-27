@@ -4,7 +4,7 @@ import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
-const StarButton = ({ programId, programTitle }) => {
+const StarButton = ({ programId, programTitle, programStatus }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showUnfeatureModal, setShowUnfeatureModal] = useState(false)
@@ -16,7 +16,7 @@ const StarButton = ({ programId, programTitle }) => {
     isLoading: statusLoading,
     refetch: refetchStatus 
   } = useCheckFeaturedStatusQuery(programId, {
-    skip: !programId
+    skip: !programId || programStatus === 'archived'
   })
 
   // Mutations for starring/unstarring
@@ -24,11 +24,40 @@ const StarButton = ({ programId, programTitle }) => {
   const [removeFeaturedProject] = useRemoveFeaturedProjectMutation()
 
   // Update local state when featured status is fetched
+  // Also check program status - if archived, always set to false
   useEffect(() => {
+    if (programStatus === 'archived') {
+      setIsStarred(false)
+      return
+    }
     if (featuredStatus !== undefined) {
       setIsStarred(featuredStatus)
     }
-  }, [featuredStatus])
+  }, [featuredStatus, programStatus])
+
+  // Listen for program status changes (archive/unarchive) and refetch featured status
+  useEffect(() => {
+    const handleProgramStatusChanged = () => {
+      // Refetch featured status when program status changes
+      refetchStatus()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('programStatusChanged', handleProgramStatusChanged)
+      
+      return () => {
+        window.removeEventListener('programStatusChanged', handleProgramStatusChanged)
+      }
+    }
+  }, [refetchStatus])
+
+  // Refetch featured status when program status changes from archived to non-archived
+  useEffect(() => {
+    if (programStatus && programStatus !== 'archived' && programId) {
+      // If program was just restored (status changed from archived), refetch featured status
+      refetchStatus()
+    }
+  }, [programStatus, programId, refetchStatus])
 
   const handleStarClick = async (e) => {
     e.preventDefault()

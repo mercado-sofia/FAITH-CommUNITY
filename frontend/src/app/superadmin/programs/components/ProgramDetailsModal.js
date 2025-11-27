@@ -2,17 +2,22 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock, FaArchive } from 'react-icons/fa'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils'
-import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
+import { useGetProgramByIdQuery, useArchiveProgramMutation } from '@/rtk/superadmin/programsApi'
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
+import ArchiveConfirmationModal from './ArchiveConfirmationModal'
 import styles from './styles/ProgramDetailsModal.module.css'
 
-const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
+const ProgramDetailsModal = ({ program, isOpen, onClose, onActionComplete }) => {
   const [activeTab, setActiveTab] = useState('details')
   const scrollPositionRef = useRef(0)
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
+
+  const [archiveProgram] = useArchiveProgramMutation()
 
   // Reset tab when program changes
   useEffect(() => {
@@ -117,6 +122,45 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(programData.image);
+
+  // Handle archive
+  const handleArchive = async () => {
+    if (!programData) return
+    
+    setIsArchiving(true)
+    try {
+      await archiveProgram(programData.id).unwrap()
+      setArchiveModalOpen(false)
+      onClose()
+      if (onActionComplete) {
+        onActionComplete()
+      }
+      // Trigger refresh event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('programStatusChanged'))
+      }
+    } catch (error) {
+      console.error('Error archiving program:', error)
+      // Extract error message from RTK Query error
+      // RTK Query errors have the structure: { status, data: { message, error, ... } }
+      let errorMessage = 'Failed to archive program. Please try again.'
+      
+      if (error?.data) {
+        // RTK Query error format
+        errorMessage = error.data.message || error.data.error || errorMessage
+      } else if (error?.message) {
+        // Standard error format
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        // String error
+        errorMessage = error
+      }
+      
+      alert(errorMessage)
+    } finally {
+      setIsArchiving(false)
+    }
+  }
 
   // Using centralized date utilities - formatProgramDates is now imported
 
@@ -455,10 +499,39 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
           )}
         </div>
 
+        {/* Archive Confirmation Modal */}
+        <ArchiveConfirmationModal
+          isOpen={archiveModalOpen}
+          onClose={() => setArchiveModalOpen(false)}
+          onConfirm={handleArchive}
+          programTitle={programData?.title}
+          organizationName={programData?.organization_name}
+          isLoading={isArchiving}
+        />
+
         <div className={styles.modalFooter}>
-          <button onClick={onClose} className={styles.closeModalButton}>
-            Close
-          </button>
+          {programData?.created_at && (
+            <div className={styles.footerDate}>
+              Date Created: {formatDateShort(programData.created_at)}
+            </div>
+          )}
+           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+             {/* Show archive button for all programs that are not already archived */}
+             {/* This allows archiving regardless of status: Upcoming, Active, Completed, Featured, etc. */}
+             {programData && programData.status !== 'archived' && (
+               <button
+                 onClick={() => setArchiveModalOpen(true)}
+                 className={styles.archiveButton}
+                 disabled={isArchiving}
+               >
+                 <FaArchive style={{ marginRight: '0.5rem' }} />
+                 Archive
+               </button>
+             )}
+             <button onClick={onClose} className={styles.closeModalButton}>
+               Close
+             </button>
+           </div>
         </div>
       </div>
     </div>

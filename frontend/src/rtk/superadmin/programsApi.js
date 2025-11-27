@@ -19,7 +19,7 @@ export const superadminProgramsApi = createApi({
       return headers
     },
   }),
-  tagTypes: ["SuperadminProgram"],
+  tagTypes: ["SuperadminProgram", "FeaturedStatus"],
   endpoints: (builder) => ({
     // Get all programs grouped by organization
     getAllProgramsByOrganization: builder.query({
@@ -43,6 +43,11 @@ export const superadminProgramsApi = createApi({
                   completed: []
                 }
               };
+            }
+
+            // Skip archived programs - they should only appear in the archive page
+            if (program.status === 'archived') {
+              return acc;
             }
 
             const programData = {
@@ -105,6 +110,8 @@ export const superadminProgramsApi = createApi({
             upcomingPrograms: response.data.upcoming_programs || 0,
             activePrograms: response.data.active_programs || 0,
             completedPrograms: response.data.completed_programs || 0,
+            archivedPrograms: response.data.archived_programs || 0,
+            featuredPrograms: response.data.featured_programs || 0,
             totalOrganizations: response.data.total_organizations || 0
           };
         }
@@ -113,6 +120,8 @@ export const superadminProgramsApi = createApi({
           upcomingPrograms: 0,
           activePrograms: 0,
           completedPrograms: 0,
+          archivedPrograms: 0,
+          featuredPrograms: 0,
           totalOrganizations: 0
         };
       },
@@ -167,23 +176,26 @@ export const superadminProgramsApi = createApi({
       keepUnusedDataFor: 60,
       transformResponse: (response) => {
         if (response.success && Array.isArray(response.data)) {
-          return response.data.map(project => ({
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            image: project.image,
-            status: project.status,
-            event_start_date: project.event_start_date,
-            event_end_date: project.event_end_date,
-            created_at: project.created_at,
-            orgAcronym: project.orgAcronym,
-            orgName: project.orgName,
-            orgColor: project.orgColor,
-            category: project.category,
-            slug: project.slug,
-            is_collaborative: project.is_collaborative || false,
-            collaborators: project.collaborators || []
-          }))
+          // Filter out archived programs - they should only appear in the archive page
+          return response.data
+            .filter(project => project.status !== 'archived')
+            .map(project => ({
+              id: project.id,
+              title: project.title,
+              description: project.description,
+              image: project.image,
+              status: project.status,
+              event_start_date: project.event_start_date,
+              event_end_date: project.event_end_date,
+              created_at: project.created_at,
+              orgAcronym: project.orgAcronym,
+              orgName: project.orgName,
+              orgColor: project.orgColor,
+              category: project.category,
+              slug: project.slug,
+              is_collaborative: project.is_collaborative || false,
+              collaborators: project.collaborators || []
+            }))
         }
         return []
       },
@@ -227,8 +239,106 @@ export const superadminProgramsApi = createApi({
     // Check if program is featured
     checkFeaturedStatus: builder.query({
       query: (programId) => `/admin/programs/single/${programId}`,
+      providesTags: (result, error, programId) => [
+        { type: "SuperadminProgram", id: programId },
+        { type: "FeaturedStatus", id: programId }
+      ],
       transformResponse: (response) => {
-        return response.success ? response.data.is_featured : false;
+        if (!response.success || !response.data) {
+          return false;
+        }
+        // If program is archived, it cannot be featured
+        if (response.data.status === 'archived') {
+          return false;
+        }
+        // Return the actual featured status for non-archived programs
+        return response.data.is_featured === true || response.data.is_featured === 1 || response.data.is_featured === '1';
+      },
+      transformErrorResponse: (response) => {
+        return response;
+      }
+    }),
+
+    // Archive a program
+    archiveProgram: builder.mutation({
+      query: (programId) => ({
+        url: `/admin/programs/${programId}/archive`,
+        method: 'PUT',
+      }),
+      invalidatesTags: (result, error, programId) => [
+        "SuperadminProgram",
+        { type: "SuperadminProgram", id: programId },
+        { type: "FeaturedStatus", id: programId }
+      ],
+      transformErrorResponse: (response) => {
+        // Extract error message from backend response
+        const errorData = response?.data || response;
+        const errorMessage = errorData?.message || errorData?.error || 'Failed to archive program';
+        return {
+          message: errorMessage,
+          error: errorMessage,
+          status: response?.status,
+          ...errorData
+        };
+      },
+    }),
+
+    // Unarchive a program
+    unarchiveProgram: builder.mutation({
+      query: (programId) => ({
+        url: `/admin/programs/${programId}/unarchive`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, programId) => [
+        "SuperadminProgram",
+        { type: "SuperadminProgram", id: programId },
+        { type: "FeaturedStatus", id: programId }
+      ],
+    }),
+
+    // Get archived programs (for superadmin, we'll get all archived programs)
+    // Note: This uses a workaround - we'll fetch all programs and filter archived ones
+    // Or we can create a superadmin-specific endpoint later
+    getArchivedPrograms: builder.query({
+      query: () => `/program-projects/superadmin/all`,
+      providesTags: ["SuperadminProgram"],
+      transformResponse: (response) => {
+        if (response.success && Array.isArray(response.data)) {
+          // Filter only archived programs and flatten the structure
+          const archivedPrograms = [];
+          response.data.forEach(program => {
+            if (program.status === 'archived') {
+              archivedPrograms.push({
+                id: program.id,
+                title: program.title,
+                description: program.description,
+                category: program.category,
+                status: program.status,
+                image: program.image,
+                event_start_date: program.event_start_date,
+                event_end_date: program.event_end_date,
+                multiple_dates: program.multiple_dates || [],
+                created_at: program.created_at,
+                updated_at: program.updated_at,
+                organization_id: program.organization_id,
+                organization_name: program.organization_name,
+                organization_acronym: program.organization_acronym,
+                organization_color: program.organization_color,
+                orgLogo: program.orgLogo,
+                is_collaborative: program.is_collaborative || false,
+                collaborators: program.collaborators || [],
+                submitted_by_name: program.submitted_by_name,
+                submitted_by_role: program.submitted_by_role,
+                edited_by_name: program.edited_by_name,
+                edited_by_role: program.edited_by_role,
+                manual_status_override: program.manual_status_override === true || program.manual_status_override === 1 || program.manual_status_override === '1',
+                accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
+              });
+            }
+          });
+          return archivedPrograms;
+        }
+        return [];
       },
       transformErrorResponse: (response) => {
         return response;
@@ -245,4 +355,7 @@ export const {
   useAddFeaturedProjectMutation,
   useRemoveFeaturedProjectMutation,
   useCheckFeaturedStatusQuery,
+  useArchiveProgramMutation,
+  useUnarchiveProgramMutation,
+  useGetArchivedProgramsQuery,
 } = superadminProgramsApi

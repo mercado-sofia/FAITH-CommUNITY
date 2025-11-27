@@ -3,44 +3,44 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiChevronDown, FiArchive, FiArrowLeft } from 'react-icons/fi'
-import { useGetArchivedHighlightsQuery } from '@/rtk/superadmin/highlightsApi'
+import { useGetArchivedProgramsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
-import HighlightCard from '../components/HighlightCard'
-import HighlightDetailsModal from '../components/HighlightDetailsModal'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import ProgramCard from '../components/ProgramCard'
+import ProgramDetailsModal from '../components/ProgramDetailsModal'
 import RestoreConfirmationModal from '../components/RestoreConfirmationModal'
 import SearchBar from '../components/SearchBar'
 import { SkeletonLoader } from '../../components'
-import { useArchiveHighlightMutation, useUnarchiveHighlightMutation, useDeleteHighlightMutation } from '@/rtk/superadmin/highlightsApi'
-import styles from '../highlights.module.css'
+import { useUnarchiveProgramMutation } from '@/rtk/superadmin/programsApi'
+import styles from '../programs.module.css'
 
-const ArchiveHighlightsPage = () => {
+const ArchiveProgramsPage = () => {
   const router = useRouter()
   const [selectedOrganization, setSelectedOrganization] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedHighlight, setSelectedHighlight] = useState(null)
+  const [selectedProgram, setSelectedProgram] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [highlightToAction, setHighlightToAction] = useState(null)
+  const [programToAction, setProgramToAction] = useState(null)
   const [restoreModalOpen, setRestoreModalOpen] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
   const dropdownRef = useRef(null)
 
   const { 
-    data: highlights = [], 
-    isLoading: highlightsLoading, 
-    error: highlightsError,
-    refetch: refetchHighlights 
-  } = useGetArchivedHighlightsQuery()
+    data: programs = [], 
+    isLoading: programsLoading, 
+    error: programsError,
+    refetch: refetchPrograms 
+  } = useGetArchivedProgramsQuery()
 
   const {
     data: organizations = [],
     isLoading: orgsLoading
   } = useGetOrganizationsForFilterQuery()
 
-  const [unarchiveHighlight] = useUnarchiveHighlightMutation()
-  const [deleteHighlight] = useDeleteHighlightMutation()
+  const [unarchiveProgram] = useUnarchiveProgramMutation()
+  // Note: Delete functionality might need a separate endpoint for programs
+  // For now, we'll skip delete functionality or use a placeholder
 
   // Handle click outside for dropdowns
   useEffect(() => {
@@ -71,9 +71,9 @@ const ArchiveHighlightsPage = () => {
     }
   }, [showDropdown])
 
-  // Enhanced search function for archived highlights
-  const searchHighlights = (highlights, query) => {
-    if (!query || !query.trim()) return highlights
+  // Enhanced search function for archived programs
+  const searchPrograms = (programs, query) => {
+    if (!query || !query.trim()) return programs
     
     const searchTerm = query.toLowerCase().trim()
     const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0)
@@ -94,7 +94,7 @@ const ArchiveHighlightsPage = () => {
       }
     }
     
-    const highlightsWithScores = highlights.map(highlight => {
+    const programsWithScores = programs.map(program => {
       let score = 0
       let hasMatch = false
       
@@ -146,23 +146,44 @@ const ArchiveHighlightsPage = () => {
       }
       
       // Search in organization fields (highest priority)
-      checkMatch(highlight.organization_name, 100, 50)
-      checkMatch(highlight.organization_acronym, 100, 50)
+      checkMatch(program.organization_name, 100, 50)
+      checkMatch(program.organization_acronym, 100, 50)
       
       // Search in title (high priority)
-      checkMatch(highlight.title, 80, 40)
+      checkMatch(program.title, 80, 40)
       
-      // Search in program title
-      checkMatch(highlight.program_title, 70, 30)
+      // Search in category
+      checkMatch(program.category, 50, 20)
       
       // Search in description (lower priority but still important)
-      if (highlight.description) {
-        checkMatch(highlight.description, 30)
+      if (program.description) {
+        checkMatch(program.description, 30)
+      }
+      
+      // Search in status
+      if (program.status) {
+        checkMatch(program.status, 40, 20)
       }
       
       // Search in formatted dates
-      if (highlight.created_at) {
-        const formattedCreatedDate = formatDateForSearch(highlight.created_at)
+      if (program.event_start_date) {
+        const formattedStartDate = formatDateForSearch(program.event_start_date)
+        if (formattedStartDate.toLowerCase().includes(searchTerm)) {
+          hasMatch = true
+          score += 25
+        }
+      }
+      
+      if (program.event_end_date) {
+        const formattedEndDate = formatDateForSearch(program.event_end_date)
+        if (formattedEndDate.toLowerCase().includes(searchTerm)) {
+          hasMatch = true
+          score += 25
+        }
+      }
+      
+      if (program.created_at) {
+        const formattedCreatedDate = formatDateForSearch(program.created_at)
         if (formattedCreatedDate.toLowerCase().includes(searchTerm)) {
           hasMatch = true
           score += 15
@@ -172,8 +193,22 @@ const ArchiveHighlightsPage = () => {
       // Search in year (if user searches for a year like "2024")
       if (/^\d{4}$/.test(searchTerm)) {
         const year = parseInt(searchTerm)
-        if (highlight.created_at) {
-          const createdYear = new Date(highlight.created_at).getFullYear()
+        if (program.event_start_date) {
+          const startYear = new Date(program.event_start_date).getFullYear()
+          if (startYear === year) {
+            hasMatch = true
+            score += 30
+          }
+        }
+        if (program.event_end_date) {
+          const endYear = new Date(program.event_end_date).getFullYear()
+          if (endYear === year) {
+            hasMatch = true
+            score += 30
+          }
+        }
+        if (program.created_at) {
+          const createdYear = new Date(program.created_at).getFullYear()
           if (createdYear === year) {
             hasMatch = true
             score += 20
@@ -182,50 +217,50 @@ const ArchiveHighlightsPage = () => {
       }
       
       if (!hasMatch) return null
-      return { highlight, score }
+      return { program, score }
     }).filter(item => item !== null)
     
-    return highlightsWithScores
+    return programsWithScores
       .sort((a, b) => b.score - a.score)
-      .map(item => item.highlight)
+      .map(item => item.program)
   }
 
-  // Filter highlights by organization
-  const filterByOrganization = (highlights, orgId) => {
-    if (orgId === 'all') return highlights
-    return highlights.filter(h => h.organization_id === parseInt(orgId))
+  // Filter programs by organization
+  const filterByOrganization = (programs, orgId) => {
+    if (orgId === 'all') return programs
+    return programs.filter(p => p.organization_id === parseInt(orgId))
   }
 
-  // Process highlights
-  let processedHighlights = highlights
+  // Process programs
+  let processedPrograms = programs
 
   // Apply search filter
   if (searchQuery.trim()) {
-    processedHighlights = searchHighlights(processedHighlights, searchQuery)
+    processedPrograms = searchPrograms(processedPrograms, searchQuery)
   }
 
   // Apply organization filter
   if (selectedOrganization !== 'all') {
-    processedHighlights = filterByOrganization(processedHighlights, selectedOrganization)
+    processedPrograms = filterByOrganization(processedPrograms, selectedOrganization)
   }
 
   // Handle restore (unarchive)
   const handleRestore = async () => {
-    if (!highlightToAction) return
+    if (!programToAction) return
     
     setIsRestoring(true)
     try {
-      await unarchiveHighlight(highlightToAction.id).unwrap()
-      setHighlightToAction(null)
+      await unarchiveProgram(programToAction.id).unwrap()
+      setProgramToAction(null)
       setRestoreModalOpen(false)
-      refetchHighlights()
+      refetchPrograms()
       // Trigger refresh event
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('highlightStatusChanged'))
+        window.dispatchEvent(new CustomEvent('programStatusChanged'))
       }
     } catch (error) {
-      console.error('Error restoring highlight:', error)
-      let errorMessage = 'Failed to restore highlight. Please try again.'
+      console.error('Error restoring program:', error)
+      let errorMessage = 'Failed to restore program. Please try again.'
       if (error?.data) {
         errorMessage = error.data.message || error.data.error || errorMessage
       } else if (error?.message) {
@@ -239,40 +274,21 @@ const ArchiveHighlightsPage = () => {
     }
   }
 
-  const handleRestoreClick = (highlight) => {
-    setHighlightToAction(highlight)
+  const handleRestoreClick = (program) => {
+    setProgramToAction(program)
     setRestoreModalOpen(true)
   }
 
-  // Handle delete
-  const handleDelete = async () => {
-    if (!highlightToAction) return
-    
-    try {
-      await deleteHighlight(highlightToAction.id).unwrap()
-      setDeleteModalOpen(false)
-      setHighlightToAction(null)
-      refetchHighlights()
-      // Trigger refresh event
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('highlightStatusChanged'))
-      }
-    } catch (error) {
-      console.error('Error deleting highlight:', error)
-      alert('Failed to delete highlight. Please try again.')
-    }
-  }
-
   // Handle view details
-  const handleViewDetails = (highlight) => {
-    setSelectedHighlight(highlight)
+  const handleViewDetails = (program) => {
+    setSelectedProgram(program)
     setIsModalOpen(true)
   }
 
   // Handle close modal
   const handleCloseModal = () => {
     setIsModalOpen(false)
-    setSelectedHighlight(null)
+    setSelectedProgram(null)
   }
 
   // Search handler
@@ -280,7 +296,7 @@ const ArchiveHighlightsPage = () => {
     setSearchQuery(query)
   }
 
-  if (highlightsLoading) {
+  if (programsLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -297,7 +313,7 @@ const ArchiveHighlightsPage = () => {
     )
   }
 
-  if (highlightsError) {
+  if (programsError) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -310,8 +326,8 @@ const ArchiveHighlightsPage = () => {
           </div>
         </div>
         <div className={styles.errorContainer}>
-          <p className={styles.errorMessage}>Failed to load archived highlights</p>
-          <button onClick={refetchHighlights} className={styles.retryButton}>
+          <p className={styles.errorMessage}>Failed to load archived programs</p>
+          <button onClick={refetchPrograms} className={styles.retryButton}>
             Try Again
           </button>
         </div>
@@ -326,9 +342,9 @@ const ArchiveHighlightsPage = () => {
           <h1 className={styles.pageTitle}>Archives</h1>
           <div className={styles.headerActions}>
             <button
-              onClick={() => router.push('/superadmin/highlights')}
+              onClick={() => router.push('/superadmin/programs')}
               className={styles.addButton}
-              title="Go back to Highlights"
+              title="Go back to Programs"
             >
               <FiArrowLeft /> Go back
             </button>
@@ -338,7 +354,7 @@ const ArchiveHighlightsPage = () => {
           <SearchBar
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
-            placeholder="Search Archived Highlights..."
+            placeholder="Search Archived Programs..."
           />
           <div className={styles.dropdownWrapper} ref={dropdownRef}>
             <div
@@ -380,37 +396,37 @@ const ArchiveHighlightsPage = () => {
       </div>
 
       {/* Organization Filter Header */}
-      <div className={styles.highlightsHeader}>
-        <div className={styles.highlightsHeaderTop}>
-          <h2 className={styles.sectionTitle}>Archived Highlights</h2>
+      <div className={styles.programsHeader}>
+        <div className={styles.programsHeaderTop}>
+          <h2 className={styles.sectionTitle}>Archived Programs</h2>
         </div>
         <div className={styles.featuredCountInfo}>
           <span className={styles.featuredCountText}>
-            {processedHighlights.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'highlights'}
+            {processedPrograms.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'Programs'}
           </span>
         </div>
       </div>
 
-      {/* Highlights Grid */}
-      <div className={styles.highlightsSection}>
-        {processedHighlights.length === 0 ? (
+      {/* Programs Grid */}
+      <div className={styles.programsSection}>
+        {processedPrograms.length === 0 ? (
           <div className={styles.emptyState}>
             <FiArchive style={{ fontSize: '48px', color: '#9ca3af', marginBottom: '1rem' }} />
-            <h3 className={styles.emptyStateTitle}>No archived highlights found</h3>
+            <h3 className={styles.emptyStateTitle}>No archived programs found</h3>
             <p className={styles.emptyStateText}>
               {searchQuery || selectedOrganization !== 'all'
-                ? 'No archived highlights match your current filters.'
-                : 'No highlights have been archived yet.'}
+                ? 'No archived programs match your current filters.'
+                : 'No programs have been archived yet.'}
             </p>
           </div>
         ) : (
-          <div className={styles.highlightsGrid}>
-            {processedHighlights.map(highlight => (
-              <HighlightCard
-                key={highlight.id}
-                highlight={highlight}
+          <div className={styles.programGrid}>
+            {processedPrograms.map(program => (
+              <ProgramCard
+                key={program.id}
+                program={program}
                 onViewDetails={handleViewDetails}
-                searchQuery={searchQuery}
+                showOrganizationBadge={true}
                 onRestore={handleRestoreClick}
               />
             ))}
@@ -418,25 +434,11 @@ const ArchiveHighlightsPage = () => {
         )}
       </div>
 
-      {/* Highlight Details Modal */}
-      <HighlightDetailsModal 
-        highlight={selectedHighlight}
+      {/* Program Details Modal */}
+      <ProgramDetailsModal 
+        program={selectedProgram}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-      />
-
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false)
-          setHighlightToAction(null)
-        }}
-        onConfirm={handleDelete}
-        highlightTitle={highlightToAction?.title}
-        organizationName={highlightToAction?.organization_name}
-        isLoading={false}
       />
 
       {/* Restore Confirmation Modal */}
@@ -444,17 +446,16 @@ const ArchiveHighlightsPage = () => {
         isOpen={restoreModalOpen}
         onClose={() => {
           setRestoreModalOpen(false)
-          setHighlightToAction(null)
+          setProgramToAction(null)
         }}
         onConfirm={handleRestore}
-        highlightTitle={highlightToAction?.title || ''}
-        organizationName={highlightToAction?.organization_name || highlightToAction?.organization_acronym || ''}
+        programTitle={programToAction?.title || ''}
+        organizationName={programToAction?.organization_name || programToAction?.organization_acronym || ''}
         isLoading={isRestoring}
       />
     </div>
   )
 }
 
-export default ArchiveHighlightsPage
-
+export default ArchiveProgramsPage
 

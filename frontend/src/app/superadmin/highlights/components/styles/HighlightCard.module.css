@@ -63,6 +63,22 @@
   user-select: none;
 }
 
+.archivedBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
 .cardContent {
   padding: 16px 24px;
   display: flex;
@@ -154,30 +170,29 @@
 
 .featuredCardFooter {
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
 }
 
-.viewDetailsButton {
+.featuredCardFooter .viewDetailsButton {
   width: 100%;
   background: #000;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-family: var(--font-inter);
+  transition: all 0.2s ease;
 }
 
-.viewDetailsButton:hover {
-  background: #1a1a1a;
+.featuredCardFooter .viewDetailsButton:hover {
+  background: #142220;
+  transform: translateY(-1px);
 }
 
-.viewDetailsButton:active {
-  background: #0d0d0d;
+.featuredCardFooter .viewDetailsButton:active {
+  transform: translateY(0);
 }
 
 .highlightedText {

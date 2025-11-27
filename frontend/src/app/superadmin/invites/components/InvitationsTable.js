@@ -222,6 +222,7 @@ export default function InvitationsTable({
               title="Delete selected invitations and admin accounts"
             >
               <FiTrash2 size={16} />
+              Delete
             </button>
             <button 
               className={styles.cancelSelectionButton}

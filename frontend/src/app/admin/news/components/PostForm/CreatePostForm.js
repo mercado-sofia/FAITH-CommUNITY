@@ -109,37 +109,26 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   }, [showPublishDropdown]);
 
   // Helper function to convert datetime to ISO format for DatePickerPopover
-  // Handles both timezone-aware (UTC) and timezone-naive (DATETIME) strings
+  // Uses formatDateTimeForInput which handles both UTC and timezone-naive strings correctly
   const convertToISOFormat = (dateTimeString) => {
     if (!dateTimeString) return null;
     
-    const normalizedString = dateTimeString.trim();
+    // Use formatDateTimeForInput which properly handles:
+    // 1. UTC timestamps (ending with 'Z' or timezone offset) - converts to local time
+    // 2. Timezone-naive DATETIME strings - treats as local time
+    const converted = formatDateTimeForInput(dateTimeString);
     
-    // Check if the string has timezone info (Z or offset like +08:00)
-    const hasTimezone = normalizedString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalizedString);
-    
-    if (hasTimezone) {
-      // This is a timezone-aware string (likely UTC from JSON serialization of Date object)
-      // Parse as UTC and convert to local time
-      const date = new Date(normalizedString);
-      if (isNaN(date.getTime())) {
-        // If parsing fails, fall back to formatDateTimeForInput
-        return formatDateTimeForInput(dateTimeString) || null;
-      }
-      
-      // Get local time components from the Date object
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Log conversion for debugging in development mode
+    if (process.env.NODE_ENV === 'development' && dateTimeString) {
+      console.log('[CreatePostForm] convertToISOFormat:', {
+        input: dateTimeString,
+        output: converted,
+        hasTimezone: dateTimeString.trim().endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateTimeString.trim()),
+        timestamp: new Date().toISOString()
+      });
     }
     
-    // This is a timezone-naive string (DATETIME field) - parse components directly
-    // Use formatDateTimeForInput which extracts components without timezone conversion
-    return formatDateTimeForInput(dateTimeString) || null;
+    return converted || null;
   };
 
   // Initialize form data when in edit mode
@@ -149,9 +138,21 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
       const publishedAt = initialData.published_at || initialData.date;
       
       // For scheduled news, convert the scheduled date/time to ISO format for DatePickerPopover
+      // IMPORTANT: published_at from backend is stored in UTC, so we need to convert to local time for display
       let publishedAtValue = null;
       if (currentStatus === 'scheduled' && publishedAt) {
         publishedAtValue = convertToISOFormat(publishedAt);
+        
+        // Log conversion for debugging in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[CreatePostForm] INITIALIZING SCHEDULED NEWS:', {
+            status: currentStatus,
+            publishedAtFromBackend: publishedAt,
+            convertedToLocal: publishedAtValue,
+            hasTimezone: publishedAt.trim().endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(publishedAt.trim()),
+            timestamp: new Date().toISOString()
+          });
+        }
       }
       
       const initialFormData = {

@@ -488,13 +488,44 @@ export const createNews = async (req, res) => {
       
       // Get timezone offset from request body (sent by frontend)
       // Format: "+08:00" or "-05:00" (offset from UTC)
-      const timezoneOffset = req.body.timezoneOffset || null;
+      // IMPORTANT: Log all req.body fields to debug FormData parsing
+      // Check both camelCase and lowercase versions (multer might normalize field names)
+      const timezoneOffsetRaw = req.body.timezoneOffset || req.body.timezoneoffset || req.body['timezoneOffset'] || req.body['timezone-offset'] || null;
+      
+      console.log('[createNews] REQUEST BODY DEBUG:', {
+        hasTimezoneOffset: !!req.body.timezoneOffset,
+        timezoneOffset: req.body.timezoneOffset,
+        timezoneoffset: req.body.timezoneoffset,
+        timezoneOffsetRaw: timezoneOffsetRaw,
+        published_at: req.body.published_at,
+        action: req.body.action,
+        allBodyKeys: Object.keys(req.body),
+        allBodyValues: Object.entries(req.body).map(([k, v]) => ({ key: k, value: typeof v === 'string' ? v.substring(0, 50) : v })),
+        timestamp: new Date().toISOString()
+      });
+      
+      const timezoneOffset = timezoneOffsetRaw || null;
       
       // Validate timezone offset if provided
       if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
         return res.status(400).json({ 
           success: false, 
           message: `Invalid timezone offset format: ${timezoneOffset}. Expected format: +HH:MM or -HH:MM` 
+        });
+      }
+      
+      // CRITICAL: timezoneOffset is REQUIRED for schedule action
+      // Without it, we cannot convert local time to UTC correctly
+      if (!timezoneOffset && normalizedAction === 'schedule') {
+        console.error('[createNews] ERROR: timezoneOffset is REQUIRED for schedule action!', {
+          published_at: normalizedPublishedAt,
+          action: normalizedAction,
+          allBodyKeys: Object.keys(req.body),
+          timestamp: new Date().toISOString()
+        });
+        return res.status(400).json({ 
+          success: false, 
+          message: "Timezone offset is required for scheduling. Please refresh the page and try again." 
         });
       }
       
@@ -515,11 +546,12 @@ export const createNews = async (req, res) => {
           console.error('[createNews] Invalid UTC conversion:', {
             localTime: normalizedPublishedAt,
             timezoneOffset,
-            utcDate
+            utcDate,
+            error: 'convertLocalToUTC returned null or invalid date'
           });
           return res.status(400).json({ 
             success: false, 
-            message: "Invalid date and time format. Please provide a valid date and time." 
+            message: "Invalid date and time format or missing timezone information. Please provide a valid date and time." 
           });
         }
         
@@ -2057,13 +2089,44 @@ export const updateNews = async (req, res) => {
         const normalizedPublishedAt = published_at.trim();
         
         // Get timezone offset from request body (sent by frontend)
-        const timezoneOffset = req.body.timezoneOffset || null;
+        // IMPORTANT: Log all req.body fields to debug FormData parsing
+        // Check both camelCase and lowercase versions (multer might normalize field names)
+        const timezoneOffsetRaw = req.body.timezoneOffset || req.body.timezoneoffset || req.body['timezoneOffset'] || req.body['timezone-offset'] || null;
+        
+        console.log('[updateNews] REQUEST BODY DEBUG:', {
+          hasTimezoneOffset: !!req.body.timezoneOffset,
+          timezoneOffset: req.body.timezoneOffset,
+          timezoneoffset: req.body.timezoneoffset,
+          timezoneOffsetRaw: timezoneOffsetRaw,
+          published_at: req.body.published_at,
+          action: req.body.action,
+          allBodyKeys: Object.keys(req.body),
+          allBodyValues: Object.entries(req.body).map(([k, v]) => ({ key: k, value: typeof v === 'string' ? v.substring(0, 50) : v })),
+          timestamp: new Date().toISOString()
+        });
+        
+        const timezoneOffset = timezoneOffsetRaw || null;
         
         // Validate timezone offset if provided
         if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
           return res.status(400).json({ 
             success: false, 
             message: `Invalid timezone offset format: ${timezoneOffset}. Expected format: +HH:MM or -HH:MM` 
+          });
+        }
+        
+        // CRITICAL: timezoneOffset is REQUIRED for schedule action
+        // Without it, we cannot convert local time to UTC correctly
+        if (!timezoneOffset && normalizedAction === 'schedule') {
+          console.error('[updateNews] ERROR: timezoneOffset is REQUIRED for schedule action!', {
+            published_at: normalizedPublishedAt,
+            action: normalizedAction,
+            allBodyKeys: Object.keys(req.body),
+            timestamp: new Date().toISOString()
+          });
+          return res.status(400).json({ 
+            success: false, 
+            message: "Timezone offset is required for scheduling. Please refresh the page and try again." 
           });
         }
         

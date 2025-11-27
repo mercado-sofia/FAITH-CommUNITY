@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import styles from "./SignupForm.module.css"
 import { FaUser, FaLock, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
@@ -11,8 +11,19 @@ import { formatDateForAPI } from "@/utils/shared/dateUtils"
 export default function SignupForm({ onRegistrationSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [registrationData, setRegistrationData] = useState(null)
+  const [isMobile, setIsMobile] = useState(false)
   
   const router = useRouter()
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 480)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -401,12 +412,12 @@ export default function SignupForm({ onRegistrationSuccess }) {
       <div className={styles.stepIndicator}>
         <div className={`${styles.step} ${currentStep === 1 ? styles.active : ''}`}>
           <div className={styles.stepNumber}>1</div>
-          <span>Personal Information</span>
+          <span>{isMobile ? 'Personal Info' : 'Personal Information'}</span>
         </div>
         <div className={`${styles.stepDivider} ${currentStep >= 2 ? styles.active : ''}`}></div>
         <div className={`${styles.step} ${currentStep === 2 ? styles.active : ''}`}>
           <div className={styles.stepNumber}>2</div>
-          <span>Account Security</span>
+          <span>{isMobile ? 'Account Security' : 'Account Security'}</span>
         </div>
       </div>
 

@@ -19,12 +19,23 @@ export const verifyAdminToken = async (req, res, next) => {
     })
 
     try {
-      await SessionSecurity.verifyAdminSession(
+      const sessionResult = await SessionSecurity.verifyAdminSession(
         token,
         getClientIpAddress(req),
         req.headers['user-agent']
       )
+      
+      if (!sessionResult.valid) {
+        return res.status(403).json({ 
+          error: "Session verification failed", 
+          reason: sessionResult.reason 
+        })
+      }
     } catch (sessionError) {
+      return res.status(403).json({ 
+        error: "Session verification error", 
+        reason: "Unable to verify session security" 
+      })
     }
 
     if (decoded.role === 'admin' && decoded.id) {

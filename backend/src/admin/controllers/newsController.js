@@ -159,29 +159,6 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
       };
     }
     
-    // First, let's check what scheduled news items exist and their published_at values
-    // This helps with debugging timezone issues
-    let checkQuery = `SELECT id, title, published_at, UTC_TIMESTAMP() as server_now, 
-                      TIMESTAMPDIFF(SECOND, published_at, UTC_TIMESTAMP()) as seconds_diff
-                      FROM news 
-                      WHERE status = 'scheduled'`;
-    const checkParams = [];
-    
-    if (organizationId) {
-      checkQuery += ' AND organization_id = ?';
-      checkParams.push(organizationId);
-    }
-    
-    if (slug) {
-      checkQuery += ' AND slug = ?';
-      checkParams.push(slug);
-    }
-    
-    try {
-      await db.execute(checkQuery, checkParams);
-    } catch (checkError) {
-    }
-    
     // Compare published_at with UTC_TIMESTAMP() - both in UTC
     // Note: published_at is stored in UTC (converted from user's local timezone)
     // Using UTC_TIMESTAMP() ensures consistent comparison regardless of server timezone

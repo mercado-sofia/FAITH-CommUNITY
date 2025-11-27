@@ -575,7 +575,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
                 className={styles.archiveButton}
                 disabled={isArchiving || isDeleting}
               >
-                <FiArchive style={{ marginRight: '0.5rem' }} />
+                <FiArchive />
                 Archive
               </button>
             )}
@@ -585,7 +585,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
                 className={styles.deleteButton}
                 disabled={isArchiving || isDeleting}
               >
-                <FiTrash2 style={{ marginRight: '0.5rem' }} />
+                <FiTrash2 />
                 Delete
               </button>
             )}

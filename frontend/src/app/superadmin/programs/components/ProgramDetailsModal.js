@@ -531,7 +531,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose, onActionComplete }) => 
                  className={styles.archiveButton}
                  disabled={isArchiving}
                >
-                 <FiArchive style={{ marginRight: '0.5rem' }} />
+                 <FiArchive />
                  Archive
                </button>
              )}

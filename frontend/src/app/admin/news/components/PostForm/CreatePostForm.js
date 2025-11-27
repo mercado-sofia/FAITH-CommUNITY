@@ -779,6 +779,17 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             // Add timezone offset to help backend convert to UTC correctly
             // Use centralized utility function for consistent timezone offset calculation
             submitData.timezoneOffset = getBrowserTimezoneOffset();
+            
+            // Log for debugging
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[CreatePostForm] SCHEDULING SUBMISSION:', {
+                userSelectedTime: submitData.publishedAt,
+                timezoneOffset: submitData.timezoneOffset,
+                browserTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                browserOffsetMinutes: new Date().getTimezoneOffset(),
+                timestamp: new Date().toISOString()
+              });
+            }
           } catch (dateError) {
             throw new Error(dateError.message || 'Invalid date and time format for scheduling');
           }

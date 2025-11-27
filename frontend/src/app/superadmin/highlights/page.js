@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiChevronDown } from 'react-icons/fi'
+import { FiChevronDown, FiArchive } from 'react-icons/fi'
 import { useGetAllHighlightsQuery, useGetHighlightsStatisticsQuery } from '@/rtk/superadmin/highlightsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import HighlightCard from './components/HighlightCard'
@@ -546,12 +546,50 @@ const SuperadminHighlightsPage = () => {
           <div className={styles.twoColumnLayout}>
             {/* Left Column - 50% width */}
             <div className={styles.leftColumn}>
-              <h1 className={styles.pageTitle}>Highlights Management</h1>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '1rem' }}>
+                <h1 className={styles.pageTitle}>Highlights Management</h1>
+              </div>
               <div className={styles.searchSection}>
                 <SearchBar
                   searchQuery={searchQuery}
                   onSearchChange={handleSearchChange}
                 />
+                <div className={styles.dropdownWrapper} ref={dropdownRef}>
+                  <div
+                    className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
+                    onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
+                  >
+                    {orgsLoading ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        <span className={styles.organizationLabel}>Organization:</span>
+                        <span className={styles.organizationValue}>
+                          {selectedOrganization === "all" ? "All" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym || "All"}
+                        </span>
+                      </>
+                    )}
+                    <FiChevronDown className={styles.icon} />
+                  </div>
+                  {showDropdown === "organization" && (
+                    <ul className={styles.options}>
+                      <li key="all" onClick={() => {
+                        setSelectedOrganization("all")
+                        setShowDropdown(null)
+                      }}>
+                        All
+                      </li>
+                      {organizationOptions.map(org => (
+                        <li key={org.id} onClick={() => {
+                          setSelectedOrganization(org.id.toString())
+                          setShowDropdown(null)
+                        }}>
+                          {org.acronym}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -569,6 +607,11 @@ const SuperadminHighlightsPage = () => {
                             <span className={styles.approvedCount}>
                               {featuredCount} Total Featured
                             </span>
+                            {statistics.archivedHighlights > 0 && (
+                              <span className={styles.archivedCount} style={{ marginLeft: '1rem', color: '#6b7280' }}>
+                                {statistics.archivedHighlights} Archived
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -597,45 +640,16 @@ const SuperadminHighlightsPage = () => {
             All
           </button>
         </div>
+        <button
+          onClick={() => router.push('/superadmin/highlights/archive')}
+          className={styles.archiveButton}
+        >
+          <FiArchive /> Archive
+        </button>
       </div>
 
-      {/* Organization Filter Header - Show in both "Featured" and "All" tabs */}
+      {/* Highlights Header - Show count info */}
       <div className={styles.highlightsHeader}>
-        <div className={styles.highlightsHeaderTop}>
-          <h2 className={styles.sectionTitle}>Highlights by Organization</h2>
-          <div className={styles.filtersContainer}>
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Organization:</label>
-              <div className={styles.dropdownWrapper} ref={dropdownRef}>
-                <div
-                  className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
-                  onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
-                >
-                  {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym + " - " + organizationOptions.find(org => org.id.toString() === selectedOrganization)?.name}
-                  <FiChevronDown className={styles.icon} />
-                </div>
-                {showDropdown === "organization" && (
-                  <ul className={styles.options}>
-                    <li key="all" onClick={() => {
-                      setSelectedOrganization("all")
-                      setShowDropdown(null)
-                    }}>
-                      All Organizations
-                    </li>
-                    {organizationOptions.map(org => (
-                      <li key={org.id} onClick={() => {
-                        setSelectedOrganization(org.id.toString())
-                        setShowDropdown(null)
-                      }}>
-                        {org.acronym} - {org.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
         {/* Show featured count per organization in Featured tab */}
         {activeTab === 'featured' && (
           <div className={styles.featuredCountInfo}>
@@ -696,6 +710,10 @@ const SuperadminHighlightsPage = () => {
         highlight={selectedHighlight}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onActionComplete={() => {
+          refetchHighlights()
+          refetchStatistics()
+        }}
       />
     </div>
   )

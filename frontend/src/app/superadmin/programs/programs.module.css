@@ -44,6 +44,7 @@
   justify-content: flex-start;
   align-items: center;
   width: 100%;
+  gap: 0.75rem;
 }
 
 .pageTitle {
@@ -235,9 +236,8 @@
 
 .organizationDropdown {
   background: #fff;
-  padding: 0.45rem 0.9rem;
-  min-width: 320px;
-  min-height: 2.5rem;
+  padding: 0.4rem 0.9rem;
+  min-height: 2.25rem;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
@@ -250,6 +250,18 @@
   justify-content: space-between;
   transition: all 0.2s ease-in-out;
   user-select: none;
+  white-space: nowrap;
+}
+
+.organizationLabel {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.organizationValue {
+  color: #000;
+  font-weight: 500;
 }
 
 .organizationDropdown:hover {

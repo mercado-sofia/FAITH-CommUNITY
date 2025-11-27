@@ -54,9 +54,11 @@ export default function NewsTable({
   onUnarchive,
   onBulkDelete,
   onBulkArchive,
+  onBulkUnarchive,
   itemsPerPage = 10,
   onSelectionChange,
-  selectedItems = []
+  selectedItems = [],
+  isArchiveMode = false
 }) {
   const [selectedNews, setSelectedNews] = useState([])
   const [showDropdown, setShowDropdown] = useState(null)
@@ -192,6 +194,14 @@ export default function NewsTable({
     }
   }
 
+  const handleBulkUnarchive = () => {
+    if (selectedNews.length === 0) return
+    // Pass selected news IDs to parent for confirmation modal
+    if (onBulkUnarchive) {
+      onBulkUnarchive(selectedNews)
+    }
+  }
+
   const cancelSelection = () => {
     setSelectedNews([])
     // Notify parent to clear selections as well
@@ -247,14 +257,25 @@ export default function NewsTable({
             </span>
           </div>
           <div className={styles.bulkActionsRight}>
-            <button 
-              className={`${styles.bulkButton} ${styles.archiveButton}`}
-              onClick={handleBulkArchive}
-              title="Archive selected news items"
-            >
-              <FiArchive size={16} />
-              Archive Selected
-            </button>
+            {!isArchiveMode ? (
+              <button 
+                className={`${styles.bulkButton} ${styles.archiveButton}`}
+                onClick={handleBulkArchive}
+                title="Archive selected news items"
+              >
+                <FiArchive size={16} />
+                Archive Selected
+              </button>
+            ) : (
+              <button 
+                className={`${styles.bulkButton} ${styles.archiveButton}`}
+                onClick={handleBulkUnarchive}
+                title="Unarchive selected news items"
+              >
+                <FiArchive size={16} />
+                Unarchive Selected
+              </button>
+            )}
             <button 
               className={`${styles.bulkButton} ${styles.deleteButton}`}
               onClick={handleBulkDelete}
@@ -377,13 +398,20 @@ export default function NewsTable({
                           >
                             <li onClick={() => handleAction(newsItem, "view")}>View</li>
                             <li onClick={() => handleAction(newsItem, "edit")}>Edit</li>
-                            {/* Only show Archive option for published news */}
-                            {(newsItem.status || '').toLowerCase() === 'published' && (
-                              <li onClick={() => handleAction(newsItem, "archive")}>Archive</li>
-                            )}
-                            {/* Only show Unarchive option for archived news */}
-                            {(newsItem.status || '').toLowerCase() === 'archived' && (
+                            {/* Show Archive/Unarchive based on mode and status */}
+                            {isArchiveMode ? (
+                              /* In archive mode, show Unarchive for all items */
                               <li onClick={() => handleAction(newsItem, "unarchive")}>Unarchive</li>
+                            ) : (
+                              /* In normal mode, show Archive for published, Unarchive for archived */
+                              <>
+                                {(newsItem.status || '').toLowerCase() === 'published' && (
+                                  <li onClick={() => handleAction(newsItem, "archive")}>Archive</li>
+                                )}
+                                {(newsItem.status || '').toLowerCase() === 'archived' && (
+                                  <li onClick={() => handleAction(newsItem, "unarchive")}>Unarchive</li>
+                                )}
+                              </>
                             )}
                             <li 
                               onClick={() => handleAction(newsItem, "delete")}

@@ -19,6 +19,41 @@
   gap: 1.5rem;
 }
 
+/* Header Actions for Archive Page - when headerActions exists, make it a row */
+.headerTop:has(.headerActions) {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.addButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 0.375rem;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.addButton:hover {
+  background: #142220;
+}
+
 .twoColumnLayout {
   display: flex;
   width: 100%;
@@ -44,6 +79,7 @@
   justify-content: flex-start;
   align-items: center;
   width: 100%;
+  gap: 0.75rem;
 }
 
 .pageTitle {
@@ -61,13 +97,15 @@
 .navigationSection {
   width: 100%;
   margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* Navigation Tabs */
 .navigationTabs {
   display: flex;
   gap: 0.75rem;
-  width: 100%;
   padding: 0;
 }
 
@@ -94,6 +132,27 @@
   color: #000;
   font-weight: 600;
   background: #f3f4f6;
+}
+
+.archiveButton {
+  background: #fff;
+  color: #000;
+  border: 1px solid #e5e5e5;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.archiveButton:hover {
+  border-color: #000;
 }
 
 /* Statistics Cards */
@@ -303,9 +362,8 @@
 
 .organizationDropdown {
   background: #fff;
-  padding: 0.45rem 0.9rem;
-  min-width: 320px;
-  min-height: 2.5rem;
+  padding: 0.4rem 0.9rem;
+  min-height: 2.25rem;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
@@ -318,6 +376,18 @@
   justify-content: space-between;
   transition: all 0.2s ease-in-out;
   user-select: none;
+  white-space: nowrap;
+}
+
+.organizationLabel {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.organizationValue {
+  color: #000;
+  font-weight: 500;
 }
 
 .organizationDropdown:hover {

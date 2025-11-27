@@ -3,23 +3,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { useAdminNews } from '@/hooks/admin/useAdminData';
-import { useNewsOperations, useNewsFilters, useNewsModals, useNewsURL } from './hooks';
-import { NewsTable, CreatePostForm, SearchAndFilterControls, ViewDetailsModal } from './components';
+import { useArchivedNews } from '@/hooks/admin/useAdminData';
+import { useNewsOperations, useNewsFilters, useNewsModals, useNewsURL } from '../hooks';
+import { NewsTable, CreatePostForm, SearchAndFilterControls, ViewDetailsModal } from '../components';
 import { ErrorBoundary, SuccessModal } from '@/components';
-import { SkeletonLoader } from '../components';
+import { SkeletonLoader } from '../../components';
 import { ConfirmationModal } from '@/components';
-import styles from './news.module.css';
-import { FaPlus } from 'react-icons/fa';
+import styles from '../news.module.css';
+import { useRouter } from 'next/navigation';
+import { FiArrowLeft } from 'react-icons/fi';
 
-export default function AdminNewsPage() {
+export default function ArchiveNewsPage() {
+  const router = useRouter();
   const currentAdmin = useSelector(selectCurrentAdmin);
   
   // Success modal state
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
 
-  // Use SWR hook for news data
-  const { news = [], isLoading: loading, error, mutate: refreshNews } = useAdminNews(
+  // Use SWR hook for archived news data
+  const { news = [], isLoading: loading, error, mutate: refreshNews } = useArchivedNews(
     currentAdmin?.org && currentAdmin.org !== '' ? currentAdmin.org : null
   );
 
@@ -29,10 +31,7 @@ export default function AdminNewsPage() {
   const newsOperations = useNewsOperations(orgId, refreshNews, setSuccessModal);
   const urlState = useNewsURL();
   const modals = useNewsModals(urlState);
-  
-  // Filter out archived items from the main news list
-  const activeNews = news.filter(item => (item.status || 'draft').toLowerCase() !== 'archived');
-  const { displayedNews } = useNewsFilters(activeNews, urlState.searchQuery, urlState.sortBy, urlState.statusFilter);
+  const { displayedNews } = useNewsFilters(news, urlState.searchQuery, urlState.sortBy, urlState.statusFilter);
   
   // Initialize edit/create mode from URL parameter on mount or when URL changes
   useEffect(() => {
@@ -78,7 +77,7 @@ export default function AdminNewsPage() {
       const errorMessage = error instanceof Error ? error.message : String(error);
       // Only show error modal if we're not already showing an error
       if (!successModal.isVisible || successModal.type !== 'error') {
-        setSuccessModal({ isVisible: true, message: `Failed to fetch news: ${errorMessage}`, type: 'error' });
+        setSuccessModal({ isVisible: true, message: `Failed to fetch archived news: ${errorMessage}`, type: 'error' });
       }
     }
   }, [error, currentAdmin?.org, successModal.isVisible, successModal.type]);
@@ -109,34 +108,28 @@ export default function AdminNewsPage() {
     }
   }, [modals, newsOperations]);
 
-  // Handle archive confirmation
-  const handleArchiveConfirm = useCallback(async () => {
-    if (modals.archivingNews) {
-      // Single archive
-      await newsOperations.handleArchiveNews(modals.archivingNews.id);
-      modals.handleCloseArchiveModal();
-    } else if (modals.selectedItems.length > 0) {
-      // Bulk archive
-      const selectedNewsItems = news.filter(n => modals.selectedItems.includes(n.id));
-      await newsOperations.handleBulkArchive(modals.selectedItems, selectedNewsItems);
-      modals.handleCloseArchiveModal();
-    }
-  }, [modals, newsOperations, news]);
-
   // Handle unarchive confirmation
   const handleUnarchiveConfirm = useCallback(async () => {
     if (modals.unarchivingNews) {
+      // Single unarchive
       await newsOperations.handleUnarchiveNews(modals.unarchivingNews.id);
       modals.handleCloseUnarchiveModal();
+    } else if (modals.selectedItems.length > 0) {
+      // Bulk unarchive
+      const selectedNewsItems = news.filter(n => modals.selectedItems.includes(n.id));
+      for (const item of selectedNewsItems) {
+        await newsOperations.handleUnarchiveNews(item.id);
+      }
+      modals.handleCloseUnarchiveModal();
     }
-  }, [modals, newsOperations]);
+  }, [modals, newsOperations, news]);
 
   // Display error message if there's an error and we have a valid admin
   if (error && currentAdmin?.org) {
     return (
       <div className={styles.container}>
         <div className={styles.errorMessage} role="alert" aria-live="assertive">
-          Error loading news: {error.message}
+          Error loading archived news: {error.message}
         </div>
       </div>
     );
@@ -159,14 +152,14 @@ export default function AdminNewsPage() {
         {modals.pageMode === 'list' ? (
           <>
             <div className={styles.headerTop}>
-              <h1>News and Announcements</h1>
+              <h1>Archives</h1>
               <div className={styles.headerActions}>
                 <button
-                  onClick={modals.handleCreateMode}
+                  onClick={() => router.push('/admin/news')}
                   className={styles.addButton}
-                  disabled={newsOperations.isSubmitting || loading}
+                  title="Go back to News"
                 >
-                  <FaPlus /> New Post
+                  <FiArrowLeft /> Go back
                 </button>
               </div>
             </div>
@@ -180,6 +173,8 @@ export default function AdminNewsPage() {
               onStatusFilterChange={urlState.handleStatusFilterChange}
               showCount={urlState.showCount}
               onShowCountChange={urlState.handleShowCountChange}
+              isArchiveMode={true}
+              showArchiveToggle={false}
             />
 
             {loading && (
@@ -213,9 +208,11 @@ export default function AdminNewsPage() {
                 onUnarchive={modals.handleUnarchive}
                 onBulkDelete={modals.handleBulkDeleteRequest}
                 onBulkArchive={modals.handleBulkArchiveRequest}
+                onBulkUnarchive={modals.handleBulkUnarchiveRequest}
                 onSelectionChange={handleSelectionChange}
                 selectedItems={modals.selectedItems}
                 itemsPerPage={urlState.showCount}
+                isArchiveMode={true}
               />
             )}
           </>
@@ -261,21 +258,10 @@ export default function AdminNewsPage() {
           isDeleting={newsOperations.isDeleting}
       />
 
-      {/* Archive News Modal */}
-      <ConfirmationModal
-        isOpen={modals.showArchiveModal}
-        itemName={modals.getArchiveModalItemName()}
-        itemType="news"
-        actionType="archive"
-        onConfirm={handleArchiveConfirm}
-        onCancel={modals.handleCloseArchiveModal}
-        isLoading={newsOperations.isDeleting}
-      />
-
       {/* Unarchive News Modal */}
       <ConfirmationModal
         isOpen={modals.showUnarchiveModal}
-        itemName={modals.unarchivingNews?.title}
+        itemName={modals.unarchivingNews?.title || (modals.selectedItems.length > 0 ? `${modals.selectedItems.length} selected news items` : '')}
         itemType="news"
         actionType="unarchive"
         onConfirm={handleUnarchiveConfirm}
@@ -294,3 +280,4 @@ export default function AdminNewsPage() {
     </ErrorBoundary>
   );
 }
+

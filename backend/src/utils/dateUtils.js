@@ -589,6 +589,23 @@ export const convertLocalToUTC = (localDateTime, timezoneOffset) => {
         return null;
       }
       
+      // Log conversion for debugging
+      console.log('[convertLocalToUTC] LOCAL → UTC CONVERSION:', {
+        inputLocalTime: localDateTime,
+        inputTimezoneOffset: timezoneOffset,
+        isoStringWithOffset: isoString,
+        convertedUTC: utcDate.toISOString(),
+        utcComponents: {
+          year: utcDate.getUTCFullYear(),
+          month: utcDate.getUTCMonth() + 1,
+          day: utcDate.getUTCDate(),
+          hour: utcDate.getUTCHours(),
+          minute: utcDate.getUTCMinutes(),
+          second: utcDate.getUTCSeconds()
+        },
+        timestamp: new Date().toISOString()
+      });
+      
       return utcDate;
     }
     

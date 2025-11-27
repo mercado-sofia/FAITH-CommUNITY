@@ -65,6 +65,13 @@ export const useNewsModals = (urlState = null) => {
     setShowArchiveModal(true);
   }, []);
 
+  // Handle bulk unarchive request
+  const handleBulkUnarchiveRequest = useCallback((selectedNewsIds) => {
+    setSelectedItems(selectedNewsIds);
+    setUnarchivingNews(null); // Clear single unarchive to indicate bulk operation
+    setShowUnarchiveModal(true);
+  }, []);
+
   // Handle archive action
   const handleArchive = useCallback((newsItem) => {
     setArchivingNews(newsItem);
@@ -93,6 +100,12 @@ export const useNewsModals = (urlState = null) => {
   const handleCloseUnarchiveModal = useCallback(() => {
     setShowUnarchiveModal(false);
     setUnarchivingNews(null);
+    // Clear selected items if closing after bulk unarchive operation
+    setSelectedItems(prev => {
+      // Only clear if there are selected items (indicating it was a bulk operation)
+      // Single unarchive operations don't set selectedItems
+      return prev.length > 0 ? [] : prev;
+    });
   }, []);
 
   // Handle close all modals
@@ -186,6 +199,7 @@ export const useNewsModals = (urlState = null) => {
     handleCloseUnarchiveModal,
     handleBulkDeleteRequest,
     handleBulkArchiveRequest,
+    handleBulkUnarchiveRequest,
     handleCloseModals,
     handleCreateMode,
     handleListMode,

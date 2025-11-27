@@ -508,6 +508,66 @@ export const useAdminNews = (orgAcronym) => {
   };
 };
 
+// Custom hook for archived admin news data
+export const useArchivedNews = (orgAcronym) => {
+  // Guard clause: only make API call if orgAcronym is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  
+  const { data, error, isLoading, mutate } = useSWR(
+    shouldFetch ? `${API_BASE_URL}/api/news/archived/${orgAcronym}` : null,
+    adminFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      revalidateOnMount: true,
+      dedupingInterval: 60000, // Cache for 1 minute
+      errorRetryCount: 2, // Reduced retry count
+      errorRetryInterval: 2000, // Faster retry interval
+      keepPreviousData: true, // Keep previous data while loading
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors), 404 (not found), 403 (forbidden), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 403 && status !== 429 && !(status >= 500);
+      },
+      onError: (error) => {
+        // Only log if error hasn't been logged already by the fetcher and orgAcronym is valid
+        if (!error._alreadyLogged && orgAcronym) {
+          logger.swrError(`${API_BASE_URL}/api/news/archived/${orgAcronym}`, error, { orgAcronym });
+        }
+      }
+    }
+  );
+
+  // Handle both response formats: direct array or { success: true, data: [...] }
+  const news = useMemo(() => {
+    if (!data) return [];
+    
+    // If data is an array (direct response from backend)
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // If data has success/data structure
+    if (data.success && Array.isArray(data.data)) {
+      return data.data;
+    }
+    
+    return [];
+  }, [data]);
+
+  return {
+    news,
+    isLoading,
+    error,
+    mutate,
+    isEmpty: !data && !isLoading && !error,
+  };
+};
+
 // Custom hook for admin advocacies data
 export const useAdminAdvocacies = (orgId) => {
   // Guard clause: only make API call if orgId is valid

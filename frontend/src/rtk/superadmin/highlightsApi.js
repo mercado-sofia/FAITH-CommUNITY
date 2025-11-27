@@ -53,6 +53,7 @@ export const superadminHighlightsApi = createApi({
             approvedHighlights: highlights.filter(h => h.status === 'approved').length,
             pendingHighlights: highlights.filter(h => h.status === 'pending').length,
             rejectedHighlights: highlights.filter(h => h.status === 'rejected').length,
+            archivedHighlights: highlights.filter(h => h.status === 'archived').length,
           }
         }
         return {
@@ -60,6 +61,7 @@ export const superadminHighlightsApi = createApi({
           approvedHighlights: 0,
           pendingHighlights: 0,
           rejectedHighlights: 0,
+          archivedHighlights: 0,
         }
       },
     }),
@@ -101,6 +103,50 @@ export const superadminHighlightsApi = createApi({
       }),
       invalidatesTags: ["SuperadminHighlight"],
     }),
+
+    // Archive a highlight
+    archiveHighlight: builder.mutation({
+      query: (highlightId) => ({
+        url: `/admin/highlights/${highlightId}/archive`,
+        method: "POST",
+      }),
+      invalidatesTags: ["SuperadminHighlight"],
+    }),
+
+    // Unarchive a highlight
+    unarchiveHighlight: builder.mutation({
+      query: (highlightId) => ({
+        url: `/admin/highlights/${highlightId}/unarchive`,
+        method: "POST",
+      }),
+      invalidatesTags: ["SuperadminHighlight"],
+    }),
+
+    // Delete a highlight (superadmin only, immediate deletion)
+    deleteHighlight: builder.mutation({
+      query: (highlightId) => ({
+        url: `/admin/highlights/${highlightId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SuperadminHighlight"],
+    }),
+
+    // Get archived highlights
+    getArchivedHighlights: builder.query({
+      query: () => `/admin/highlights/archived`,
+      providesTags: ["SuperadminHighlight"],
+      transformResponse: (response) => {
+        if (response.highlights && Array.isArray(response.highlights)) {
+          return response.highlights.map(highlight => ({
+            ...highlight,
+            media: highlight.media || [],
+            program_title: highlight.program_title || null,
+            program_id: highlight.program_id || null
+          }))
+        }
+        return []
+      },
+    }),
   }),
 })
 
@@ -111,5 +157,9 @@ export const {
   useCheckFeaturedStatusQuery,
   useAddFeaturedHighlightMutation,
   useRemoveFeaturedHighlightMutation,
+  useArchiveHighlightMutation,
+  useUnarchiveHighlightMutation,
+  useDeleteHighlightMutation,
+  useGetArchivedHighlightsQuery,
 } = superadminHighlightsApi
 

@@ -14,8 +14,7 @@ export default function SearchAndFilterControls({
   programs = [],
   programsLoading = false,
   totalCount,
-  filteredCount,
-  isRefreshing = false
+  filteredCount
 }) {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [showDropdown, setShowDropdown] = useState(null);

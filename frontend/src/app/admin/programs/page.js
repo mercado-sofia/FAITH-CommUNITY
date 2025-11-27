@@ -18,7 +18,6 @@ import { FaPlus, FaUsers } from 'react-icons/fa';
 import { FiArchive } from 'react-icons/fi';
 import { IoMdCheckboxOutline } from 'react-icons/io';
 import { LuCalendarClock } from 'react-icons/lu';
-import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { HiLightningBolt } from 'react-icons/hi';
 
 export default function AdminProgramsPage() {
@@ -180,7 +179,7 @@ export default function AdminProgramsPage() {
           {/* Status Navigation Tabs */}
           <div className={styles.statusTabs}>
             {[
-              { key: 'active', label: 'Active', icon: <MdOutlineRadioButtonChecked /> },
+              { key: 'active', label: 'Active', icon: <HiLightningBolt /> },
               { key: 'upcoming', label: 'Upcoming', icon: <LuCalendarClock /> },
               { key: 'completed', label: 'Completed', icon: <IoMdCheckboxOutline /> },
               { key: 'collaborations', label: 'Collaborations', icon: <FaUsers /> },
@@ -197,7 +196,7 @@ export default function AdminProgramsPage() {
                 >
                   {tab.icon && (
                     <span className={styles.statusTabIcon}>
-                      {isActive ? <HiLightningBolt /> : tab.icon}
+                      {tab.icon}
                     </span>
                   )}
                   {tab.label}

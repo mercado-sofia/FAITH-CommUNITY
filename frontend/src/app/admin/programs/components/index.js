@@ -2,7 +2,7 @@ export { default as DateSelectionField } from './DatePicker/DateSelectionField'
 export { default as ProgramForm } from './ProgramForm/ProgramForm'
 export { default as ProgramCard } from './ProgramCard/ProgramCard'
 export { default as SearchAndFilterControls } from './SearchAndFilterControls/SearchAndFilterControls'
-export { default as ViewDetailsModal } from './ViewDetailsModal/ViewDetailsModal'
+export { ProgramDetailsModal as ViewDetailsModal } from '@/components/portal'
 export { default as UnsaveChangesModal } from './UnsaveChangesModal/UnsaveChangesModal'
 
 // Container components

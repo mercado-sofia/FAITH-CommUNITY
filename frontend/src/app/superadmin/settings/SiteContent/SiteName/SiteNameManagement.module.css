@@ -43,7 +43,7 @@
   font-size: 12px;
   color: #64748b;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
 }
 
@@ -70,7 +70,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .textInput {
@@ -78,7 +78,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -109,7 +109,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .editToggleBtn:hover {
@@ -132,7 +132,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .cancelBtn:hover {
@@ -155,7 +155,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .saveBtn:hover {

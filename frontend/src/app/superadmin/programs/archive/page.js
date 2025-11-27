@@ -6,7 +6,7 @@ import { FiChevronDown, FiArchive, FiArrowLeft } from 'react-icons/fi'
 import { useGetArchivedProgramsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import ProgramCard from '../components/ProgramCard'
-import ProgramDetailsModal from '../components/ProgramDetailsModal'
+import { ProgramDetailsModal } from '@/components/portal'
 import { ConfirmationModal } from '@/components'
 import SearchBar from '../components/SearchBar'
 import { SkeletonLoader } from '../../components'
@@ -437,6 +437,8 @@ const ArchiveProgramsPage = () => {
       <ProgramDetailsModal 
         program={selectedProgram}
         isOpen={isModalOpen}
+        portal="superadmin"
+        enableDataFetch={true}
         onClose={handleCloseModal}
       />
 

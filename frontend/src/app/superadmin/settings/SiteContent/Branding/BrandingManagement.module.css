@@ -47,7 +47,7 @@
   font-size: 12px;
   color: #64748b;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
 }
 
@@ -106,7 +106,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Remove Button */
@@ -156,7 +156,7 @@
   border-radius: 8px;
   color: #9ca3af;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   margin-bottom: 1rem;
   min-height: 120px;
 }
@@ -176,7 +176,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   text-decoration: none;
 }
 
@@ -202,7 +202,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .textInput {
@@ -210,7 +210,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -235,7 +235,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   align-self: flex-start;
 }
 
@@ -279,7 +279,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   border-bottom: none;
   padding-bottom: 0;
 }
@@ -321,7 +321,7 @@
 .serviceItem span {
   font-size: 14px;
   color: #64748b;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-weight: 400;
   flex: 1;
 }
@@ -386,7 +386,7 @@
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .addServiceGroup .textInput:focus {
@@ -447,7 +447,7 @@
   border-radius: 6px;
   border: 1px solid #d1d5db;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
 }
 
@@ -463,13 +463,13 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .helpText {
   font-size: 12px;
   color: #6b7280;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
   margin: 0;
 }
@@ -578,7 +578,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .editToggleBtn:hover {
@@ -601,7 +601,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .cancelBtn:hover {
@@ -624,7 +624,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .saveBtn:hover {

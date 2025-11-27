@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
-import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
+import { SearchAndFilterControls, HighlightCard, HighlightForm } from './components';
+import { HighlightDetailsModal } from '@/components/portal';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
 import { useAdminPrograms } from '@/hooks/admin/useAdminData';
@@ -518,8 +519,10 @@ export default function AdminHighlightsPage() {
 
       {/* View Details Modal */}
       {viewingHighlight && (
-        <ViewDetailsModal
+        <HighlightDetailsModal
           highlight={viewingHighlight}
+          isOpen={!!viewingHighlight}
+          portal="admin"
           onClose={() => setViewingHighlight(null)}
         />
       )}

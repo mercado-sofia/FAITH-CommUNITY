@@ -7,7 +7,7 @@ import { FiChevronDown, FiArchive } from 'react-icons/fi'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
-import ProgramDetailsModal from './components/ProgramDetailsModal'
+import { ProgramDetailsModal } from '@/components/portal'
 import FeaturedProjects from './components/featuredProjects'
 import ProgramCard from './components/ProgramCard'
 import SearchBar from './components/SearchBar'
@@ -356,13 +356,11 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.featuredCount}>— Total Featured</span>
+                            <span className={styles.featuredCount}>— Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
-                          </div>
-                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Archived</span>
+                            <span className={styles.archivedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -470,13 +468,11 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.featuredCount}>— Total Featured</span>
+                            <span className={styles.featuredCount}>— Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
-                          </div>
-                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Archived</span>
+                            <span className={styles.archivedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -697,7 +693,7 @@ const SuperadminProgramsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.featuredCount}>
-                              {statistics.featuredPrograms || 0} Total Featured
+                              {statistics.featuredPrograms || 0} Featured
                             </span>
                             <span className={styles.activeCount}>
                               {statistics.activePrograms || 0} Active
@@ -708,14 +704,12 @@ const SuperadminProgramsPage = () => {
                             <span className={styles.completedCount}>
                               {statistics.completedPrograms || 0} Completed
                             </span>
-                          </div>
-                          {statistics.archivedPrograms > 0 && (
-                            <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                              <span className={styles.approvedCount}>
+                            {statistics.archivedPrograms > 0 && (
+                              <span className={styles.archivedCount}>
                                 {statistics.archivedPrograms} Archived
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -729,13 +723,11 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.featuredCount}>— Total Featured</span>
+                            <span className={styles.featuredCount}>— Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
-                          </div>
-                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Archived</span>
+                            <span className={styles.archivedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -750,13 +742,11 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.featuredCount}>— Total Featured</span>
+                            <span className={styles.featuredCount}>— Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
-                          </div>
-                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Archived</span>
+                            <span className={styles.archivedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -918,6 +908,8 @@ const SuperadminProgramsPage = () => {
           key={`program-modal-${selectedProgram.id}`}
           program={selectedProgram}
           isOpen={isModalOpen}
+          portal="superadmin"
+          enableDataFetch={true}
           onClose={() => {
             setIsModalOpen(false)
             // Small delay before clearing to ensure modal closes smoothly

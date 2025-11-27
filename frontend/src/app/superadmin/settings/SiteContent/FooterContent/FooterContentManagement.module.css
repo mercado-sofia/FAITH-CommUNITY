@@ -36,7 +36,7 @@
   font-size: 12px;
   color: #64748b;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
 }
 
@@ -107,7 +107,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .editToggleBtn:hover {
@@ -130,7 +130,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .cancelBtn:hover {
@@ -153,7 +153,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .saveBtn:hover {
@@ -173,7 +173,7 @@
   font-size: 14px;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   width: 100%;
   min-width: 0;
   margin-top: 0.5rem;
@@ -192,7 +192,7 @@
   font-size: 14px;
   background: white;
   transition: border-color 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   flex: 1;
 }
 
@@ -217,7 +217,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .textInput {
@@ -225,7 +225,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -250,7 +250,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   align-self: flex-start;
 }
 
@@ -294,7 +294,7 @@
 .serviceItem span {
   font-size: 14px;
   color: #64748b;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-weight: 400;
   flex: 1;
 }
@@ -356,7 +356,7 @@
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .addServiceGroup .textInput:focus {
@@ -417,7 +417,7 @@
   border-radius: 6px;
   border: 1px solid #d1d5db;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
 }
 
@@ -433,7 +433,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .emptyState {
@@ -447,7 +447,7 @@
 .emptyStateText {
   font-size: 13px;
   color: #9ca3af;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.5;
   margin: 0;
 }
@@ -462,13 +462,13 @@
   align-items: center;
   font-size: 13px;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .emptyPlaceholder {
   color: #9ca3af;
   font-style: italic;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Social Media Styles */
@@ -540,14 +540,14 @@
   font-size: 14px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   white-space: nowrap;
 }
 
 .socialMediaUrl {
   font-size: 12px;
   color: #6b7280;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   word-break: break-all;
 }
 
@@ -587,7 +587,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   width: 100%;
   margin-bottom: 1rem;
 }
@@ -643,7 +643,7 @@
   font-size: 16px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .closeModalBtn {
@@ -686,7 +686,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .platformOption:hover {
@@ -725,7 +725,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .modalActions .cancelBtn:hover {
@@ -744,7 +744,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .addBtn:hover:not(:disabled) {

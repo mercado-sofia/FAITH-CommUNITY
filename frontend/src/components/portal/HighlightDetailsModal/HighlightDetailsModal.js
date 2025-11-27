@@ -8,10 +8,21 @@ import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import logger from '@/utils/shared/logger'
 import { ConfirmationModal } from '@/components'
-import { useArchiveHighlightMutation, useDeleteHighlightMutation } from '@/rtk/superadmin/highlightsApi'
-import styles from './styles/HighlightDetailsModal.module.css'
+import styles from './HighlightDetailsModal.module.css'
 
-const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete }) => {
+// Conditional imports for superadmin features
+import { 
+  useArchiveHighlightMutation as useSuperadminArchiveHighlightMutation,
+  useDeleteHighlightMutation as useSuperadminDeleteHighlightMutation
+} from '@/rtk/superadmin/highlightsApi'
+
+const HighlightDetailsModal = ({ 
+  highlight, 
+  isOpen, 
+  onClose, 
+  portal = 'admin', // 'superadmin' | 'admin'
+  onActionComplete 
+}) => {
   const scrollPositionRef = useRef(0)
   const [programTitle, setProgramTitle] = useState(null)
   const [loadingProgram, setLoadingProgram] = useState(false)
@@ -23,12 +34,13 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
   const [isArchiving, setIsArchiving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [archiveHighlight] = useArchiveHighlightMutation()
-  const [deleteHighlight] = useDeleteHighlightMutation()
+  // Archive and delete mutations (superadmin only) - always call hook, but only use when portal is superadmin
+  const [archiveHighlight] = useSuperadminArchiveHighlightMutation()
+  const [deleteHighlight] = useSuperadminDeleteHighlightMutation()
 
-  // Lock scroll when modal is open
+  // Lock scroll when modal is open (superadmin only)
   useEffect(() => {
-    if (typeof document === 'undefined' || !document.body) {
+    if (portal !== 'superadmin' || typeof document === 'undefined' || !document.body) {
       return
     }
 
@@ -101,7 +113,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
         }
       }
     }
-  }, [isOpen])
+  }, [isOpen, portal])
 
   // Fetch program title when program_id is available but program_title is not
   useEffect(() => {
@@ -113,84 +125,174 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
       }
 
       // If no program_id, try to fetch from submission record
-      if (highlight?.program_id === null || highlight?.program_id === undefined || highlight?.program_id === '') {
+      if (!highlight?.program_id || highlight.program_id === null || highlight.program_id === undefined || highlight.program_id === '') {
         // Try to get program_id from submission if highlight doesn't have it
         setLoadingProgram(true)
         try {
-          const { API_BASE_URL } = await import('@/config/api');
-          // Try to find submission for this highlight using the correct endpoint
-          const apiUrl = `${API_BASE_URL || ''}/api/approvals`
-          const response = await fetch(apiUrl, {
-            credentials: 'include', // CRITICAL: Include httpOnly cookies
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
+          const { API_BASE_URL } = await import('@/config/api')
+          
+          if (portal === 'admin') {
+            // Admin: Get organization acronym from admin data
+            let orgAcronym = null
+            try {
+              const adminData = typeof window !== 'undefined' ? localStorage.getItem('adminData') : null
+              if (adminData) {
+                const parsed = JSON.parse(adminData)
+                orgAcronym = parsed.org || parsed.organization_acronym || parsed.acronym
+              }
+            } catch (e) {
+              console.error('Error parsing admin data:', e)
+            }
 
-          if (response.ok) {
-            const result = await response.json()
-            // Response structure: { success: true, data: [submissions] }
-            const submissions = result.success ? result.data : (result.submissions || [])
-            
-            // Find submission for this highlight
-            // Match by: section='highlights', status='approved', and title matches
-            const highlightSubmission = submissions.find(sub => {
-              if (sub.section !== 'highlights' || sub.status !== 'approved') {
-                return false
-              }
-              
-              try {
-                const proposedData = typeof sub.proposed_data === 'string' 
-                  ? JSON.parse(sub.proposed_data) 
-                  : sub.proposed_data
-                
-                // Match by title (most reliable) or highlight_id
-                const titleMatch = proposedData?.title === highlight?.title
-                const idMatch = proposedData?.highlight_id === highlight?.id
-                const orgMatch = sub.organization_id === highlight?.organization_id
-                
-                // If title matches and org matches, or if highlight_id matches, this is likely the right submission
-                return (titleMatch && orgMatch) || idMatch
-              } catch {
-                return false
-              }
+            if (!orgAcronym) {
+              setLoadingProgram(false)
+              return
+            }
+
+            // Try to find submission for this highlight using the correct endpoint
+            const apiUrl = `${API_BASE_URL || ''}/api/submissions/${orgAcronym}`
+            const response = await fetch(apiUrl, {
+              credentials: 'include', // CRITICAL: Include httpOnly cookies
+              headers: {
+                'Content-Type': 'application/json',
+                // No Authorization header needed - httpOnly cookies handle authentication
+              },
             })
 
-            if (highlightSubmission) {
-              try {
-                const proposedData = typeof highlightSubmission.proposed_data === 'string' 
-                  ? JSON.parse(highlightSubmission.proposed_data) 
-                  : highlightSubmission.proposed_data
+            if (response.ok) {
+              const result = await response.json()
+              // Response structure: { success: true, data: [submissions] }
+              const submissions = result.success ? result.data : (result.submissions || [])
+              
+              // Find submission for this highlight
+              const highlightSubmission = submissions.find(sub => {
+                if (sub.section !== 'highlights' || sub.status !== 'approved') {
+                  return false
+                }
                 
-                if (proposedData?.program_id) {
-                  // Found program_id in submission, now fetch the program title
-                  const { API_BASE_URL } = await import('@/config/api');
-                  const programResponse = await fetch(
-                    `${API_BASE_URL || ''}/api/projects/superadmin/${proposedData.program_id}`,
-                    {
-                      credentials: 'include', // CRITICAL: Include httpOnly cookies
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                    }
-                  )
+                try {
+                  const proposedData = typeof sub.proposed_data === 'string' 
+                    ? JSON.parse(sub.proposed_data) 
+                    : sub.proposed_data
+                  
+                  // Match by title (most reliable)
+                  return proposedData?.title === highlight?.title
+                } catch {
+                  return false
+                }
+              })
 
-                  if (programResponse.ok) {
-                    const programResult = await programResponse.json()
-                    if (programResult.success && programResult.data?.title) {
-                      setProgramTitle(programResult.data.title)
-                    } else if (programResult.title) {
-                      setProgramTitle(programResult.title)
+              if (highlightSubmission) {
+                try {
+                  const proposedData = typeof highlightSubmission.proposed_data === 'string' 
+                    ? JSON.parse(highlightSubmission.proposed_data) 
+                    : highlightSubmission.proposed_data
+                  
+                  if (proposedData?.program_id) {
+                    // Found program_id in submission, now fetch the program title
+                    const programResponse = await fetch(
+                      `${API_BASE_URL || ''}/api/admin/programs/single/${proposedData.program_id}`,
+                      {
+                        credentials: 'include', // CRITICAL: Include httpOnly cookies
+                        headers: {
+                          'Content-Type': 'application/json',
+                          // No Authorization header needed - httpOnly cookies handle authentication
+                        },
+                      }
+                    )
+
+                    if (programResponse.ok) {
+                      const programResult = await programResponse.json()
+                      if (programResult.data?.title) {
+                        setProgramTitle(programResult.data.title)
+                      } else if (programResult.title) {
+                        setProgramTitle(programResult.title)
+                      }
                     }
                   }
+                } catch (e) {
+                  console.error('Error parsing submission data:', e)
                 }
-              } catch (e) {
-                logger.error('Error parsing submission data', e, { context: 'HighlightDetailsModal' })
+              }
+            }
+          } else {
+            // Superadmin: Try to find submission for this highlight using the correct endpoint
+            const apiUrl = `${API_BASE_URL || ''}/api/approvals`
+            const response = await fetch(apiUrl, {
+              credentials: 'include', // CRITICAL: Include httpOnly cookies
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+
+            if (response.ok) {
+              const result = await response.json()
+              // Response structure: { success: true, data: [submissions] }
+              const submissions = result.success ? result.data : (result.submissions || [])
+              
+              // Find submission for this highlight
+              // Match by: section='highlights', status='approved', and title matches
+              const highlightSubmission = submissions.find(sub => {
+                if (sub.section !== 'highlights' || sub.status !== 'approved') {
+                  return false
+                }
+                
+                try {
+                  const proposedData = typeof sub.proposed_data === 'string' 
+                    ? JSON.parse(sub.proposed_data) 
+                    : sub.proposed_data
+                  
+                  // Match by title (most reliable) or highlight_id
+                  const titleMatch = proposedData?.title === highlight?.title
+                  const idMatch = proposedData?.highlight_id === highlight?.id
+                  const orgMatch = sub.organization_id === highlight?.organization_id
+                  
+                  // If title matches and org matches, or if highlight_id matches, this is likely the right submission
+                  return (titleMatch && orgMatch) || idMatch
+                } catch {
+                  return false
+                }
+              })
+
+              if (highlightSubmission) {
+                try {
+                  const proposedData = typeof highlightSubmission.proposed_data === 'string' 
+                    ? JSON.parse(highlightSubmission.proposed_data) 
+                    : highlightSubmission.proposed_data
+                  
+                  if (proposedData?.program_id) {
+                    // Found program_id in submission, now fetch the program title
+                    const programResponse = await fetch(
+                      `${API_BASE_URL || ''}/api/projects/superadmin/${proposedData.program_id}`,
+                      {
+                        credentials: 'include', // CRITICAL: Include httpOnly cookies
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                      }
+                    )
+
+                    if (programResponse.ok) {
+                      const programResult = await programResponse.json()
+                      if (programResult.success && programResult.data?.title) {
+                        setProgramTitle(programResult.data.title)
+                      } else if (programResult.title) {
+                        setProgramTitle(programResult.title)
+                      }
+                    }
+                  }
+                } catch (e) {
+                  logger.error('Error parsing submission data', e, { context: 'HighlightDetailsModal' })
+                }
               }
             }
           }
         } catch (error) {
-          logger.error('Error fetching program from submission', error, { context: 'HighlightDetailsModal' })
+          if (portal === 'admin') {
+            console.error('Error fetching program from submission:', error)
+          } else {
+            logger.error('Error fetching program from submission', error, { context: 'HighlightDetailsModal' })
+          }
         } finally {
           setLoadingProgram(false)
         }
@@ -200,26 +302,42 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
       // Fetch program title from API using program_id
       setLoadingProgram(true)
       try {
-        const { API_BASE_URL } = await import('@/config/api');
-        const apiUrl = `${API_BASE_URL || ''}/api/projects/superadmin/${highlight.program_id}`
+        const { API_BASE_URL } = await import('@/config/api')
+        const apiUrl = portal === 'admin'
+          ? `${API_BASE_URL || ''}/api/admin/programs/single/${highlight.program_id}`
+          : `${API_BASE_URL || ''}/api/projects/superadmin/${highlight.program_id}`
+        
         const response = await fetch(apiUrl, {
           credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
         })
 
         if (response.ok) {
           const result = await response.json()
-          if (result.success && result.data?.title) {
-            setProgramTitle(result.data.title)
-          } else if (result.title) {
-            // Fallback: check if title is at root level
-            setProgramTitle(result.title)
+          if (portal === 'admin') {
+            if (result.data?.title) {
+              setProgramTitle(result.data.title)
+            } else if (result.title) {
+              setProgramTitle(result.title)
+            }
+          } else {
+            if (result.success && result.data?.title) {
+              setProgramTitle(result.data.title)
+            } else if (result.title) {
+              // Fallback: check if title is at root level
+              setProgramTitle(result.title)
+            }
           }
         }
       } catch (error) {
-        logger.error('Error fetching program title', error, { context: 'HighlightDetailsModal' })
+        if (portal === 'admin') {
+          console.error('Error fetching program title:', error)
+        } else {
+          logger.error('Error fetching program title', error, { context: 'HighlightDetailsModal' })
+        }
       } finally {
         setLoadingProgram(false)
       }
@@ -232,7 +350,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
       setProgramTitle(null)
       setLoadingProgram(false)
     }
-  }, [isOpen, highlight])
+  }, [isOpen, highlight, portal])
 
   // Get all images from media - must be before early return
   useEffect(() => {
@@ -309,21 +427,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
     return firstImage?.url || firstImage?.filename || null
   }
 
-  // Get impact level label
-  const getImpactLevelLabel = (impactLevel) => {
-    if (!impactLevel) return null
-    switch (impactLevel.toLowerCase()) {
-      case 'low':
-        return 'Small Impact'
-      case 'average':
-        return 'Average Impact'
-      case 'high':
-        return 'High Impact'
-      default:
-        return null
-    }
-  }
-
   const imageUrl = getImageUrl()
 
   const openImageViewer = (index = 0) => {
@@ -337,9 +440,9 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
     }
   }
 
-  // Handle archive
+  // Handle archive (superadmin only)
   const handleArchive = async () => {
-    if (!highlight) return
+    if (!highlight || portal !== 'superadmin') return
     
     setIsArchiving(true)
     try {
@@ -361,9 +464,9 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
     }
   }
 
-  // Handle delete
+  // Handle delete (superadmin only)
   const handleDelete = async () => {
-    if (!highlight) return
+    if (!highlight || portal !== 'superadmin') return
     
     setIsDeleting(true)
     try {
@@ -385,10 +488,10 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
     }
   }
 
-  // Only show archive button if highlight is approved (not already archived)
-  const showActions = highlight?.status === 'approved'
-  // Show delete button for both approved and archived highlights
-  const showDelete = highlight?.status === 'approved' || highlight?.status === 'archived'
+  // Only show archive button if highlight is approved (not already archived) and portal is superadmin
+  const showActions = portal === 'superadmin' && highlight?.status === 'approved'
+  // Show delete button for both approved and archived highlights, but only for superadmin
+  const showDelete = portal === 'superadmin' && (highlight?.status === 'approved' || highlight?.status === 'archived')
 
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
@@ -436,7 +539,8 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
 
             {/* Information Grid - Two Columns */}
             <div className={styles.infoGrid}>
-              {highlight.organization_name && (
+              {/* Organization - Only show for superadmin */}
+              {portal === 'superadmin' && highlight.organization_name && (
                 <div className={styles.infoItem}>
                   <div className={styles.infoLabel}>
                     <FaBuilding className={styles.infoIcon} />
@@ -463,6 +567,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
                 </div>
               )}
 
+              {/* Year field - Always show if available */}
               {highlight.year && (
                 <div className={styles.infoItem}>
                   <div className={styles.infoLabel}>
@@ -562,38 +667,52 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
           </div>
         </div>
 
-        <div className={styles.modalFooter}>
-          {highlight.created_at && (
-            <div className={styles.footerDate}>
-              Date Created: {formatDateShort(highlight.created_at)}
+        {/* Modal Footer - Show actions only for superadmin */}
+        {portal === 'superadmin' && (
+          <div className={styles.modalFooter}>
+            {highlight.created_at && (
+              <div className={styles.footerDate}>
+                Date Created: {formatDateShort(highlight.created_at)}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              {showActions && (
+                <button
+                  onClick={() => setArchiveModalOpen(true)}
+                  className={styles.archiveButton}
+                  disabled={isArchiving || isDeleting}
+                >
+                  <FiArchive />
+                  Archive
+                </button>
+              )}
+              {showDelete && (
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className={styles.deleteButton}
+                  disabled={isArchiving || isDeleting}
+                >
+                  <FiTrash2 />
+                  Delete
+                </button>
+              )}
+              <button onClick={onClose} className={styles.closeModalButton}>
+                Close
+              </button>
             </div>
-          )}
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            {showActions && (
-              <button
-                onClick={() => setArchiveModalOpen(true)}
-                className={styles.archiveButton}
-                disabled={isArchiving || isDeleting}
-              >
-                <FiArchive />
-                Archive
-              </button>
-            )}
-            {showDelete && (
-              <button
-                onClick={() => setDeleteModalOpen(true)}
-                className={styles.deleteButton}
-                disabled={isArchiving || isDeleting}
-              >
-                <FiTrash2 />
-                Delete
-              </button>
-            )}
-            <button onClick={onClose} className={styles.closeModalButton}>
-              Close
-            </button>
           </div>
-        </div>
+        )}
+
+        {/* Modal Footer - Admin only shows close button */}
+        {portal === 'admin' && (
+          <div className={styles.modalFooter}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginLeft: 'auto' }}>
+              <button onClick={onClose} className={styles.closeModalButton}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Full Screen Image Viewer */}
@@ -656,37 +775,41 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
         </div>
       )}
 
-      {/* Archive Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={archiveModalOpen}
-        onCancel={() => setArchiveModalOpen(false)}
-        onConfirm={handleArchive}
-        itemName={highlight?.title}
-        itemType="highlight"
-        actionType="archive"
-        isLoading={isArchiving}
-        customMessage={
-          highlight?.organization_name
-            ? `Are you sure you want to archive this highlight? Organization: ${highlight.organization_name}. This will remove it from the website display.`
-            : undefined
-        }
-      />
+      {/* Archive Confirmation Modal - Superadmin only */}
+      {portal === 'superadmin' && (
+        <ConfirmationModal
+          isOpen={archiveModalOpen}
+          onCancel={() => setArchiveModalOpen(false)}
+          onConfirm={handleArchive}
+          itemName={highlight?.title}
+          itemType="highlight"
+          actionType="archive"
+          isLoading={isArchiving}
+          customMessage={
+            highlight?.organization_name
+              ? `Are you sure you want to archive this highlight? Organization: ${highlight.organization_name}. This will remove it from the website display.`
+              : undefined
+          }
+        />
+      )}
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onCancel={() => setDeleteModalOpen(false)}
-        onConfirm={handleDelete}
-        itemName={highlight?.title}
-        itemType="highlight"
-        actionType="delete"
-        isLoading={isDeleting}
-        customMessage={
-          highlight?.organization_name
-            ? `Are you sure you want to delete this highlight? Organization: ${highlight.organization_name}. This action cannot be undone.`
-            : undefined
-        }
-      />
+      {/* Delete Confirmation Modal - Superadmin only */}
+      {portal === 'superadmin' && (
+        <ConfirmationModal
+          isOpen={deleteModalOpen}
+          onCancel={() => setDeleteModalOpen(false)}
+          onConfirm={handleDelete}
+          itemName={highlight?.title}
+          itemType="highlight"
+          actionType="delete"
+          isLoading={isDeleting}
+          customMessage={
+            highlight?.organization_name
+              ? `Are you sure you want to delete this highlight? Organization: ${highlight.organization_name}. This action cannot be undone.`
+              : undefined
+          }
+        />
+      )}
     </div>
   )
 }

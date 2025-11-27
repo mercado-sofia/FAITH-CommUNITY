@@ -59,7 +59,7 @@
   font-weight: 700;
   color: #111827;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), sans-serif;
   letter-spacing: -0.01em;
 }
 
@@ -235,7 +235,7 @@
   margin: 0 0 8px 0;
   padding-bottom: 0;
   border-bottom: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Description Box */
@@ -306,7 +306,7 @@
   color: #111827;
   line-height: 1.6;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Enhanced Main Image Container */
@@ -539,7 +539,7 @@
   border-bottom: none;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .dataContent {

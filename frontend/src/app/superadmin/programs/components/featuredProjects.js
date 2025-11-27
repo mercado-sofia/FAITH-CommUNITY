@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
-import ProgramDetailsModal from './ProgramDetailsModal'
+import { ProgramDetailsModal } from '@/components/portal'
 import ProgramCard from './ProgramCard'
 import { SkeletonLoader } from '../../components'
 import styles from '../programs.module.css'
@@ -315,6 +315,8 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
           key={`featured-modal-${selectedProgram.id}`}
           program={selectedProgram}
           isOpen={isModalOpen}
+          portal="superadmin"
+          enableDataFetch={true}
           onClose={() => {
             setIsModalOpen(false)
             // Small delay before clearing to ensure modal closes smoothly

@@ -62,7 +62,7 @@
   font-weight: 600;
   color: #111827;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), sans-serif;
   letter-spacing: -0.01em;
   text-align: center;
   flex: 1;
@@ -199,7 +199,7 @@
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .infoIcon {
@@ -229,7 +229,7 @@
   font-weight: 600;
   color: #6b7280;
   margin: 0 0 12px 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -461,7 +461,7 @@
   font-size: 15px;
   font-weight: 600;
   color: #ffffff;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .imageCounter {
@@ -583,3 +583,4 @@
     font-size: 20px;
   }
 }
+

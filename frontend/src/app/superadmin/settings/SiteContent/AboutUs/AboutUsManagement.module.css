@@ -43,7 +43,7 @@
   font-size: 12px;
   color: #64748b;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
 }
 
@@ -92,7 +92,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .textInput {
@@ -100,7 +100,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -121,7 +121,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   resize: vertical;
@@ -144,7 +144,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: #f9fafb;
   color: #374151;
   line-height: 1.6;
@@ -155,7 +155,7 @@
 .emptyPlaceholder {
   color: #94a3b8;
   font-style: italic;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .emptyCategories {
@@ -163,7 +163,7 @@
   text-align: center;
   color: #94a3b8;
   font-style: italic;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   border: 1px dashed #d1d5db;
   border-radius: 6px;
   background: #f9fafb;
@@ -174,7 +174,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   -webkit-appearance: none;
@@ -258,7 +258,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   color: #374151;
   cursor: pointer;
@@ -311,7 +311,7 @@
   background: white;
   color: #374151;
   font-size: 14px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -359,7 +359,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .addCategoryBtn:hover {
@@ -400,13 +400,13 @@
   font-size: 14px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .categoryMeta {
   font-size: 12px;
   color: #6b7280;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .categoryActions {
@@ -462,7 +462,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .editToggleBtn:hover {
@@ -485,7 +485,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .cancelBtn:hover {
@@ -508,7 +508,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .saveBtn:hover {
@@ -691,7 +691,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   border: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -713,7 +713,7 @@
   padding: 0.25rem 0.5rem;
   font-size: 11px;
   text-align: center;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .currentImage {
@@ -751,7 +751,7 @@
   color: #6b7280;
   font-size: 14px;
   font-style: italic;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .imageUploadControls {

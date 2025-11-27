@@ -6,7 +6,7 @@ import { FiChevronDown, FiArchive, FiArrowLeft } from 'react-icons/fi'
 import { useGetArchivedHighlightsQuery } from '@/rtk/superadmin/highlightsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import HighlightCard from '../components/HighlightCard'
-import HighlightDetailsModal from '../components/HighlightDetailsModal'
+import { HighlightDetailsModal } from '@/components/portal'
 import { ConfirmationModal } from '@/components'
 import SearchBar from '../components/SearchBar'
 import { SkeletonLoader } from '../../components'
@@ -418,6 +418,7 @@ const ArchiveHighlightsPage = () => {
       <HighlightDetailsModal 
         highlight={selectedHighlight}
         isOpen={isModalOpen}
+        portal="superadmin"
         onClose={handleCloseModal}
       />
 

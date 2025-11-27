@@ -6,7 +6,7 @@ import { FiChevronDown, FiArchive } from 'react-icons/fi'
 import { useGetAllHighlightsQuery, useGetHighlightsStatisticsQuery } from '@/rtk/superadmin/highlightsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import HighlightCard from './components/HighlightCard'
-import HighlightDetailsModal from './components/HighlightDetailsModal'
+import { HighlightDetailsModal } from '@/components/portal'
 import SearchBar from './components/SearchBar'
 import { SkeletonLoader } from '../components'
 import styles from './highlights.module.css'
@@ -636,7 +636,7 @@ const SuperadminHighlightsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {featuredCount} Total Featured
+                              {featuredCount} Featured
                             </span>
                             {statistics.archivedHighlights > 0 && (
                               <span className={styles.archivedCount} style={{ marginLeft: '1rem' }}>
@@ -737,6 +737,7 @@ const SuperadminHighlightsPage = () => {
       <HighlightDetailsModal 
         highlight={selectedHighlight}
         isOpen={isModalOpen}
+        portal="superadmin"
         onClose={handleCloseModal}
         onActionComplete={() => {
           refetchHighlights()

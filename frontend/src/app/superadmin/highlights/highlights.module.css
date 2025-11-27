@@ -181,7 +181,7 @@
   overflow: hidden;
   box-sizing: border-box;
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .cardContent {
@@ -272,7 +272,7 @@
 .highlightsHeader .sectionTitle {
   font-size: 1.15rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), sans-serif;
   color: #000;
   margin: 0.5rem 0 0 0;
   user-select: none;

@@ -37,7 +37,7 @@
   font-size: 12px;
   color: #64748b;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
 }
 
@@ -106,7 +106,7 @@
 .uploadingState p {
   font-size: 12px;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 @keyframes spin {
@@ -136,7 +136,7 @@
   color: #9ca3af;
   font-style: normal;
   margin-top: 1rem;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .emptyState h3 {
@@ -144,14 +144,14 @@
   font-weight: 600;
   color: #374151;
   margin: 0 0 0.5rem 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .emptyState p {
   color: #6b7280;
   font-size: 13px;
   margin: 0 0 1.5rem 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Head Card */
@@ -196,7 +196,7 @@
   color: #6b7280;
   font-size: 48px;
   font-weight: 600;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .imageOverlay {
@@ -229,7 +229,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .uploadButton:hover {
@@ -264,7 +264,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .textInput,
@@ -273,7 +273,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   resize: vertical;
@@ -308,7 +308,7 @@
   font-weight: 600;
   color: #000;
   margin: 0 0 1rem 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .position {
@@ -322,7 +322,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   width: fit-content;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   border: 1px solid #e5e7eb;
 }
 
@@ -331,7 +331,7 @@
   color: #6b7280;
   line-height: 1.6;
   margin: 0;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .contactInfo {
@@ -352,13 +352,13 @@
   font-weight: 600;
   color: #374151;
   min-width: 60px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .contactValue {
   font-size: 13px;
   color: #6b7280;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 /* Action Buttons */
@@ -384,7 +384,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   border: none;
   text-decoration: none;
   user-select: none;
@@ -405,7 +405,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   white-space: nowrap;
 }
 

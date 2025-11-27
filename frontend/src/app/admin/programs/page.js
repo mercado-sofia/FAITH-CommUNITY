@@ -255,8 +255,12 @@ export default function AdminProgramsPage() {
       {modals.viewingProgram && (
         <ViewDetailsModal
           program={modals.viewingProgram}
-          onClose={modals.closeViewModal}
+          isOpen={!!modals.viewingProgram}
+          portal="admin"
           mode="view"
+          onClose={modals.closeViewModal}
+          onArchive={programsManagement.handleArchiveProgram}
+          onUnarchive={programsManagement.handleUnarchiveProgram}
         />
       )}
 
@@ -264,8 +268,10 @@ export default function AdminProgramsPage() {
       {modals.isCollaborationModalOpen && modals.selectedCollaboration && (
         <ViewDetailsModal
           collaboration={modals.selectedCollaboration}
-          onClose={modals.closeCollaborationModal}
+          isOpen={modals.isCollaborationModalOpen}
+          portal="admin"
           mode="collaboration"
+          onClose={modals.closeCollaborationModal}
         />
       )}
 

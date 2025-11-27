@@ -360,9 +360,9 @@
 }
 
 .archiveButton {
-  background: #6b7280;
-  color: white;
-  border: none;
+  background: transparent;
+  color: #000;
+  border: 2px solid #000;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
@@ -375,9 +375,9 @@
 }
 
 .archiveButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: #f3f4f6;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .archiveButton:disabled {
@@ -389,7 +389,7 @@
 .deleteButton {
   background: white;
   color: #ef4444;
-  border: 1px solid #ef4444;
+  border: 2px solid #ef4444;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;

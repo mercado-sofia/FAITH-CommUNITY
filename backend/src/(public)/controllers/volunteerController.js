@@ -1,4 +1,3 @@
-// Consolidated Volunteer Controller - handles both public and admin operations
 // db table: volunteers
 import db from "../../database.js";
 import { createUserNotification } from './userController.js';
@@ -80,9 +79,6 @@ export const submitVolunteer = async (req, res) => {
 
     const program = programRows[0];
     
-    // Calculate actual program status respecting manual_status_override
-    // This matches the frontend getProgramStatusByDates logic
-    // Programs stay in their current status until admin manually changes it
     let actualStatus = program.status || 'Upcoming';
     
     if (program.manual_status_override === 1 || program.manual_status_override === true) {
@@ -156,7 +152,6 @@ export const submitVolunteer = async (req, res) => {
           volunteerId
         );
       } catch (userNotificationError) {
-        console.error('Failed to create user notification:', userNotificationError);
         // Don't throw - notification failure shouldn't block the application submission
       }
       
@@ -597,8 +592,7 @@ export const updateVolunteerStatus = async (req, res) => {
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text
-        }).catch(error => {
-          console.error('Failed to send volunteer status email:', error);
+        }).catch(() => {
           // Don't throw - email failure shouldn't block the status update
         });
 
@@ -764,17 +758,12 @@ export const getVolunteersByProgram = async (req, res) => {
   }
 };
 
-// Get approved programs with status "Upcoming" for volunteer application dropdown
-// This endpoint is public and does not require authentication
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {
-    // Note: user_id is optional - this endpoint is accessible to both authenticated and non-authenticated users
     const user_id = req.user?.id;
     
     // Get all approved programs (Upcoming and Active) that are not Completed
-    // Exclude Completed programs regardless of accepts_volunteers setting
-    // Only return programs that accept volunteers (admin can close volunteer applications)
-    // Programs stay 'Upcoming' until admin manually changes status
+    // Only return programs that accept volunteers
     const query = `
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p

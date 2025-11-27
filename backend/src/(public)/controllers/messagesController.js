@@ -1,8 +1,6 @@
-//db table: messages
 import db from "../../database.js";
 import NotificationController from "../../admin/controllers/notificationController.js";
 
-// Submit a message from public portal
 export const submitMessage = async (req, res) => {
   const { organization_id, sender_email, sender_name, message, user_id } = req.body;
 

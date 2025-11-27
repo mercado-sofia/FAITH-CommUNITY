@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight, FaArchive, FaTrash } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
+import { FiArchive, FiTrash2 } from 'react-icons/fi'
 import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import logger from '@/utils/shared/logger'
-import ArchiveConfirmationModal from './ArchiveConfirmationModal'
-import DeleteConfirmationModal from './DeleteConfirmationModal'
+import { ConfirmationModal } from '@/components'
 import { useArchiveHighlightMutation, useDeleteHighlightMutation } from '@/rtk/superadmin/highlightsApi'
 import styles from './styles/HighlightDetailsModal.module.css'
 
@@ -575,7 +575,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
                 className={styles.archiveButton}
                 disabled={isArchiving || isDeleting}
               >
-                <FaArchive style={{ marginRight: '0.5rem' }} />
+                <FiArchive style={{ marginRight: '0.5rem' }} />
                 Archive
               </button>
             )}
@@ -585,7 +585,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
                 className={styles.deleteButton}
                 disabled={isArchiving || isDeleting}
               >
-                <FaTrash style={{ marginRight: '0.5rem' }} />
+                <FiTrash2 style={{ marginRight: '0.5rem' }} />
                 Delete
               </button>
             )}
@@ -657,23 +657,35 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete })
       )}
 
       {/* Archive Confirmation Modal */}
-      <ArchiveConfirmationModal
+      <ConfirmationModal
         isOpen={archiveModalOpen}
-        onClose={() => setArchiveModalOpen(false)}
+        onCancel={() => setArchiveModalOpen(false)}
         onConfirm={handleArchive}
-        highlightTitle={highlight?.title}
-        organizationName={highlight?.organization_name}
+        itemName={highlight?.title}
+        itemType="highlight"
+        actionType="archive"
         isLoading={isArchiving}
+        customMessage={
+          highlight?.organization_name
+            ? `Are you sure you want to archive this highlight? Organization: ${highlight.organization_name}. This will remove it from the website display.`
+            : undefined
+        }
       />
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
+        onCancel={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        highlightTitle={highlight?.title}
-        organizationName={highlight?.organization_name}
+        itemName={highlight?.title}
+        itemType="highlight"
+        actionType="delete"
         isLoading={isDeleting}
+        customMessage={
+          highlight?.organization_name
+            ? `Are you sure you want to delete this highlight? Organization: ${highlight.organization_name}. This action cannot be undone.`
+            : undefined
+        }
       />
     </div>
   )

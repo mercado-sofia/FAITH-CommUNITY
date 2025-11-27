@@ -1,5 +1,3 @@
-//db table: organization_heads
-
 import db from "../../database.js"
 
 export const getHeads = async (req, res) => {
@@ -33,7 +31,6 @@ export const getHeads = async (req, res) => {
 export const addHead = async (req, res) => {
   const { organization_id, head_name, role, facebook, email, photo, priority, display_order } = req.body
 
-  // Input validation
   if (!organization_id || !head_name || !role) {
     return res.status(400).json({
       success: false,
@@ -56,7 +53,6 @@ export const addHead = async (req, res) => {
   }
 
   try {
-    // Check if organization exists
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
     if (orgCheck.length === 0) {
       return res.status(404).json({
@@ -65,14 +61,12 @@ export const addHead = async (req, res) => {
       })
     }
 
-    // Handle Cloudinary upload for photo if provided
     let finalPhoto = photo?.trim() || null
     if (req.file) {
       try {
         const { uploadSingleToCloudinary, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
         const { uploadSingleToCloudinary: uploadToCloudinary } = await import('../../utils/cloudinaryUpload.js');
         
-        // Upload new photo to Cloudinary
         const uploadResult = await uploadToCloudinary(
           req.file, 
           CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
@@ -120,7 +114,6 @@ export const updateHead = async (req, res) => {
   const { id } = req.params
   const { head_name, role, facebook, email, photo, priority, display_order } = req.body
 
-  // Individual head update request
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -208,7 +201,6 @@ export const updateHead = async (req, res) => {
       })
     }
 
-    // Individual head update completed successfully
     res.json({
       success: true,
       message: "Organization head updated successfully",
@@ -258,10 +250,7 @@ export const deleteHead = async (req, res) => {
 export const bulkDeleteHeads = async (req, res) => {
   const { organization_id, head_ids } = req.body
 
-  // Bulk delete heads request
-
   if (!organization_id || !Array.isArray(head_ids) || head_ids.length === 0) {
-    // Validation failed: Missing organization_id or head_ids is not array or empty
     return res.status(400).json({
       success: false,
       message: "Organization ID and head IDs array are required",
@@ -325,8 +314,6 @@ export const bulkDeleteHeads = async (req, res) => {
 
 export const bulkUpdateHeads = async (req, res) => {
   const { organization_id, heads } = req.body
-
-  
 
   if (!organization_id || !Array.isArray(heads)) {
     return res.status(400).json({

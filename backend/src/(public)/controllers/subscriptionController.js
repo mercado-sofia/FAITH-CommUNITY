@@ -1,10 +1,8 @@
-//db table: subscribers
 import db from '../../database.js';
 import crypto from 'crypto';
 import { sendMail } from '../../utils/mailer.js';
 import { getSiteName } from '../../utils/siteName.js';
 
-/* ============================== Utils ============================== */
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:3000';
 const VERIFY_TTL_HOURS = Number(process.env.VERIFY_TTL_HOURS || 24);
 
@@ -58,12 +56,6 @@ async function sendConfirmationEmail({ email, verifyToken, unsubscribeToken }) {
   });
 }
 
-/* ============================ Controllers =========================== */
-/**
- * Subscribe endpoint
- * - If req.user exists (logged-in user): auto-verify (no email).
- * - Else (guest): create/refresh token and send confirmation email.
- */
 export const createSubscription = async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Email is required.' });
@@ -80,7 +72,6 @@ export const createSubscription = async (req, res) => {
       [email]
     );
 
-    /* ---------- Logged-in users: auto-verify ---------- */
     if (req.user) {
       await db.execute(
         `INSERT INTO subscribers (email, is_verified, verified_at, created_at, unsubscribe_token)
@@ -92,7 +83,6 @@ export const createSubscription = async (req, res) => {
       return res.status(201).json({ message: 'Subscribed! You will receive updates from us.' });
     }
 
-    /* ---------- Guests: double opt-in ---------- */
     const verifyToken = makeToken(32);
     const unsubscribeToken = rows[0]?.unsubscribe_token || makeToken(32);
     const expiresAtSql = `DATE_ADD(NOW(), INTERVAL ${VERIFY_TTL_HOURS} HOUR)`;
@@ -105,7 +95,6 @@ export const createSubscription = async (req, res) => {
         [email, verifyToken, unsubscribeToken]
       );
     } else {
-      // Already exists but not verified: refresh token + expiry
       if (rows[0].is_verified && rows[0].verified_at) {
         return res.status(400).json({ error: 'This email is already subscribed.' });
       }
@@ -140,7 +129,6 @@ export const confirmSubscription = async (req, res) => {
       [token]
     );
 
-    // If the token no longer exists, treat as success (idempotent UX).
     if (!rows.length) {
       return res.json({
         message: 'Subscription already confirmed. Welcome back!',
@@ -176,7 +164,6 @@ export const confirmSubscription = async (req, res) => {
   }
 };
 
-/** Unsubscribe by token (public link in email) */
 export const unsubscribe = async (req, res) => {
   const { token } = req.params;
   if (!token) return res.status(400).json({ error: 'Unsubscribe token is required.' });
@@ -195,7 +182,6 @@ export const unsubscribe = async (req, res) => {
   }
 };
 
-/** Admin: list all */
 export const getAllSubscriptions = async (_req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM subscribers ORDER BY created_at DESC');

@@ -7,8 +7,7 @@ import { useGetArchivedHighlightsQuery } from '@/rtk/superadmin/highlightsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import HighlightCard from '../components/HighlightCard'
 import HighlightDetailsModal from '../components/HighlightDetailsModal'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import RestoreConfirmationModal from '../components/RestoreConfirmationModal'
+import { ConfirmationModal } from '@/components'
 import SearchBar from '../components/SearchBar'
 import { SkeletonLoader } from '../../components'
 import { useArchiveHighlightMutation, useUnarchiveHighlightMutation, useDeleteHighlightMutation } from '@/rtk/superadmin/highlightsApi'
@@ -424,29 +423,41 @@ const ArchiveHighlightsPage = () => {
 
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={deleteModalOpen}
-        onClose={() => {
+        onCancel={() => {
           setDeleteModalOpen(false)
           setHighlightToAction(null)
         }}
         onConfirm={handleDelete}
-        highlightTitle={highlightToAction?.title}
-        organizationName={highlightToAction?.organization_name}
+        itemName={highlightToAction?.title}
+        itemType="highlight"
+        actionType="delete"
         isLoading={false}
+        customMessage={
+          highlightToAction?.organization_name
+            ? `Are you sure you want to delete this highlight? Organization: ${highlightToAction.organization_name}. This action cannot be undone.`
+            : undefined
+        }
       />
 
       {/* Restore Confirmation Modal */}
-      <RestoreConfirmationModal
+      <ConfirmationModal
         isOpen={restoreModalOpen}
-        onClose={() => {
+        onCancel={() => {
           setRestoreModalOpen(false)
           setHighlightToAction(null)
         }}
         onConfirm={handleRestore}
-        highlightTitle={highlightToAction?.title || ''}
-        organizationName={highlightToAction?.organization_name || highlightToAction?.organization_acronym || ''}
+        itemName={highlightToAction?.title || ''}
+        itemType="highlight"
+        actionType="unarchive"
         isLoading={isRestoring}
+        customMessage={
+          highlightToAction?.organization_name || highlightToAction?.organization_acronym
+            ? `Are you sure you want to unarchive this highlight? Organization: ${highlightToAction.organization_name || highlightToAction.organization_acronym}. It will be restored and visible on the website again.`
+            : undefined
+        }
       />
     </div>
   )

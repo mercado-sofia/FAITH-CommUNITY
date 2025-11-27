@@ -84,9 +84,6 @@ export const getAdminHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching highlights:', error);
-    }
     res.status(500).json({ error: 'Failed to fetch highlights', details: error.message });
   }
 };
@@ -159,9 +156,6 @@ export const getHighlightById = async (req, res) => {
     
     res.json({ highlight });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to fetch highlight', details: error.message });
   }
 };
@@ -410,9 +404,6 @@ export const updateHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error updating highlight:', error);
-    }
     res.status(500).json({ 
       error: 'Failed to update highlight',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -664,9 +655,6 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in getAllHighlightsForApproval:', error);
-    }
     res.status(500).json({ error: 'Failed to fetch highlights for approval', details: error.message });
   }
 };
@@ -800,9 +788,6 @@ export const getApprovedHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error in getApprovedHighlights:', error);
-    }
     res.status(500).json({ error: 'Failed to fetch approved highlights', details: error.message });
   }
 };
@@ -877,13 +862,6 @@ export const getFeaturedHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[getFeaturedHighlights] Error fetching featured highlights:', {
-        error: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-    }
     res.status(500).json({ 
       error: 'Failed to fetch featured highlights',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -950,9 +928,6 @@ export const addFeaturedHighlight = async (req, res) => {
     res.json({ message: 'Highlight added to featured', displayOrder, impact_level: impact_level || 'average' });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error adding featured highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to add featured highlight' });
   } finally {
     connection.release();
@@ -996,9 +971,6 @@ export const removeFeaturedHighlight = async (req, res) => {
     res.json({ message: 'Highlight removed from featured' });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error removing featured highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to remove featured highlight' });
   } finally {
     connection.release();
@@ -1034,9 +1006,6 @@ export const checkFeaturedStatus = async (req, res) => {
       displayOrder: rows.length > 0 ? rows[0].display_order : null
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error checking featured status:', error);
-    }
     res.status(500).json({ error: 'Failed to check featured status' });
   }
 };
@@ -1098,9 +1067,6 @@ export const archiveHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error archiving highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to archive highlight', details: error.message });
   } finally {
     connection.release();
@@ -1167,9 +1133,6 @@ export const unarchiveHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error unarchiving highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to unarchive highlight', details: error.message });
   } finally {
     connection.release();
@@ -1255,9 +1218,6 @@ export const getArchivedHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching archived highlights:', error);
-    }
     res.status(500).json({ error: 'Failed to fetch archived highlights', details: error.message });
   }
 };
@@ -1306,9 +1266,6 @@ export const deleteHighlightForSuperadmin = async (req, res) => {
     res.json({ message: 'Highlight deleted successfully' });
   } catch (error) {
     await connection.rollback();
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error deleting highlight:', error);
-    }
     res.status(500).json({ error: 'Failed to delete highlight', details: error.message });
   } finally {
     connection.release();

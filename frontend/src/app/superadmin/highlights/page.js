@@ -639,7 +639,7 @@ const SuperadminHighlightsPage = () => {
                               {featuredCount} Total Featured
                             </span>
                             {statistics.archivedHighlights > 0 && (
-                              <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>
+                              <span className={styles.archivedCount} style={{ marginLeft: '1rem' }}>
                                 {statistics.archivedHighlights} Archived
                               </span>
                             )}

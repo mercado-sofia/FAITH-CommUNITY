@@ -1,43 +1,31 @@
-//db table: organizations
-
 import db from "../../database.js"
 import { getOrganizationLogoUrl } from "../../utils/imageUrlUtils.js";
 
-// Helper function to normalize advocacy/competency data
 const normalizeTextData = (value) => {
   if (!value) return ""
   
-  // If it's already a string, check if it's a JSON string
   if (typeof value === 'string') {
-    // Try to parse as JSON
     try {
       const parsed = JSON.parse(value)
-      // If parsed result is an object (like {}), return empty string
       if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
         return ""
       }
-      // If parsed result is a string, return it
       if (typeof parsed === 'string') {
         return parsed
       }
-      // Otherwise return empty string for other object types
       return ""
     } catch (e) {
-      // Not JSON, return as-is
       return value
     }
   }
   
-  // If it's an object, check if it's empty
   if (typeof value === 'object' && value !== null) {
     if (Object.keys(value).length === 0) {
       return ""
     }
-    // If object has content, try to stringify (shouldn't happen, but handle it)
     return JSON.stringify(value)
   }
   
-  // For other types, convert to string
   return String(value)
 }
 
@@ -45,8 +33,6 @@ export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
 
   try {
-    // Get organization details with org/orgName from organizations table
-    // Only return organizations with ACTIVE status
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
@@ -90,7 +76,6 @@ export const getOrganizationByName = async (req, res) => {
     if (org.logo) {
       logoUrl = getOrganizationLogoUrl(org.logo);
     } else {
-      // Fallback to expected logo path
       logoUrl = `/logo/${org.org.toLowerCase()}_logo.jpg`;
     }
 
@@ -116,9 +101,6 @@ export const getOrganizationByName = async (req, res) => {
 export const createOrganization = async (req, res) => {
   const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
-  // Organization creation request received
-
-  // Validate required fields
   if (!org || !orgName) {
     return res.status(400).json({ 
       success: false, 
@@ -154,7 +136,6 @@ export const createOrganization = async (req, res) => {
       [org, orgName, finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor]
     )
 
-    // Organization created successfully
     res.status(201).json({ 
       success: true, 
       message: "Organization created successfully",
@@ -169,8 +150,6 @@ export const updateOrganizationInfo = async (req, res) => {
   const { id } = req.params
   const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
-
-  // Validate required fields
   if (!org || !orgName) {
     return res.status(400).json({ 
       success: false, 
@@ -216,14 +195,9 @@ export const updateOrganizationInfo = async (req, res) => {
   // Convert empty strings and undefined values to null for optional fields
   const finalFacebook = (facebook === "" || facebook === undefined) ? null : facebook
   const finalDescription = (description === "" || description === undefined) ? null : description
-  const finalStatus = status || "ACTIVE" // Ensure status is always a string
+  const finalStatus = status || "ACTIVE"
   const finalOrgColor = orgColor || "#444444"
 
-
-  // Values prepared for database update
-  // Now updating org and orgName in organizations table
-
-  // Get a connection for transaction
   const connection = await db.getConnection()
   
   if (!connection) {
@@ -274,9 +248,6 @@ export const updateOrganizationInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
-    // Organization data updated successfully
-
-    // Commit the transaction
     await connection.commit()
     
     // Get the updated organization data to return
@@ -287,7 +258,6 @@ export const updateOrganizationInfo = async (req, res) => {
     
     connection.release()
 
-    // Organization data updated successfully
     res.json({ 
       success: true, 
       message: "Organization information updated successfully",

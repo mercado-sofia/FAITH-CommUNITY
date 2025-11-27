@@ -3,21 +3,18 @@ import { S3_FOLDERS } from '../../utils/s3Config.js';
 import { logError } from '../../utils/logger.js';
 import SuperAdminNotificationController from '../../superadmin/controllers/superadminNotificationController.js';
 
-// Admin upload Post Act Report for a program
 export const uploadPostActReport = async (req, res) => {
-  const { id } = req.params; // program id
+  const { id } = req.params;
 
   if (!id) {
     return res.status(400).json({ success: false, message: 'Program ID is required' });
   }
 
   try {
-    // Validate file presence first (fail fast)
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    // Validate program exists and is approved (published)
     const [rows] = await db.execute(
       'SELECT id, title, status, organization_id FROM programs_projects WHERE id = ? AND is_approved = TRUE',
       [id]
@@ -27,7 +24,6 @@ export const uploadPostActReport = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Program not found or not approved' });
     }
 
-    // Prevent duplicate pending submissions for the same program
     const [existingPending] = await db.execute(
       `SELECT id FROM program_post_act_reports WHERE program_id = ? AND status = 'pending' LIMIT 1`,
       [id]
@@ -40,12 +36,8 @@ export const uploadPostActReport = async (req, res) => {
       });
     }
 
-    // Upload file to S3 with dedicated folder
-    // S3 handles all file types (images, PDFs, DOC, DOCX) with proper content-type headers
     const { uploadSingleToS3 } = await import('../../utils/s3Upload.js');
 
-    // Upload to Post Act Reports folder - supports mixed file types (images, PDFs, DOC, DOCX)
-    // S3 automatically sets correct Content-Type based on file mimetype
     const uploadResult = await uploadSingleToS3(
       req.file,
       S3_FOLDERS.PROGRAMS.POST_ACT,

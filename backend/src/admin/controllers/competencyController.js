@@ -1,49 +1,36 @@
-//db table: competencies
-
 import db from "../../database.js"
 
-// Helper function to normalize advocacy/competency data
 const normalizeTextData = (value) => {
   if (!value) return ""
   
-  // If it's already a string, check if it's a JSON string
   if (typeof value === 'string') {
-    // Try to parse as JSON
     try {
       const parsed = JSON.parse(value)
-      // If parsed result is an object (like {}), return empty string
       if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
         return ""
       }
-      // If parsed result is a string, return it
       if (typeof parsed === 'string') {
         return parsed
       }
-      // Otherwise return empty string for other object types
       return ""
     } catch (e) {
-      // Not JSON, return as-is
       return value
     }
   }
   
-  // If it's an object, check if it's empty
   if (typeof value === 'object' && value !== null) {
     if (Object.keys(value).length === 0) {
       return ""
     }
-    // If object has content, try to stringify (shouldn't happen, but handle it)
     return JSON.stringify(value)
   }
   
-  // For other types, convert to string
   return String(value)
 }
 
 export const addCompetency = async (req, res) => {
   const { organization_id, competency } = req.body
 
-  // Input validation
   if (!organization_id) {
     return res.status(400).json({
       success: false,
@@ -51,7 +38,6 @@ export const addCompetency = async (req, res) => {
     })
   }
 
-  // Allow empty competency, but if provided, it must be at least 10 characters
   if (competency !== undefined && competency !== null && competency.trim().length > 0 && competency.trim().length < 10) {
     return res.status(400).json({
       success: false,
@@ -60,7 +46,6 @@ export const addCompetency = async (req, res) => {
   }
 
   try {
-    // Check if organization exists
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
     if (orgCheck.length === 0) {
       return res.status(404).json({
@@ -69,14 +54,11 @@ export const addCompetency = async (req, res) => {
       })
     }
 
-    // Check if an entry already exists
     const [existing] = await db.execute("SELECT * FROM competencies WHERE organization_id = ?", [organization_id])
 
-    // Normalize competency value (handle undefined/null/empty)
     const competencyValue = (competency !== undefined && competency !== null) ? competency.trim() : "";
     
     if (existing.length > 0) {
-      // Update if it exists
       await db.execute("UPDATE competencies SET competency = ? WHERE organization_id = ?", [
         competencyValue,
         organization_id,
@@ -86,7 +68,6 @@ export const addCompetency = async (req, res) => {
         message: "Competency updated successfully",
       })
     } else {
-      // Otherwise insert
       await db.execute("INSERT INTO competencies (organization_id, competency) VALUES (?, ?)", [
         organization_id,
         competencyValue,
@@ -118,7 +99,6 @@ export const getCompetencies = async (req, res) => {
   try {
     const [rows] = await db.execute("SELECT * FROM competencies WHERE organization_id = ?", [organization_id])
     
-    // Normalize the competency field to ensure it's always a string
     const normalizedRows = rows.map(row => ({
       ...row,
       competency: normalizeTextData(row.competency)
@@ -146,7 +126,6 @@ export const getAllCompetencies = async (req, res) => {
       ORDER BY o.orgName
     `)
     
-    // Normalize the competency field to ensure it's always a string
     const normalizedRows = rows.map(row => ({
       ...row,
       competency: normalizeTextData(row.competency)

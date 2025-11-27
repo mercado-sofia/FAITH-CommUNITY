@@ -6,7 +6,6 @@ import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 const JWT_SECRET = process.env.JWT_SECRET
 
 export const verifyAdminToken = async (req, res, next) => {
-  // Try cookie first (more secure), then header (for backward compatibility)
   const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1]
 
   if (!token) {
@@ -20,13 +19,12 @@ export const verifyAdminToken = async (req, res, next) => {
     })
 
     try {
-      const sessionCheck = await SessionSecurity.verifyAdminSession(
+      await SessionSecurity.verifyAdminSession(
         token,
         getClientIpAddress(req),
         req.headers['user-agent']
       )
     } catch (sessionError) {
-      // Continue with JWT verification only if session check fails
     }
 
     if (decoded.role === 'admin' && decoded.id) {

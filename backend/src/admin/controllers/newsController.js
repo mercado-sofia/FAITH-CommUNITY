@@ -162,8 +162,8 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     
     // First, let's check what scheduled news items exist and their published_at values
     // This helps with debugging timezone issues
-    let checkQuery = `SELECT id, title, published_at, NOW() as server_now, 
-                      TIMESTAMPDIFF(SECOND, published_at, NOW()) as seconds_diff
+    let checkQuery = `SELECT id, title, published_at, UTC_TIMESTAMP() as server_now, 
+                      TIMESTAMPDIFF(SECOND, published_at, UTC_TIMESTAMP()) as seconds_diff
                       FROM news 
                       WHERE status = 'scheduled'`;
     const checkParams = [];
@@ -186,18 +186,18 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
       console.error('[autoUpdateScheduledNews] Error checking scheduled items:', checkError);
     }
     
-    // Compare published_at with NOW() - both use the server's timezone
-    // Note: MySQL DATETIME doesn't store timezone, so we assume it's in the server's timezone
-    // The datetime stored should match the server's timezone context
+    // Compare published_at with UTC_TIMESTAMP() - both in UTC
+    // Note: published_at is stored in UTC (converted from user's local timezone)
+    // Using UTC_TIMESTAMP() ensures consistent comparison regardless of server timezone
     // Since we already checked statusColumnExists and returned early if false, we can use the status column query
     // IMPORTANT: Do NOT update updated_at when auto-publishing scheduled news, as this is not a user edit
     // Only update status - published_at remains the same (the scheduled time)
-    // Use TIMESTAMPDIFF for more explicit comparison to avoid any edge cases
+    // Use TIMESTAMPDIFF with UTC_TIMESTAMP for consistent UTC comparison
     let query = `UPDATE news 
                  SET status = 'published' 
                  WHERE status = 'scheduled' 
                  AND published_at IS NOT NULL
-                 AND TIMESTAMPDIFF(SECOND, published_at, NOW()) >= 0`;
+                 AND TIMESTAMPDIFF(SECOND, published_at, UTC_TIMESTAMP()) >= 0`;
     const params = [];
     
     if (organizationId) {
@@ -437,10 +437,13 @@ export const createNews = async (req, res) => {
         });
       }
       
+      // Get timezone offset from request body (sent by frontend)
+      // Format: "+08:00" or "-05:00" (offset from UTC)
+      const timezoneOffset = req.body.timezoneOffset || null;
+      
       // Normalize datetime format for MySQL (convert ISO format to MySQL DATETIME format)
       // MySQL DATETIME format: YYYY-MM-DD HH:MM:SS (space separator, not T)
-      // IMPORTANT: Extract date/time components directly from the string to avoid timezone conversion
-      // This preserves the exact date/time the user selected, regardless of server timezone
+      // IMPORTANT: Convert user's local time to UTC before storing to avoid timezone mismatches
       let publishDate;
       try {
         let datePart, timePart;
@@ -504,8 +507,62 @@ export const createNews = async (req, res) => {
           throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
         }
         
-        // Format as MySQL DATETIME: YYYY-MM-DD HH:MM:SS
-        finalPublishedAt = `${datePart} ${hours}:${minutes}:${seconds}`;
+        // Convert user's local time to UTC for storage
+        // Create a Date object representing the user's local time
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, minute, second] = [hours, minutes, seconds].map(Number);
+        
+        // If timezone offset is provided, use it to convert to UTC
+        // Otherwise, assume the datetime is already in the server's timezone (for backward compatibility)
+        let utcDate;
+        if (timezoneOffset && /^[+-]\d{2}:\d{2}$/.test(timezoneOffset)) {
+          // Parse timezone offset (e.g., "+08:00" or "-05:00")
+          // Note: timezoneOffset from frontend is in format like "+08:00" (UTC+8) or "-05:00" (UTC-5)
+          // This means: local time = UTC + offset
+          // So: UTC = local time - offset
+          const offsetMatch = timezoneOffset.match(/([+-])(\d{2}):(\d{2})/);
+          if (offsetMatch) {
+            const [, sign, offsetHours, offsetMinutes] = offsetMatch;
+            // Convert offset to minutes (positive for UTC+, negative for UTC-)
+            // Example: "+08:00" = +480 minutes, "-05:00" = -300 minutes
+            const offsetTotalMinutes = (parseInt(offsetHours, 10) * 60 + parseInt(offsetMinutes, 10)) * (sign === '+' ? 1 : -1);
+            
+            // Create an ISO string with the timezone offset, then parse it
+            // This correctly converts local time to UTC
+            const isoString = `${datePart}T${hours}:${minutes}:${seconds}${timezoneOffset}`;
+            utcDate = new Date(isoString);
+            
+            // Validate the conversion worked
+            if (isNaN(utcDate.getTime())) {
+              throw new Error(`Invalid date/time with timezone offset: ${isoString}`);
+            }
+          } else {
+            // Invalid offset format, fall back to treating as server timezone
+            utcDate = new Date(year, month - 1, day, hour, minute, second);
+          }
+        } else {
+          // No timezone offset provided - for backward compatibility, treat as server timezone
+          // But log a warning in development
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[createNews] No timezone offset provided for scheduled news. Assuming server timezone.');
+          }
+          utcDate = new Date(year, month - 1, day, hour, minute, second);
+        }
+        
+        // Check if date is valid
+        if (isNaN(utcDate.getTime())) {
+          throw new Error(`Invalid date - could not parse: ${datePart} ${hours}:${minutes}:${seconds}`);
+        }
+        
+        // Format UTC date as MySQL DATETIME: YYYY-MM-DD HH:MM:SS
+        const utcYear = utcDate.getUTCFullYear();
+        const utcMonth = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+        const utcDay = String(utcDate.getUTCDate()).padStart(2, '0');
+        const utcHour = String(utcDate.getUTCHours()).padStart(2, '0');
+        const utcMinute = String(utcDate.getUTCMinutes()).padStart(2, '0');
+        const utcSecond = String(utcDate.getUTCSeconds()).padStart(2, '0');
+        
+        finalPublishedAt = `${utcYear}-${utcMonth}-${utcDay} ${utcHour}:${utcMinute}:${utcSecond}`;
         
         // Final validation
         if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(finalPublishedAt)) {
@@ -513,30 +570,12 @@ export const createNews = async (req, res) => {
         }
         
         // Validate that scheduled date is in the future
-        // Use MySQL's NOW() to compare in the same timezone context as the database
-        // This ensures consistency with how auto-publish will work
-        // We'll do a simple string comparison first, then use Date for more precise validation
-        // Parse the date components for validation
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hour, minute, second] = [hours, minutes, seconds].map(Number);
-        
-        // Create a Date object in local timezone (server timezone)
-        // Since MySQL DATETIME is timezone-naive, we treat the input as server local time
-        // The Date constructor with individual components creates a Date in local timezone
-        const scheduledDate = new Date(year, month - 1, day, hour, minute, second);
-        
-        // Check if date is valid
-        if (isNaN(scheduledDate.getTime())) {
-          throw new Error(`Invalid date - could not parse: ${finalPublishedAt}`);
-        }
-        
-        // Get current server time
+        // Compare UTC times to ensure consistency
         const now = new Date();
-        // Add 1 minute buffer to account for processing time and clock differences
-        const bufferTime = new Date(now.getTime() + 60000);
+        const bufferTime = new Date(now.getTime() + 60000); // 1 minute buffer
         
         // Validate that scheduled date is in the future (with buffer)
-        if (scheduledDate <= bufferTime) {
+        if (utcDate <= bufferTime) {
           return res.status(400).json({ 
             success: false, 
             message: "Scheduled date and time must be at least 1 minute in the future" 
@@ -988,13 +1027,13 @@ export const getApprovedNews = async (req, res) => {
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       } else {
         // Fallback: use published_at to determine published status
-        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
+        // Use TIMESTAMPDIFF with UTC_TIMESTAMP for consistent UTC comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  INNER JOIN organizations o ON n.organization_id = o.id
                  WHERE n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
-                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                   AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0
                    AND o.status = 'ACTIVE'
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       }
@@ -1012,7 +1051,7 @@ export const getApprovedNews = async (req, res) => {
                                  INNER JOIN organizations o ON n.organization_id = o.id
                                  WHERE n.is_deleted = FALSE 
                                    AND n.published_at IS NOT NULL 
-                                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                                   AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0
                                    AND o.status = 'ACTIVE'
                                  ORDER BY n.published_at DESC, n.created_at DESC`;
           const fallbackResult = await db.execute(fallbackQuery);
@@ -1183,7 +1222,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
                  WHERE n.organization_id = ? 
                    AND n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
-                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                   AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0
                    AND o.status = 'ACTIVE'
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       }
@@ -1198,7 +1237,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
                                WHERE n.organization_id = ? 
                                  AND n.is_deleted = FALSE 
                                  AND n.published_at IS NOT NULL 
-                                 AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                                 AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0
                                  AND o.status = 'ACTIVE'
                                ORDER BY n.published_at DESC, n.created_at DESC`;
         [rows] = await db.execute(fallbackQuery, [organization.id]);
@@ -1333,7 +1372,7 @@ export const getNewsBySlug = async (req, res) => {
         if (isPublicRequest) {
           // Public requests: only published content from active organizations
           query += ` AND n.published_at IS NOT NULL 
-                     AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
+                     AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0
                      AND o.status = 'ACTIVE'`;
         }
         // For authenticated admin/superadmin requests, no filters here - they can see all statuses
@@ -1349,7 +1388,7 @@ export const getNewsBySlug = async (req, res) => {
                              LEFT JOIN organizations o ON n.organization_id = o.id
                              WHERE n.slug = ? AND n.is_deleted = FALSE 
                                AND n.published_at IS NOT NULL 
-                               AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
+                               AND TIMESTAMPDIFF(SECOND, n.published_at, UTC_TIMESTAMP()) >= 0`;
         
         // For public requests, also filter by active organization
         if (isPublicRequest) {
@@ -2007,8 +2046,12 @@ export const updateNews = async (req, res) => {
         dateValue = null; // Will use DATE(NOW()) in SQL
       } else if (normalizedAction === 'schedule' && published_at) {
         // Schedule - use provided published_at
-        // Parse and format the datetime
+        // Parse and format the datetime, converting to UTC
         const normalizedPublishedAt = published_at.trim();
+        
+        // Get timezone offset from request body (sent by frontend)
+        const timezoneOffset = req.body.timezoneOffset || null;
+        
         let datePart, timePart;
         
         try {
@@ -2068,23 +2111,51 @@ export const updateNews = async (req, res) => {
             throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
           }
           
-          // Format as MySQL DATETIME
-          finalPublishedAt = `${datePart} ${hours}:${minutes}:${seconds}`;
-          dateValue = datePart;
-          
-          // Validate that scheduled date is in the future
-          // Parse date components to create Date object in local timezone (matching MySQL DATETIME behavior)
+          // Convert user's local time to UTC for storage (same logic as createNews)
           const [year, month, day] = datePart.split('-').map(Number);
           const [hour, minute, second] = [hours, minutes, seconds].map(Number);
-          const publishDate = new Date(year, month - 1, day, hour, minute, second);
           
-          if (isNaN(publishDate.getTime())) {
-            throw new Error(`Invalid date - could not parse: ${finalPublishedAt}`);
+          let utcDate;
+          if (timezoneOffset && /^[+-]\d{2}:\d{2}$/.test(timezoneOffset)) {
+            // Parse timezone offset and convert to UTC
+            const offsetMatch = timezoneOffset.match(/([+-])(\d{2}):(\d{2})/);
+            if (offsetMatch) {
+              const isoString = `${datePart}T${hours}:${minutes}:${seconds}${timezoneOffset}`;
+              utcDate = new Date(isoString);
+              
+              if (isNaN(utcDate.getTime())) {
+                throw new Error(`Invalid date/time with timezone offset: ${isoString}`);
+              }
+            } else {
+              utcDate = new Date(year, month - 1, day, hour, minute, second);
+            }
+          } else {
+            // No timezone offset - assume server timezone (backward compatibility)
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[updateNews] No timezone offset provided for scheduled news. Assuming server timezone.');
+            }
+            utcDate = new Date(year, month - 1, day, hour, minute, second);
           }
           
+          if (isNaN(utcDate.getTime())) {
+            throw new Error(`Invalid date - could not parse: ${datePart} ${hours}:${minutes}:${seconds}`);
+          }
+          
+          // Format UTC date as MySQL DATETIME
+          const utcYear = utcDate.getUTCFullYear();
+          const utcMonth = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+          const utcDay = String(utcDate.getUTCDate()).padStart(2, '0');
+          const utcHour = String(utcDate.getUTCHours()).padStart(2, '0');
+          const utcMinute = String(utcDate.getUTCMinutes()).padStart(2, '0');
+          const utcSecond = String(utcDate.getUTCSeconds()).padStart(2, '0');
+          
+          finalPublishedAt = `${utcYear}-${utcMonth}-${utcDay} ${utcHour}:${utcMinute}:${utcSecond}`;
+          dateValue = `${utcYear}-${utcMonth}-${utcDay}`;
+          
+          // Validate that scheduled date is in the future
           const now = new Date();
           const bufferTime = new Date(now.getTime() + 60000); // 1 minute buffer
-          if (publishDate <= bufferTime) {
+          if (utcDate <= bufferTime) {
             return res.status(400).json({ 
               success: false, 
               message: "Scheduled date and time must be at least 1 minute in the future" 

@@ -775,6 +775,14 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             } else {
               throw new Error('Invalid date and time format for scheduling');
             }
+            
+            // Add timezone offset to help backend convert to UTC correctly
+            // Get timezone offset in minutes and convert to hours:minutes format
+            const timezoneOffset = -new Date().getTimezoneOffset(); // Negative because getTimezoneOffset returns opposite
+            const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+            const offsetMinutes = Math.abs(timezoneOffset) % 60;
+            const offsetSign = timezoneOffset >= 0 ? '+' : '-';
+            submitData.timezoneOffset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
           } catch (dateError) {
             throw new Error(dateError.message || 'Invalid date and time format for scheduling');
           }

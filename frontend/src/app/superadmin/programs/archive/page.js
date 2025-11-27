@@ -398,7 +398,6 @@ const ArchiveProgramsPage = () => {
       {/* Organization Filter Header */}
       <div className={styles.programsHeader}>
         <div className={styles.programsHeaderTop}>
-          <h2 className={styles.sectionTitle}>Archived Programs</h2>
         </div>
         <div className={styles.featuredCountInfo}>
           <span className={styles.featuredCountText}>

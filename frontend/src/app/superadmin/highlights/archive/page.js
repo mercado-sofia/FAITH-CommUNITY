@@ -381,9 +381,6 @@ const ArchiveHighlightsPage = () => {
 
       {/* Organization Filter Header */}
       <div className={styles.highlightsHeader}>
-        <div className={styles.highlightsHeaderTop}>
-          <h2 className={styles.sectionTitle}>Archived Highlights</h2>
-        </div>
         <div className={styles.featuredCountInfo}>
           <span className={styles.featuredCountText}>
             {processedHighlights.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'highlights'}

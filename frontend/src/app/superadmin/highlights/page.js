@@ -14,7 +14,10 @@ import styles from './highlights.module.css'
 const SuperadminHighlightsPage = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selectedOrganization, setSelectedOrganization] = useState('all')
+  const [selectedOrganization, setSelectedOrganization] = useState(() => {
+    const org = searchParams.get('org')
+    return org || 'all'
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedHighlight, setSelectedHighlight] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -42,6 +45,18 @@ const SuperadminHighlightsPage = () => {
     router.push(`?${params.toString()}`, { scroll: false })
   }, [searchParams, router])
 
+  // Helper function to update organization URL parameter
+  const updateOrganizationUrl = useCallback((orgId) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (orgId === 'all') {
+      // Remove org parameter for 'all' (default)
+      params.delete('org')
+    } else {
+      params.set('org', orgId)
+    }
+    router.push(`?${params.toString()}`, { scroll: false })
+  }, [searchParams, router])
+
   // Sync URL parameter changes with activeTab state
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -54,6 +69,15 @@ const SuperadminHighlightsPage = () => {
       setActiveTab('featured')
     }
   }, [searchParams, activeTab])
+
+  // Sync URL parameter changes with selectedOrganization state
+  useEffect(() => {
+    const org = searchParams.get('org')
+    const newOrg = org || 'all'
+    if (newOrg !== selectedOrganization) {
+      setSelectedOrganization(newOrg)
+    }
+  }, [searchParams, selectedOrganization])
 
   // Always fetch only approved highlights
   const statusFilter = 'approved'
@@ -581,14 +605,14 @@ const SuperadminHighlightsPage = () => {
                   {showDropdown === "organization" && (
                     <ul className={styles.options}>
                       <li key="all" onClick={() => {
-                        setSelectedOrganization("all")
+                        updateOrganizationUrl("all")
                         setShowDropdown(null)
                       }}>
                         All
                       </li>
                       {organizationOptions.map(org => (
                         <li key={org.id} onClick={() => {
-                          setSelectedOrganization(org.id.toString())
+                          updateOrganizationUrl(org.id.toString())
                           setShowDropdown(null)
                         }}>
                           {org.acronym}
@@ -612,7 +636,7 @@ const SuperadminHighlightsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {featuredCount} Total Featured Highlights
+                              {featuredCount} Total Featured
                             </span>
                             {statistics.archivedHighlights > 0 && (
                               <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>
@@ -660,21 +684,18 @@ const SuperadminHighlightsPage = () => {
         {/* Show featured count per organization in Featured tab */}
         {activeTab === 'featured' && (
           <div className={styles.featuredCountInfo}>
-            <span className={styles.featuredCountText}>
-              {currentOrgFeaturedCount} Featured Highlights {selectedOrganization !== 'all' ? 'for this organization' : ''}
-            </span>
             {currentOrgFeaturedCount > 0 && (
               <div className={styles.impactLevelBreakdown}>
                 <span className={styles.impactBreakdownItem}>
-                  <span className={`${styles.impactBreakdownLabel} ${styles.impactHigh}`}>High:</span> 
+                  <span className={styles.impactBreakdownLabel}>High:</span> 
                   <span className={styles.impactBreakdownValue}>{impactLevelCounts.high}</span>
                 </span>
                 <span className={styles.impactBreakdownItem}>
-                  <span className={`${styles.impactBreakdownLabel} ${styles.impactAverage}`}>Average:</span> 
+                  <span className={styles.impactBreakdownLabel}>Average:</span> 
                   <span className={styles.impactBreakdownValue}>{impactLevelCounts.average}</span>
                 </span>
                 <span className={styles.impactBreakdownItem}>
-                  <span className={`${styles.impactBreakdownLabel} ${styles.impactLow}`}>Small:</span> 
+                  <span className={styles.impactBreakdownLabel}>Small:</span> 
                   <span className={styles.impactBreakdownValue}>{impactLevelCounts.low}</span>
                 </span>
               </div>

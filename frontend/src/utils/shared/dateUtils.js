@@ -817,7 +817,9 @@ export const formatDateTime = (dateString) => {
       return `${monthName} ${day}, ${year}, ${hour}:${minutesStr} ${ampm}`;
     }
     
-    // This is a DATETIME field (timezone-naive) - parse as local time without conversion
+    // This is a DATETIME field (timezone-naive)
+    // IMPORTANT: For scheduled news, published_at is now stored in UTC
+    // We need to treat it as UTC and convert to local time for display
     // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
     // Or ISO format without timezone: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
     
@@ -840,12 +842,13 @@ export const formatDateTime = (dateString) => {
       return 'Invalid date';
     }
     
-    const [, year, month, day, hour, minute] = match;
+    const [, year, month, day, hour, minute, second] = match;
     const yearNum = parseInt(year, 10);
     const monthNum = parseInt(month, 10);
     const dayNum = parseInt(day, 10);
     let hourNum = parseInt(hour, 10);
     const minuteNum = parseInt(minute, 10);
+    const secondNum = second ? parseInt(second, 10) : 0;
     
     // Validate components
     if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum) || isNaN(hourNum) || isNaN(minuteNum)) {
@@ -859,24 +862,60 @@ export const formatDateTime = (dateString) => {
       return 'Invalid date';
     }
     
+    // IMPORTANT: Treat the stored time as UTC and convert to local time
+    // This is necessary because scheduled news published_at is now stored in UTC
+    // Create a UTC date string and parse it, which will automatically convert to local time
+    const hourStr = hour.padStart ? hour.padStart(2, '0') : String(hour).padStart(2, '0');
+    const minuteStr = minute.padStart ? minute.padStart(2, '0') : String(minute).padStart(2, '0');
+    const secondStr = String(secondNum).padStart(2, '0');
+    const utcDateString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:${secondStr}Z`;
+    const date = new Date(utcDateString);
+    
+    if (isNaN(date.getTime())) {
+      // Fallback: if UTC parsing fails, use the original logic (for backward compatibility)
+      logger.warn('Failed to parse as UTC in formatDateTime, using fallback', { dateString, utcDateString });
+      
+      // Format month name
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthName = monthNames[monthNum - 1];
+      
+      // Convert to 12-hour format
+      const originalHour = hourNum;
+      const ampm = originalHour >= 12 ? 'PM' : 'AM';
+      hourNum = hourNum % 12;
+      hourNum = hourNum === 0 ? 12 : hourNum;
+      
+      const minutesStr = minuteNum.toString().padStart(2, '0');
+      return `${monthName} ${dayNum}, ${yearNum}, ${hourNum}:${minutesStr} ${ampm}`;
+    }
+    
+    // Get local time components from the converted date
+    const localYear = date.getFullYear();
+    const localMonth = date.getMonth() + 1;
+    const localDay = date.getDate();
+    let localHour = date.getHours();
+    const localMinute = date.getMinutes();
+    
     // Format month name
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    const monthName = monthNames[monthNum - 1]; // month is 1-indexed in the string
+    const monthName = monthNames[localMonth - 1];
     
     // Convert to 12-hour format
-    // IMPORTANT: Store original hour for AM/PM determination BEFORE modulo operation
-    const originalHour = hourNum;
+    const originalHour = localHour;
     const ampm = originalHour >= 12 ? 'PM' : 'AM';
-    hourNum = hourNum % 12;
-    hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
+    localHour = localHour % 12;
+    localHour = localHour === 0 ? 12 : localHour; // the hour '0' should be '12'
     
     // Format minutes with leading zero
-    const minutesStr = minuteNum.toString().padStart(2, '0');
+    const minutesStr = localMinute.toString().padStart(2, '0');
     
-    return `${monthName} ${dayNum}, ${yearNum}, ${hourNum}:${minutesStr} ${ampm}`;
+    return `${monthName} ${localDay}, ${localYear}, ${localHour}:${minutesStr} ${ampm}`;
   } catch (error) {
     logger.error('Error in formatDateTime', error, { dateString });
     return 'Invalid date';
@@ -1060,5 +1099,122 @@ export const formatTime = (dateString) => {
   } catch (error) {
     logger.error('Error in formatTime', error, { dateString });
     return 'Invalid time';
+  }
+};
+
+/**
+ * ============================================================================
+ * TIMEZONE CONVERSION UTILITIES
+ * ============================================================================
+ * These utilities handle timezone-aware datetime conversions for scheduled news.
+ * All scheduled times are stored in UTC in the database (using DATETIME type).
+ * 
+ * Strategy:
+ * - Input: User's local time + timezone offset → Convert to UTC → Store in DB
+ * - Output: UTC from DB → Convert to user's timezone → Display
+ * - Comparison: Always compare UTC to UTC using UTC_TIMESTAMP()
+ */
+
+/**
+ * Get browser's timezone offset in standard format
+ * Returns timezone offset as "+HH:MM" or "-HH:MM" (e.g., "+08:00", "-05:00")
+ * @returns {string} Timezone offset in format "+HH:MM" or "-HH:MM"
+ */
+export const getBrowserTimezoneOffset = () => {
+  try {
+    // getTimezoneOffset() returns offset in minutes, negative for timezones ahead of UTC
+    // Example: PST (UTC-8) returns 480, EST (UTC-5) returns 300
+    // We need to negate it to get the correct sign for ISO format
+    const offsetMinutes = -new Date().getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+    const offsetMins = Math.abs(offsetMinutes) % 60;
+    const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+    
+    return `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMins).padStart(2, '0')}`;
+  } catch (error) {
+    logger.error('Error in getBrowserTimezoneOffset', error);
+    // Fallback to UTC
+    return '+00:00';
+  }
+};
+
+/**
+ * Validate timezone offset format
+ * @param {string} offset - Timezone offset in format "+HH:MM" or "-HH:MM" (e.g., "+08:00", "-05:00")
+ * @returns {boolean} True if valid format
+ */
+export const validateTimezoneOffset = (offset) => {
+  if (!offset || typeof offset !== 'string') {
+    return false;
+  }
+  
+  // Match format: +HH:MM or -HH:MM
+  const offsetPattern = /^[+-]\d{2}:\d{2}$/;
+  return offsetPattern.test(offset.trim());
+};
+
+/**
+ * Convert local time to UTC for API submission
+ * @param {string} localDateTime - Local datetime in format "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DD HH:mm:ss"
+ * @param {string} timezoneOffset - Timezone offset in format "+HH:MM" or "-HH:MM" (e.g., "+08:00", "-05:00")
+ * @returns {string|null} UTC datetime in ISO format "YYYY-MM-DDTHH:mm:ss" or null if invalid
+ */
+export const convertLocalToUTC = (localDateTime, timezoneOffset) => {
+  try {
+    if (!localDateTime) {
+      return null;
+    }
+    
+    // Normalize the datetime string
+    let normalizedDateTime = localDateTime.trim();
+    
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+    if (normalizedDateTime.endsWith('Z')) {
+      normalizedDateTime = normalizedDateTime.slice(0, -1);
+    }
+    const timezoneMatch = normalizedDateTime.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      normalizedDateTime = normalizedDateTime.slice(0, timezoneMatch.index);
+    }
+    normalizedDateTime = normalizedDateTime.trim();
+    
+    // Replace space with T for ISO format
+    if (normalizedDateTime.includes(' ')) {
+      normalizedDateTime = normalizedDateTime.replace(' ', 'T');
+    }
+    
+    // Validate timezone offset if provided
+    if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
+      logger.warn('[convertLocalToUTC] Invalid timezone offset format:', timezoneOffset);
+      return null;
+    }
+    
+    // If timezone offset is provided, use it to convert to UTC
+    if (timezoneOffset && validateTimezoneOffset(timezoneOffset)) {
+      // Create ISO string with timezone offset
+      const isoString = `${normalizedDateTime}${timezoneOffset}`;
+      const utcDate = new Date(isoString);
+      
+      if (isNaN(utcDate.getTime())) {
+        logger.warn('[convertLocalToUTC] Invalid date/time with timezone offset:', isoString);
+        return null;
+      }
+      
+      // Return UTC datetime in ISO format
+      const year = utcDate.getUTCFullYear();
+      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getUTCDate()).padStart(2, '0');
+      const hour = String(utcDate.getUTCHours()).padStart(2, '0');
+      const minute = String(utcDate.getUTCMinutes()).padStart(2, '0');
+      const second = String(utcDate.getUTCSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    }
+    
+    // No timezone offset - return as-is (for backward compatibility)
+    return normalizedDateTime;
+  } catch (error) {
+    logger.error('[convertLocalToUTC] Error converting local time to UTC:', error, { localDateTime, timezoneOffset });
+    return null;
   }
 };

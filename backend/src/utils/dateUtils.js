@@ -513,3 +513,192 @@ export const formatProgramDates = (program) => {
     return 'Invalid date';
   }
 };
+
+/**
+ * ============================================================================
+ * TIMEZONE CONVERSION UTILITIES
+ * ============================================================================
+ * These utilities handle timezone-aware datetime conversions for scheduled news.
+ * All scheduled times are stored in UTC in the database (using DATETIME type).
+ * 
+ * Strategy:
+ * - Input: User's local time + timezone offset → Convert to UTC → Store in DB
+ * - Output: UTC from DB → Convert to user's timezone → Display
+ * - Comparison: Always compare UTC to UTC using UTC_TIMESTAMP()
+ */
+
+/**
+ * Validate timezone offset format
+ * @param {string} offset - Timezone offset in format "+HH:MM" or "-HH:MM" (e.g., "+08:00", "-05:00")
+ * @returns {boolean} True if valid format
+ */
+export const validateTimezoneOffset = (offset) => {
+  if (!offset || typeof offset !== 'string') {
+    return false;
+  }
+  
+  // Match format: +HH:MM or -HH:MM
+  const offsetPattern = /^[+-]\d{2}:\d{2}$/;
+  return offsetPattern.test(offset.trim());
+};
+
+/**
+ * Convert user's local time to UTC for database storage
+ * @param {string} localDateTime - Local datetime in format "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DD HH:mm:ss"
+ * @param {string} timezoneOffset - Timezone offset in format "+HH:MM" or "-HH:MM" (e.g., "+08:00", "-05:00")
+ * @returns {Date|null} UTC Date object or null if invalid
+ */
+export const convertLocalToUTC = (localDateTime, timezoneOffset) => {
+  try {
+    if (!localDateTime) {
+      return null;
+    }
+    
+    // Normalize the datetime string
+    let normalizedDateTime = localDateTime.trim();
+    
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+    if (normalizedDateTime.endsWith('Z')) {
+      normalizedDateTime = normalizedDateTime.slice(0, -1);
+    }
+    const timezoneMatch = normalizedDateTime.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      normalizedDateTime = normalizedDateTime.slice(0, timezoneMatch.index);
+    }
+    normalizedDateTime = normalizedDateTime.trim();
+    
+    // Replace space with T for ISO format
+    if (normalizedDateTime.includes(' ')) {
+      normalizedDateTime = normalizedDateTime.replace(' ', 'T');
+    }
+    
+    // Validate timezone offset if provided
+    if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
+      console.warn('[convertLocalToUTC] Invalid timezone offset format:', timezoneOffset);
+      return null;
+    }
+    
+    // If timezone offset is provided, use it to convert to UTC
+    if (timezoneOffset && validateTimezoneOffset(timezoneOffset)) {
+      // Create ISO string with timezone offset
+      const isoString = `${normalizedDateTime}${timezoneOffset}`;
+      const utcDate = new Date(isoString);
+      
+      if (isNaN(utcDate.getTime())) {
+        console.error('[convertLocalToUTC] Invalid date/time with timezone offset:', isoString);
+        return null;
+      }
+      
+      return utcDate;
+    }
+    
+    // No timezone offset provided - treat as server local time (backward compatibility)
+    // Parse components directly to avoid timezone conversion
+    const match = normalizedDateTime.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) {
+      console.error('[convertLocalToUTC] Invalid datetime format:', localDateTime);
+      return null;
+    }
+    
+    const [, year, month, day, hour, minute, second = '00'] = match;
+    const date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+      parseInt(hour, 10),
+      parseInt(minute, 10),
+      parseInt(second, 10)
+    );
+    
+    if (isNaN(date.getTime())) {
+      console.error('[convertLocalToUTC] Invalid date components:', { year, month, day, hour, minute, second });
+      return null;
+    }
+    
+    return date;
+  } catch (error) {
+    console.error('[convertLocalToUTC] Error converting local time to UTC:', error, { localDateTime, timezoneOffset });
+    return null;
+  }
+};
+
+/**
+ * Format UTC Date object for MySQL DATETIME storage
+ * @param {Date} utcDate - UTC Date object
+ * @returns {string|null} MySQL DATETIME format "YYYY-MM-DD HH:mm:ss" or null if invalid
+ */
+export const formatUTCDateForDatabase = (utcDate) => {
+  try {
+    if (!utcDate || !(utcDate instanceof Date) || isNaN(utcDate.getTime())) {
+      return null;
+    }
+    
+    // Get UTC components
+    const year = utcDate.getUTCFullYear();
+    const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(utcDate.getUTCDate()).padStart(2, '0');
+    const hour = String(utcDate.getUTCHours()).padStart(2, '0');
+    const minute = String(utcDate.getUTCMinutes()).padStart(2, '0');
+    const second = String(utcDate.getUTCSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  } catch (error) {
+    console.error('[formatUTCDateForDatabase] Error formatting UTC date:', error, { utcDate });
+    return null;
+  }
+};
+
+/**
+ * Parse MySQL DATETIME string as UTC
+ * Note: MySQL DATETIME is timezone-naive, but we treat stored values as UTC
+ * @param {string} datetimeString - MySQL DATETIME format "YYYY-MM-DD HH:mm:ss" or ISO format
+ * @returns {Date|null} Date object treated as UTC or null if invalid
+ */
+export const parseDatabaseDateTimeAsUTC = (datetimeString) => {
+  try {
+    if (!datetimeString) {
+      return null;
+    }
+    
+    let normalizedString = datetimeString.trim();
+    
+    // Remove timezone suffix if present
+    if (normalizedString.endsWith('Z')) {
+      normalizedString = normalizedString.slice(0, -1);
+    }
+    const timezoneMatch = normalizedString.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      normalizedString = normalizedString.slice(0, timezoneMatch.index);
+    }
+    normalizedString = normalizedString.trim();
+    
+    // Replace space with T for ISO format
+    if (normalizedString.includes(' ')) {
+      normalizedString = normalizedString.replace(' ', 'T');
+    }
+    
+    // Parse components
+    const match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) {
+      return null;
+    }
+    
+    const [, year, month, day, hour, minute, second = '00'] = match;
+    
+    // Create UTC date string and parse it
+    const hourStr = hour.padStart ? hour.padStart(2, '0') : String(hour).padStart(2, '0');
+    const minuteStr = minute.padStart ? minute.padStart(2, '0') : String(minute).padStart(2, '0');
+    const secondStr = String(second).padStart(2, '0');
+    const utcDateString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:${secondStr}Z`;
+    const date = new Date(utcDateString);
+    
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    return date;
+  } catch (error) {
+    console.error('[parseDatabaseDateTimeAsUTC] Error parsing database datetime:', error, { datetimeString });
+    return null;
+  }
+};

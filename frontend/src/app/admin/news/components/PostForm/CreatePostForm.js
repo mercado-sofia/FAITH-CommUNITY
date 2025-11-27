@@ -8,7 +8,7 @@ import { ContentEditor } from '@/app/admin/components';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import UnsaveChangesModal from '../UnsaveChangesModal/UnsaveChangesModal';
 import DOMPurify from 'dompurify';
-import { formatDateTimeForInput, formatDateTime, getRelativeTime } from '@/utils/shared/dateUtils';
+import { formatDateTimeForInput, formatDateTime, getRelativeTime, getBrowserTimezoneOffset, validateTimezoneOffset } from '@/utils/shared/dateUtils';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
@@ -777,12 +777,8 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             }
             
             // Add timezone offset to help backend convert to UTC correctly
-            // Get timezone offset in minutes and convert to hours:minutes format
-            const timezoneOffset = -new Date().getTimezoneOffset(); // Negative because getTimezoneOffset returns opposite
-            const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
-            const offsetMinutes = Math.abs(timezoneOffset) % 60;
-            const offsetSign = timezoneOffset >= 0 ? '+' : '-';
-            submitData.timezoneOffset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+            // Use centralized utility function for consistent timezone offset calculation
+            submitData.timezoneOffset = getBrowserTimezoneOffset();
           } catch (dateError) {
             throw new Error(dateError.message || 'Invalid date and time format for scheduling');
           }

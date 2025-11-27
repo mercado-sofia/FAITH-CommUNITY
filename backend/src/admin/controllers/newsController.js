@@ -6,7 +6,7 @@ import { signAccessToken } from "../../utils/jwt.js";
 import { findValidRefreshToken, rotateRefreshToken } from "../../utils/jwt.js";
 import { getAccessTokenCookieOptions, getRefreshCookieOptions } from "../../utils/jwt.js";
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js";
-import { formatTimestampForDB } from "../../utils/dateUtils.js";
+import { formatTimestampForDB, convertLocalToUTC, formatUTCDateForDatabase, validateTimezoneOffset } from "../../utils/dateUtils.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
 
@@ -181,6 +181,15 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     // Log scheduled items for debugging (always log, not just in development)
     try {
       const [scheduledItems] = await db.execute(checkQuery, checkParams);
+      if (process.env.NODE_ENV === 'development' && scheduledItems.length > 0) {
+        console.log('[autoUpdateScheduledNews] Checking scheduled items:', scheduledItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          published_at: item.published_at,
+          server_now: item.server_now,
+          seconds_diff: item.seconds_diff
+        })));
+      }
     } catch (checkError) {
       // Don't fail the whole operation if the check query fails
       console.error('[autoUpdateScheduledNews] Error checking scheduled items:', checkError);
@@ -441,132 +450,35 @@ export const createNews = async (req, res) => {
       // Format: "+08:00" or "-05:00" (offset from UTC)
       const timezoneOffset = req.body.timezoneOffset || null;
       
-      // Normalize datetime format for MySQL (convert ISO format to MySQL DATETIME format)
-      // MySQL DATETIME format: YYYY-MM-DD HH:MM:SS (space separator, not T)
-      // IMPORTANT: Convert user's local time to UTC before storing to avoid timezone mismatches
-      let publishDate;
+      // Validate timezone offset if provided
+      if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid timezone offset format: ${timezoneOffset}. Expected format: +HH:MM or -HH:MM` 
+        });
+      }
+      
+      // Use centralized timezone conversion utility
+      // This converts user's local time to UTC for database storage
       try {
-        let datePart, timePart;
+        // Convert local time to UTC using the utility function
+        const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
         
-        if (normalizedPublishedAt.includes('T')) {
-          // ISO format: yyyy-MM-ddTHH:mm:ss or yyyy-MM-ddTHH:mm
-          // Remove timezone suffix if present at the end (Z, +HH:MM, -HH:MM)
-          // Only remove if it's at the end, not dashes in the date part
-          let cleanDateTime = normalizedPublishedAt.trim();
-          // Remove Z at the end
-          if (cleanDateTime.endsWith('Z')) {
-            cleanDateTime = cleanDateTime.slice(0, -1);
-          }
-          // Remove timezone offset at the end (+HH:MM or -HH:MM)
-          const timezoneMatch = cleanDateTime.match(/([+-]\d{2}:\d{2})$/);
-          if (timezoneMatch) {
-            cleanDateTime = cleanDateTime.slice(0, timezoneMatch.index);
-          }
-          cleanDateTime = cleanDateTime.trim();
-          
-          const parts = cleanDateTime.split('T');
-          if (parts.length !== 2) {
-            throw new Error('Invalid ISO datetime format - expected format: yyyy-MM-ddTHH:mm');
-          }
-          datePart = parts[0];
-          timePart = parts[1];
-        } else if (normalizedPublishedAt.includes(' ')) {
-          // Already in MySQL format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd HH:mm
-          const parts = normalizedPublishedAt.trim().split(' ');
-          if (parts.length !== 2) {
-            throw new Error('Invalid MySQL datetime format - expected format: yyyy-MM-dd HH:mm');
-          }
-          datePart = parts[0];
-          timePart = parts[1];
-        } else {
-          throw new Error('Invalid datetime format - must include date and time (format: yyyy-MM-ddTHH:mm or yyyy-MM-dd HH:mm)');
+        if (!utcDate || isNaN(utcDate.getTime())) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Invalid date and time format. Please provide a valid date and time." 
+          });
         }
         
-        // Validate date part (YYYY-MM-DD)
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-          throw new Error(`Invalid date format: ${datePart} - expected YYYY-MM-DD`);
-        }
+        // Format UTC date for MySQL DATETIME storage
+        finalPublishedAt = formatUTCDateForDatabase(utcDate);
         
-        // Validate and normalize time part (HH:MM:SS or HH:MM)
-        const timeParts = timePart.split(':');
-        if (timeParts.length < 2 || timeParts.length > 3) {
-          throw new Error(`Invalid time format: ${timePart} - expected HH:MM or HH:MM:SS`);
-        }
-        
-        // Ensure we have hours, minutes, and seconds
-        const hours = timeParts[0].padStart(2, '0');
-        const minutes = timeParts[1].padStart(2, '0');
-        const seconds = timeParts.length === 3 ? timeParts[2].padStart(2, '0') : '00';
-        
-        // Validate time components
-        const hoursNum = parseInt(hours, 10);
-        const minutesNum = parseInt(minutes, 10);
-        const secondsNum = parseInt(seconds, 10);
-        if (isNaN(hoursNum) || isNaN(minutesNum) || isNaN(secondsNum) ||
-            hoursNum < 0 || hoursNum > 23 || minutesNum < 0 || minutesNum > 59 || secondsNum < 0 || secondsNum > 59) {
-          throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
-        }
-        
-        // Convert user's local time to UTC for storage
-        // Create a Date object representing the user's local time
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hour, minute, second] = [hours, minutes, seconds].map(Number);
-        
-        // If timezone offset is provided, use it to convert to UTC
-        // Otherwise, assume the datetime is already in the server's timezone (for backward compatibility)
-        let utcDate;
-        if (timezoneOffset && /^[+-]\d{2}:\d{2}$/.test(timezoneOffset)) {
-          // Parse timezone offset (e.g., "+08:00" or "-05:00")
-          // Note: timezoneOffset from frontend is in format like "+08:00" (UTC+8) or "-05:00" (UTC-5)
-          // This means: local time = UTC + offset
-          // So: UTC = local time - offset
-          const offsetMatch = timezoneOffset.match(/([+-])(\d{2}):(\d{2})/);
-          if (offsetMatch) {
-            const [, sign, offsetHours, offsetMinutes] = offsetMatch;
-            // Convert offset to minutes (positive for UTC+, negative for UTC-)
-            // Example: "+08:00" = +480 minutes, "-05:00" = -300 minutes
-            const offsetTotalMinutes = (parseInt(offsetHours, 10) * 60 + parseInt(offsetMinutes, 10)) * (sign === '+' ? 1 : -1);
-            
-            // Create an ISO string with the timezone offset, then parse it
-            // This correctly converts local time to UTC
-            const isoString = `${datePart}T${hours}:${minutes}:${seconds}${timezoneOffset}`;
-            utcDate = new Date(isoString);
-            
-            // Validate the conversion worked
-            if (isNaN(utcDate.getTime())) {
-              throw new Error(`Invalid date/time with timezone offset: ${isoString}`);
-            }
-          } else {
-            // Invalid offset format, fall back to treating as server timezone
-            utcDate = new Date(year, month - 1, day, hour, minute, second);
-          }
-        } else {
-          // No timezone offset provided - for backward compatibility, treat as server timezone
-          // But log a warning in development
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[createNews] No timezone offset provided for scheduled news. Assuming server timezone.');
-          }
-          utcDate = new Date(year, month - 1, day, hour, minute, second);
-        }
-        
-        // Check if date is valid
-        if (isNaN(utcDate.getTime())) {
-          throw new Error(`Invalid date - could not parse: ${datePart} ${hours}:${minutes}:${seconds}`);
-        }
-        
-        // Format UTC date as MySQL DATETIME: YYYY-MM-DD HH:MM:SS
-        const utcYear = utcDate.getUTCFullYear();
-        const utcMonth = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-        const utcDay = String(utcDate.getUTCDate()).padStart(2, '0');
-        const utcHour = String(utcDate.getUTCHours()).padStart(2, '0');
-        const utcMinute = String(utcDate.getUTCMinutes()).padStart(2, '0');
-        const utcSecond = String(utcDate.getUTCSeconds()).padStart(2, '0');
-        
-        finalPublishedAt = `${utcYear}-${utcMonth}-${utcDay} ${utcHour}:${utcMinute}:${utcSecond}`;
-        
-        // Final validation
-        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(finalPublishedAt)) {
-          throw new Error(`Invalid date format after conversion: ${finalPublishedAt}`);
+        if (!finalPublishedAt) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Failed to format date for database storage." 
+          });
         }
         
         // Validate that scheduled date is in the future
@@ -579,6 +491,15 @@ export const createNews = async (req, res) => {
           return res.status(400).json({ 
             success: false, 
             message: "Scheduled date and time must be at least 1 minute in the future" 
+          });
+        }
+        
+        // Log timezone conversion in development for debugging
+        if (process.env.NODE_ENV === 'development' && timezoneOffset) {
+          console.log('[createNews] Timezone conversion:', {
+            localTime: normalizedPublishedAt,
+            timezoneOffset,
+            utcTime: finalPublishedAt
           });
         }
         
@@ -2052,105 +1973,38 @@ export const updateNews = async (req, res) => {
         // Get timezone offset from request body (sent by frontend)
         const timezoneOffset = req.body.timezoneOffset || null;
         
-        let datePart, timePart;
+        // Validate timezone offset if provided
+        if (timezoneOffset && !validateTimezoneOffset(timezoneOffset)) {
+          return res.status(400).json({ 
+            success: false, 
+            message: `Invalid timezone offset format: ${timezoneOffset}. Expected format: +HH:MM or -HH:MM` 
+          });
+        }
         
+        // Use centralized timezone conversion utility (same as createNews)
         try {
-          if (normalizedPublishedAt.includes('T')) {
-            // Remove timezone suffix if present at the end (Z, +HH:MM, -HH:MM)
-            // Only remove if it's at the end, not dashes in the date part
-            let cleanDateTime = normalizedPublishedAt.trim();
-            // Remove Z at the end
-            if (cleanDateTime.endsWith('Z')) {
-              cleanDateTime = cleanDateTime.slice(0, -1);
-            }
-            // Remove timezone offset at the end (+HH:MM or -HH:MM)
-            const timezoneMatch = cleanDateTime.match(/([+-]\d{2}:\d{2})$/);
-            if (timezoneMatch) {
-              cleanDateTime = cleanDateTime.slice(0, timezoneMatch.index);
-            }
-            cleanDateTime = cleanDateTime.trim();
-            
-            const parts = cleanDateTime.split('T');
-            if (parts.length !== 2) {
-              throw new Error('Invalid ISO datetime format - expected format: yyyy-MM-ddTHH:mm');
-            }
-            datePart = parts[0];
-            timePart = parts[1];
-          } else if (normalizedPublishedAt.includes(' ')) {
-            const parts = normalizedPublishedAt.trim().split(' ');
-            if (parts.length !== 2) {
-              throw new Error('Invalid MySQL datetime format - expected format: yyyy-MM-dd HH:mm');
-            }
-            datePart = parts[0];
-            timePart = parts[1];
-          } else {
-            throw new Error('Invalid datetime format - must include date and time');
+          // Convert local time to UTC using the utility function
+          const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
+          
+          if (!utcDate || isNaN(utcDate.getTime())) {
+            return res.status(400).json({ 
+              success: false, 
+              message: "Invalid date and time format. Please provide a valid date and time." 
+            });
           }
           
-          // Validate date part
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-            throw new Error(`Invalid date format: ${datePart} - expected YYYY-MM-DD`);
+          // Format UTC date for MySQL DATETIME storage
+          finalPublishedAt = formatUTCDateForDatabase(utcDate);
+          
+          if (!finalPublishedAt) {
+            return res.status(400).json({ 
+              success: false, 
+              message: "Failed to format date for database storage." 
+            });
           }
           
-          // Validate and normalize time part
-          const timeParts = timePart.split(':');
-          if (timeParts.length < 2 || timeParts.length > 3) {
-            throw new Error(`Invalid time format: ${timePart} - expected HH:MM or HH:MM:SS`);
-          }
-          
-          const hours = timeParts[0].padStart(2, '0');
-          const minutes = timeParts[1].padStart(2, '0');
-          const seconds = timeParts.length === 3 ? timeParts[2].padStart(2, '0') : '00';
-          
-          // Validate time components
-          const hoursNum = parseInt(hours, 10);
-          const minutesNum = parseInt(minutes, 10);
-          const secondsNum = parseInt(seconds, 10);
-          if (isNaN(hoursNum) || isNaN(minutesNum) || isNaN(secondsNum) ||
-              hoursNum < 0 || hoursNum > 23 || minutesNum < 0 || minutesNum > 59 || secondsNum < 0 || secondsNum > 59) {
-            throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
-          }
-          
-          // Convert user's local time to UTC for storage (same logic as createNews)
-          const [year, month, day] = datePart.split('-').map(Number);
-          const [hour, minute, second] = [hours, minutes, seconds].map(Number);
-          
-          let utcDate;
-          if (timezoneOffset && /^[+-]\d{2}:\d{2}$/.test(timezoneOffset)) {
-            // Parse timezone offset and convert to UTC
-            const offsetMatch = timezoneOffset.match(/([+-])(\d{2}):(\d{2})/);
-            if (offsetMatch) {
-              const isoString = `${datePart}T${hours}:${minutes}:${seconds}${timezoneOffset}`;
-              utcDate = new Date(isoString);
-              
-              if (isNaN(utcDate.getTime())) {
-                throw new Error(`Invalid date/time with timezone offset: ${isoString}`);
-              }
-            } else {
-              utcDate = new Date(year, month - 1, day, hour, minute, second);
-            }
-          } else {
-            // No timezone offset - assume server timezone (backward compatibility)
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('[updateNews] No timezone offset provided for scheduled news. Assuming server timezone.');
-            }
-            utcDate = new Date(year, month - 1, day, hour, minute, second);
-          }
-          
-          if (isNaN(utcDate.getTime())) {
-            throw new Error(`Invalid date - could not parse: ${datePart} ${hours}:${minutes}:${seconds}`);
-          }
-          
-          // Format UTC date as MySQL DATETIME
-          const utcYear = utcDate.getUTCFullYear();
-          const utcMonth = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-          const utcDay = String(utcDate.getUTCDate()).padStart(2, '0');
-          const utcHour = String(utcDate.getUTCHours()).padStart(2, '0');
-          const utcMinute = String(utcDate.getUTCMinutes()).padStart(2, '0');
-          const utcSecond = String(utcDate.getUTCSeconds()).padStart(2, '0');
-          
-          finalPublishedAt = `${utcYear}-${utcMonth}-${utcDay} ${utcHour}:${utcMinute}:${utcSecond}`;
-          dateValue = `${utcYear}-${utcMonth}-${utcDay}`;
+          // Extract date portion for date column
+          dateValue = finalPublishedAt.split(' ')[0];
           
           // Validate that scheduled date is in the future
           const now = new Date();
@@ -2159,6 +2013,15 @@ export const updateNews = async (req, res) => {
             return res.status(400).json({ 
               success: false, 
               message: "Scheduled date and time must be at least 1 minute in the future" 
+            });
+          }
+          
+          // Log timezone conversion in development for debugging
+          if (process.env.NODE_ENV === 'development' && timezoneOffset) {
+            console.log('[updateNews] Timezone conversion:', {
+              localTime: normalizedPublishedAt,
+              timezoneOffset,
+              utcTime: finalPublishedAt
             });
           }
         } catch (formatError) {

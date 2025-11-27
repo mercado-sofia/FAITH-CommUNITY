@@ -781,7 +781,23 @@ export const formatDateTime = (dateString) => {
     
     // Check if this is an ISO format with timezone (TIMESTAMP field from backend)
     // Format: "YYYY-MM-DDTHH:mm:ss.sssZ" or "YYYY-MM-DDTHH:mm:ssZ" or with timezone offset
-    const hasTimezone = normalizedString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalizedString);
+    // IMPORTANT: Check for 'Z' at the end (case-insensitive) and timezone offsets
+    // The backend should always return scheduled news published_at with 'Z' suffix
+    const endsWithZ = normalizedString.endsWith('Z') || normalizedString.endsWith('z');
+    const hasTimezoneOffset = /[+-]\d{2}:\d{2}$/.test(normalizedString);
+    const hasTimezone = endsWithZ || hasTimezoneOffset;
+    
+    // Log for debugging in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[formatDateTime] INPUT:', {
+        dateString,
+        normalizedString,
+        hasTimezone,
+        endsWithZ: normalizedString.endsWith('Z'),
+        hasTimezoneOffset: /[+-]\d{2}:\d{2}$/.test(normalizedString),
+        timestamp: new Date().toISOString()
+      });
+    }
     
     if (hasTimezone) {
       // This is a TIMESTAMP field (timezone-aware) - parse as UTC and convert to local time
@@ -791,12 +807,36 @@ export const formatDateTime = (dateString) => {
         return 'Invalid date';
       }
       
-      // Get local time components from the Date object
+      // Get local time components from the Date object (automatically converted from UTC)
       const year = date.getFullYear();
       const month = date.getMonth() + 1; // getMonth() returns 0-11
       const day = date.getDate();
       let hour = date.getHours();
       const minute = date.getMinutes();
+      
+      // Log conversion for debugging in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[formatDateTime] UTC → LOCAL CONVERSION (with timezone):', {
+          inputUTC: normalizedString,
+          utcDateISO: date.toISOString(),
+          utcComponents: {
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getUTCDate(),
+            hour: date.getUTCHours(),
+            minute: date.getUTCMinutes()
+          },
+          localComponents: {
+            year,
+            month,
+            day,
+            hour,
+            minute
+          },
+          timezoneOffset: -date.getTimezoneOffset() / 60,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // Format month name
       const monthNames = [
@@ -870,6 +910,31 @@ export const formatDateTime = (dateString) => {
     const secondStr = String(secondNum).padStart(2, '0');
     const utcDateString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:${secondStr}Z`;
     const date = new Date(utcDateString);
+    
+    // Log conversion for debugging in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[formatDateTime] DATETIME (treated as UTC) → LOCAL CONVERSION:', {
+        inputDATETIME: normalizedString,
+        treatedAsUTC: utcDateString,
+        utcDateISO: date.toISOString(),
+        utcComponents: {
+          year: date.getUTCFullYear(),
+          month: date.getUTCMonth() + 1,
+          day: date.getUTCDate(),
+          hour: date.getUTCHours(),
+          minute: date.getUTCMinutes()
+        },
+        localComponents: {
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+          day: date.getDate(),
+          hour: date.getHours(),
+          minute: date.getMinutes()
+        },
+        timezoneOffset: -date.getTimezoneOffset() / 60,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     if (isNaN(date.getTime())) {
       // Fallback: if UTC parsing fails, use the original logic (for backward compatibility)
@@ -979,6 +1044,8 @@ export const formatDateTimeForInput = (dateString) => {
     }
     
     // This is a DATETIME field (timezone-naive) - parse components directly
+    // IMPORTANT: For scheduled news, published_at is stored in UTC in the database
+    // However, if the backend doesn't return it with 'Z' or timezone offset, we need to handle it
     // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
     // Or ISO format without timezone: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
     
@@ -1018,6 +1085,65 @@ export const formatDateTimeForInput = (dateString) => {
     if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
       logger.warn('Invalid time values in formatDateTimeForInput', { dateString, hourNum, minuteNum });
       return '';
+    }
+    
+    // IMPORTANT: If the string doesn't have timezone info, we need to determine if it's UTC or local
+    // For scheduled news, published_at is stored in UTC, so if we receive a DATETIME without timezone,
+    // we should treat it as UTC and convert to local time
+    // However, to be safe, we'll treat it as UTC (since scheduled news is always stored in UTC)
+    // and convert to local time for display
+    // Create a UTC date string and parse it, which will automatically convert to local time
+    const hourStr = hour.padStart ? hour.padStart(2, '0') : String(hour).padStart(2, '0');
+    const minuteStr = minute.padStart ? minute.padStart(2, '0') : String(minute).padStart(2, '0');
+    const utcDateString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:00Z`;
+    const utcDate = new Date(utcDateString);
+    
+    if (!isNaN(utcDate.getTime())) {
+      // Successfully parsed as UTC - get local time components
+      const localYear = utcDate.getFullYear();
+      const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
+      const localDay = String(utcDate.getDate()).padStart(2, '0');
+      const localHour = String(utcDate.getHours()).padStart(2, '0');
+      const localMinute = String(utcDate.getMinutes()).padStart(2, '0');
+      
+      // Log conversion for debugging in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[formatDateTimeForInput] DATETIME (treated as UTC) → LOCAL CONVERSION:', {
+          inputDATETIME: normalizedString,
+          treatedAsUTC: utcDateString,
+          utcDateISO: utcDate.toISOString(),
+          outputLocal: `${localYear}-${localMonth}-${localDay}T${localHour}:${localMinute}`,
+          utcComponents: {
+            year: utcDate.getUTCFullYear(),
+            month: utcDate.getUTCMonth() + 1,
+            day: utcDate.getUTCDate(),
+            hour: utcDate.getUTCHours(),
+            minute: utcDate.getUTCMinutes()
+          },
+          localComponents: {
+            year: localYear,
+            month: localMonth,
+            day: localDay,
+            hour: localHour,
+            minute: localMinute
+          },
+          timezoneOffset: -utcDate.getTimezoneOffset() / 60,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Return in ISO format: YYYY-MM-DDTHH:mm (local time)
+      return `${localYear}-${localMonth}-${localDay}T${localHour}:${localMinute}`;
+    }
+    
+    // Fallback: if UTC parsing fails, treat as local time (for backward compatibility)
+    // This should rarely happen, but we include it for safety
+    if (process.env.NODE_ENV === 'development') {
+      logger.warn('formatDateTimeForInput: UTC parsing failed, treating as local time', { 
+        dateString, 
+        normalizedString,
+        utcDateString 
+      });
     }
     
     // Return in ISO format: YYYY-MM-DDTHH:mm (treating as local time for backward compatibility)

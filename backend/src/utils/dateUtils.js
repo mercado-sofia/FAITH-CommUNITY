@@ -609,30 +609,18 @@ export const convertLocalToUTC = (localDateTime, timezoneOffset) => {
       return utcDate;
     }
     
-    // No timezone offset provided - treat as server local time (backward compatibility)
-    // Parse components directly to avoid timezone conversion
-    const match = normalizedDateTime.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (!match) {
-      console.error('[convertLocalToUTC] Invalid datetime format:', localDateTime);
-      return null;
-    }
+    // No timezone offset provided - this is an error for scheduled news
+    // We cannot convert local time to UTC without knowing the timezone
+    // Log error and return null to force the calling code to handle this
+    console.error('[convertLocalToUTC] ERROR: No timezone offset provided! Cannot convert local time to UTC.', {
+      localDateTime,
+      timezoneOffset,
+      timestamp: new Date().toISOString()
+    });
     
-    const [, year, month, day, hour, minute, second = '00'] = match;
-    const date = new Date(
-      parseInt(year, 10),
-      parseInt(month, 10) - 1,
-      parseInt(day, 10),
-      parseInt(hour, 10),
-      parseInt(minute, 10),
-      parseInt(second, 10)
-    );
-    
-    if (isNaN(date.getTime())) {
-      console.error('[convertLocalToUTC] Invalid date components:', { year, month, day, hour, minute, second });
-      return null;
-    }
-    
-    return date;
+    // Return null to indicate conversion failure
+    // The calling code should check for this and return an error to the user
+    return null;
   } catch (error) {
     console.error('[convertLocalToUTC] Error converting local time to UTC:', error, { localDateTime, timezoneOffset });
     return null;

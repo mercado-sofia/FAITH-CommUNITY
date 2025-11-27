@@ -30,7 +30,25 @@ const ViewDetailsModal = ({ news, onClose }) => {
   const formatDateTimeDisplay = (dateString) => {
     if (!dateString) return 'N/A';
     
+    // Log for debugging in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ViewDetailsModal] formatDateTimeDisplay INPUT:', {
+        dateString,
+        hasZ: dateString.trim().endsWith('Z'),
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     const formatted = formatDateTime(dateString);
+    
+    // Log output for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ViewDetailsModal] formatDateTimeDisplay OUTPUT:', {
+        input: dateString,
+        output: formatted,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     return formatted;
   };

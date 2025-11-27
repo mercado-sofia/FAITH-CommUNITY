@@ -89,6 +89,20 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       // Always include action for create mode (draft, schedule, publish)
       const actionValue = newsData.action || '';
       formData.append('action', actionValue);
+      
+      // CRITICAL: Include timezoneOffset for schedule action so backend can convert local time to UTC
+      if (actionValue === 'schedule' && newsData.timezoneOffset) {
+        formData.append('timezoneOffset', newsData.timezoneOffset);
+        
+        // Log for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[createFormData] Including timezoneOffset for schedule:', {
+            timezoneOffset: newsData.timezoneOffset,
+            publishedAt: newsData.publishedAt,
+            action: actionValue
+          });
+        }
+      }
     } else {
       // Edit mode: Include published_at and action only for drafts/scheduled (not for published/archived)
       // For published/archived news, published_at is immutable and status should remain unchanged
@@ -101,6 +115,20 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
           formData.append('published_at', '');
         }
         formData.append('action', newsData.action);
+        
+        // CRITICAL: Include timezoneOffset for schedule action so backend can convert local time to UTC
+        if (newsData.action === 'schedule' && newsData.timezoneOffset) {
+          formData.append('timezoneOffset', newsData.timezoneOffset);
+          
+          // Log for debugging
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[createFormData] Including timezoneOffset for schedule (edit mode):', {
+              timezoneOffset: newsData.timezoneOffset,
+              publishedAt: newsData.publishedAt,
+              action: newsData.action
+            });
+          }
+        }
       }
       // For published/archived news (action === 'save'), don't send published_at or action
       // Backend will preserve the current status and published_at when no action is provided

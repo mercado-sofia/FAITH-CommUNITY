@@ -87,6 +87,31 @@ export default function DatePickerPopover({
         return null;
       }
       
+      // Log conversion for debugging in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DatePickerPopover] UTC → LOCAL CONVERSION:', {
+          inputUTC: cleanStr,
+          utcDateISO: utcDate.toISOString(),
+          localDate: utcDate.toString(),
+          utcComponents: {
+            year: utcDate.getUTCFullYear(),
+            month: utcDate.getUTCMonth() + 1,
+            day: utcDate.getUTCDate(),
+            hour: utcDate.getUTCHours(),
+            minute: utcDate.getUTCMinutes()
+          },
+          localComponents: {
+            year: utcDate.getFullYear(),
+            month: utcDate.getMonth() + 1,
+            day: utcDate.getDate(),
+            hour: utcDate.getHours(),
+            minute: utcDate.getMinutes()
+          },
+          timezoneOffset: -utcDate.getTimezoneOffset() / 60,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // Return the Date object - it's already in local time after parsing UTC
       // The Date object automatically converts UTC to local when created
       return utcDate;

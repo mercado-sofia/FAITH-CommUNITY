@@ -356,13 +356,13 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
+                            <span className={styles.featuredCount}>— Total Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
                           <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Total Featured</span>
-                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                            <span className={styles.approvedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -470,13 +470,13 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
+                            <span className={styles.featuredCount}>— Total Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
                           <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Total Featured</span>
-                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                            <span className={styles.approvedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -696,6 +696,9 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
+                            <span className={styles.featuredCount}>
+                              {statistics.featuredPrograms || 0} Total Featured
+                            </span>
                             <span className={styles.activeCount}>
                               {statistics.activePrograms || 0} Active
                             </span>
@@ -706,16 +709,13 @@ const SuperadminProgramsPage = () => {
                               {statistics.completedPrograms || 0} Completed
                             </span>
                           </div>
-                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>
-                              {statistics.featuredPrograms || 0} Total Featured
-                            </span>
-                            {statistics.archivedPrograms > 0 && (
-                              <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>
+                          {statistics.archivedPrograms > 0 && (
+                            <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                              <span className={styles.approvedCount}>
                                 {statistics.archivedPrograms} Archived
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -729,13 +729,13 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
+                            <span className={styles.featuredCount}>— Total Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
                           <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Total Featured</span>
-                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                            <span className={styles.approvedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -750,13 +750,13 @@ const SuperadminProgramsPage = () => {
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
+                            <span className={styles.featuredCount}>— Total Featured</span>
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
                           <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
-                            <span className={styles.approvedCount}>— Total Featured</span>
-                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                            <span className={styles.approvedCount}>— Archived</span>
                           </div>
                         </div>
                       </div>

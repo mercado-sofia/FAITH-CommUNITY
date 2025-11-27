@@ -181,7 +181,8 @@
   align-items: flex-start;
   overflow: hidden;
   box-sizing: border-box;
-  width: 100%;
+  width: auto;
+  max-width: 400px;
 }
 
 .cardContent {
@@ -247,7 +248,8 @@
 .activeCount,
 .upcomingCount,
 .completedCount,
-.approvedCount {
+.approvedCount,
+.featuredCount {
   font-size: 11.5px;
   font-weight: 500;
   font-family: var(--font-inter), sans-serif;
@@ -255,7 +257,7 @@
 }
 
 .activeCount {
-  color: #1d9782;
+  color: #8b8e8d;
 }
 
 .upcomingCount {
@@ -266,30 +268,12 @@
   color: #8b8e8d;
 }
 
-.approvedCount {
+.featuredCount {
   color: #1d9782;
 }
 
-/* Filters */
-.filtersContainer {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  position: relative;
-  z-index: 10;
-}
-
-.filterGroup {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-}
-
-.filterLabel {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 0.875rem;
+.approvedCount {
+  color: #1d9782;
 }
 
 /* Custom Dropdown Components - Matching approvals */

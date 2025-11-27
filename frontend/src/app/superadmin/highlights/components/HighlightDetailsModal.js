@@ -2,19 +2,29 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight, FaArchive, FaTrash } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import logger from '@/utils/shared/logger'
+import ArchiveConfirmationModal from './ArchiveConfirmationModal'
+import DeleteConfirmationModal from './DeleteConfirmationModal'
+import { useArchiveHighlightMutation, useDeleteHighlightMutation } from '@/rtk/superadmin/highlightsApi'
 import styles from './styles/HighlightDetailsModal.module.css'
 
-const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
+const HighlightDetailsModal = ({ highlight, isOpen, onClose, onActionComplete }) => {
   const scrollPositionRef = useRef(0)
   const [programTitle, setProgramTitle] = useState(null)
   const [loadingProgram, setLoadingProgram] = useState(false)
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [allImages, setAllImages] = useState([])
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const [archiveHighlight] = useArchiveHighlightMutation()
+  const [deleteHighlight] = useDeleteHighlightMutation()
 
   // Lock scroll when modal is open
   useEffect(() => {
@@ -327,6 +337,57 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
   }
 
+  // Handle archive
+  const handleArchive = async () => {
+    if (!highlight) return
+    
+    setIsArchiving(true)
+    try {
+      await archiveHighlight(highlight.id).unwrap()
+      setArchiveModalOpen(false)
+      onClose()
+      if (onActionComplete) {
+        onActionComplete()
+      }
+      // Trigger refresh event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('highlightStatusChanged'))
+      }
+    } catch (error) {
+      console.error('Error archiving highlight:', error)
+      alert('Failed to archive highlight. Please try again.')
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!highlight) return
+    
+    setIsDeleting(true)
+    try {
+      await deleteHighlight(highlight.id).unwrap()
+      setDeleteModalOpen(false)
+      onClose()
+      if (onActionComplete) {
+        onActionComplete()
+      }
+      // Trigger refresh event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('highlightStatusChanged'))
+      }
+    } catch (error) {
+      console.error('Error deleting highlight:', error)
+      alert('Failed to delete highlight. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Only show archive/delete buttons if highlight is approved (not already archived)
+  const showActions = highlight?.status === 'approved'
+
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
       <div className={styles.modalContent}>
@@ -505,9 +566,31 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
               Date Created: {formatDateShort(highlight.created_at)}
             </div>
           )}
-          <button onClick={onClose} className={styles.closeModalButton}>
-            Close
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {showActions && (
+              <>
+                <button
+                  onClick={() => setArchiveModalOpen(true)}
+                  className={styles.archiveButton}
+                  disabled={isArchiving || isDeleting}
+                >
+                  <FaArchive style={{ marginRight: '0.5rem' }} />
+                  Archive
+                </button>
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className={styles.deleteButton}
+                  disabled={isArchiving || isDeleting}
+                >
+                  <FaTrash style={{ marginRight: '0.5rem' }} />
+                  Delete
+                </button>
+              </>
+            )}
+            <button onClick={onClose} className={styles.closeModalButton}>
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
@@ -570,6 +653,26 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           </div>
         </div>
       )}
+
+      {/* Archive Confirmation Modal */}
+      <ArchiveConfirmationModal
+        isOpen={archiveModalOpen}
+        onClose={() => setArchiveModalOpen(false)}
+        onConfirm={handleArchive}
+        highlightTitle={highlight?.title}
+        organizationName={highlight?.organization_name}
+        isLoading={isArchiving}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        highlightTitle={highlight?.title}
+        organizationName={highlight?.organization_name}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

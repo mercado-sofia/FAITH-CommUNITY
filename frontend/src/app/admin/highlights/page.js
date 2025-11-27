@@ -6,7 +6,6 @@ import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
-import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
 import { useAdminPrograms } from '@/hooks/admin/useAdminData';
@@ -24,7 +23,6 @@ export default function AdminHighlightsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [highlights, setHighlights] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Filter and search states
@@ -35,8 +33,7 @@ export default function AdminHighlightsPage() {
   // Fetch programs for filter
   const { 
     programs: programsData = [], 
-    isLoading: programsLoading,
-    error: programsError 
+    isLoading: programsLoading
   } = useAdminPrograms();
 
   // Show skeleton immediately on first load, then show content when data is ready
@@ -72,13 +69,9 @@ export default function AdminHighlightsPage() {
   }, [searchParams, searchQuery, sortBy, programFilter]);
 
   // Load highlights data
-  const loadHighlights = useCallback(async (isRefresh = false) => {
+  const loadHighlights = useCallback(async () => {
     try {
-      if (isRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       setError(null);
       
       // Check for window to avoid SSR errors
@@ -123,11 +116,7 @@ export default function AdminHighlightsPage() {
       });
       setError(errorInfo.message);
     } finally {
-      if (isRefresh) {
-        setIsRefreshing(false);
-      } else {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }, []);
 

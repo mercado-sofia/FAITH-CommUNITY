@@ -13,7 +13,11 @@ import {
   getFeaturedHighlights,
   addFeaturedHighlight,
   removeFeaturedHighlight,
-  checkFeaturedStatus
+  checkFeaturedStatus,
+  archiveHighlight,
+  unarchiveHighlight,
+  getArchivedHighlights,
+  deleteHighlightForSuperadmin
 } from '../controllers/highlightsController.js';
 
 const router = express.Router();
@@ -31,6 +35,9 @@ router.put('/approval/:id/status', updateHighlightStatus);
 // Featured highlights routes (must be before /:id routes)
 router.get('/featured', getFeaturedHighlights);
 
+// Archived highlights route (must be before /:id routes)
+router.get('/archived', getArchivedHighlights);
+
 // Get a single highlight by ID
 router.get('/:id', getHighlightById);
 
@@ -45,7 +52,13 @@ router.post('/', createHighlight);
 // Update a highlight
 router.put('/:id', updateHighlight);
 
+// Archive/Unarchive routes (must be before delete route)
+router.post('/:id/archive', archiveHighlight);
+router.post('/:id/unarchive', unarchiveHighlight);
+
 // Delete a highlight
+// Note: deleteHighlightForSuperadmin is used when superadmin deletes directly
+// The existing deleteHighlight route handles admin deletions with approval workflow
 router.delete('/:id', deleteHighlight);
 
 export default router;

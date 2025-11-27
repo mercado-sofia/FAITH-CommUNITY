@@ -582,8 +582,36 @@ const runIncrementalMigrations = async (connection) => {
       if (statusColumnCheck[0].count === 0) {
         await connection.query(`
           ALTER TABLE admin_highlights 
-          ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
+          ADD COLUMN status ENUM('pending', 'approved', 'rejected', 'archived') DEFAULT 'pending'
         `);
+      } else {
+        // Check if 'archived' status exists in the ENUM, if not, add it
+        try {
+          const [enumCheck] = await connection.query(`
+            SELECT COLUMN_TYPE 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'admin_highlights' 
+            AND COLUMN_NAME = 'status'
+          `);
+          
+          if (enumCheck.length > 0 && enumCheck[0].COLUMN_TYPE) {
+            const enumType = enumCheck[0].COLUMN_TYPE;
+            if (!enumType.includes("'archived'")) {
+              // Modify the ENUM to include 'archived'
+              await connection.query(`
+                ALTER TABLE admin_highlights 
+                MODIFY COLUMN status ENUM('pending', 'approved', 'rejected', 'archived') DEFAULT 'pending'
+              `);
+            }
+          }
+        } catch (enumUpdateError) {
+          // ENUM update might fail if there are existing values, log but continue
+          logWarn('Could not update status ENUM to include archived (may already exist)', { 
+            context: 'database', 
+            error: enumUpdateError.message 
+          });
+        }
       }
     } catch (statusError) {
       // Column might already exist or other error - silently skip
@@ -1453,7 +1481,7 @@ const initializeDatabase = async () => {
           title VARCHAR(255) NOT NULL,
           description TEXT NOT NULL,
           media_files JSON,
-          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          status ENUM('pending', 'approved', 'rejected', 'archived') DEFAULT 'pending',
           organization_id INT NOT NULL,
           program_id INT NULL,
           year INT NULL,

@@ -926,14 +926,61 @@ export const formatDateTimeForInput = (dateString) => {
   try {
     if (!dateString) return '';
     
-    // Parse the date string directly without creating a Date object to avoid timezone conversion
-    // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
-    // Or ISO format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
     let normalizedString = dateString.trim();
     
-    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
-    normalizedString = normalizedString.replace(/Z$/, '');
-    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+    // Check if this is an ISO format with timezone (TIMESTAMP field from backend with 'Z' or offset)
+    // Format: "YYYY-MM-DDTHH:mm:ss.sssZ" or "YYYY-MM-DDTHH:mm:ssZ" or with timezone offset
+    const hasTimezone = normalizedString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalizedString);
+    
+    if (hasTimezone) {
+      // This is a UTC timestamp - parse as UTC and convert to local time for the date picker
+      const utcDate = new Date(normalizedString);
+      if (isNaN(utcDate.getTime())) {
+        logger.warn('Invalid ISO date string with timezone in formatDateTimeForInput', { dateString });
+        return '';
+      }
+      
+      // Get local time components from the Date object (automatically converted from UTC)
+      const year = utcDate.getFullYear();
+      const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getDate()).padStart(2, '0');
+      const hour = String(utcDate.getHours()).padStart(2, '0');
+      const minute = String(utcDate.getMinutes()).padStart(2, '0');
+      
+      const localTimeString = `${year}-${month}-${day}T${hour}:${minute}`;
+      
+      // Log for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[formatDateTimeForInput] UTC → LOCAL CONVERSION:', {
+          inputUTC: normalizedString,
+          utcDateISO: utcDate.toISOString(),
+          outputLocal: localTimeString,
+          utcComponents: {
+            year: utcDate.getUTCFullYear(),
+            month: utcDate.getUTCMonth() + 1,
+            day: utcDate.getUTCDate(),
+            hour: utcDate.getUTCHours(),
+            minute: utcDate.getUTCMinutes()
+          },
+          localComponents: {
+            year,
+            month,
+            day,
+            hour,
+            minute
+          },
+          timezoneOffset: -utcDate.getTimezoneOffset() / 60,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Return in ISO format: YYYY-MM-DDTHH:mm (local time)
+      return localTimeString;
+    }
+    
+    // This is a DATETIME field (timezone-naive) - parse components directly
+    // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+    // Or ISO format without timezone: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
     
     // Try to match both formats: ISO (with T) and MySQL (with space)
     // First try ISO format: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss
@@ -973,7 +1020,7 @@ export const formatDateTimeForInput = (dateString) => {
       return '';
     }
     
-    // Return in ISO format: YYYY-MM-DDTHH:mm
+    // Return in ISO format: YYYY-MM-DDTHH:mm (treating as local time for backward compatibility)
     return `${year}-${month}-${day}T${hour}:${minute}`;
   } catch (error) {
     logger.error('Error in formatDateTimeForInput', error, { dateString });

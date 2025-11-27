@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import { FiChevronDown, FiSearch, FiX, FiArchive } from 'react-icons/fi';
 import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
 
@@ -13,8 +14,11 @@ const SearchAndFilterControls = ({
   onSearchChange,
   onSortChange,
   onStatusFilterChange,
-  onShowCountChange
+  onShowCountChange,
+  isArchiveMode = false,
+  showArchiveToggle = true
 }) => {
+  const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
 
@@ -42,9 +46,16 @@ const SearchAndFilterControls = ({
     { value: 'all', label: 'All' },
     { value: 'draft', label: 'Draft' },
     { value: 'published', label: 'Published' },
-    { value: 'scheduled', label: 'Scheduled' },
-    { value: 'archived', label: 'Archived' }
+    { value: 'scheduled', label: 'Scheduled' }
   ];
+
+  const handleArchiveToggle = () => {
+    if (isArchiveMode) {
+      router.push('/admin/news');
+    } else {
+      router.push('/admin/news/archive');
+    }
+  };
 
   return (
     <div className={styles.controlsRow}>
@@ -99,34 +110,36 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
-        {/* Status Filter */}
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
-            onClick={() => toggleDropdown("status")}
-          >
-            <span className={styles.statusLabel}>Status:</span>
-            <span className={styles.statusValue}>
-              {statusOptions.find(opt => opt.value === statusFilter)?.label || 'All'}
-            </span>
-            <FiChevronDown className={styles.icon} />
+        {/* Status Filter - hidden in archive mode */}
+        {!isArchiveMode && (
+          <div className={styles.dropdownWrapper}>
+            <div
+              className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
+              onClick={() => toggleDropdown("status")}
+            >
+              <span className={styles.statusLabel}>Status:</span>
+              <span className={styles.statusValue}>
+                {statusOptions.find(opt => opt.value === statusFilter)?.label || 'All'}
+              </span>
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "status" && (
+              <ul className={styles.options}>
+                {statusOptions.map((option) => (
+                  <li 
+                    key={option.value} 
+                    onClick={() => {
+                      onStatusFilterChange(option.value);
+                      setShowDropdown(null);
+                    }}
+                  >
+                    {option.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {showDropdown === "status" && (
-            <ul className={styles.options}>
-              {statusOptions.map((option) => (
-                <li 
-                  key={option.value} 
-                  onClick={() => {
-                    onStatusFilterChange(option.value);
-                    setShowDropdown(null);
-                  }}
-                >
-                  {option.label}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
 
         {/* Sort Button */}
         <button
@@ -144,6 +157,20 @@ const SearchAndFilterControls = ({
           )}
         </button>
       </div>
+      
+      {/* Archive Toggle Button - only show if showArchiveToggle is true */}
+      {showArchiveToggle && (
+        <div className={styles.archiveButtonWrapper}>
+          <button
+            className={styles.archiveToggleButton}
+            onClick={handleArchiveToggle}
+            title={isArchiveMode ? 'View Active News' : 'View Archived News'}
+          >
+            <FiArchive className={styles.archiveIcon} />
+            {isArchiveMode ? 'Active News' : 'Archive'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

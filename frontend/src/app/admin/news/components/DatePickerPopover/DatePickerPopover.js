@@ -68,13 +68,32 @@ export default function DatePickerPopover({
   minDate = null         // Minimum selectable date (null = no restriction)
 }) {
   // Parse value - could be date-only or datetime
-  // IMPORTANT: Parse datetime strings as local time to avoid timezone conversion
-  // MySQL DATETIME is timezone-naive, so we treat it as local time
+  // IMPORTANT: If value has timezone (Z or offset), it's UTC and needs conversion to local
+  // If no timezone, treat as local time (for backward compatibility)
   const parseValue = (str) => {
     if (!str) return null;
     
-    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM) to avoid timezone conversion
     let cleanStr = str.trim();
+    
+    // Check if this is a UTC timestamp (ends with Z) or has timezone offset
+    const hasTimezone = cleanStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(cleanStr);
+    
+    if (hasTimezone) {
+      // This is a UTC timestamp - parse as UTC and convert to local time
+      // Backend returns scheduled times as UTC (e.g., "2025-11-27T21:45:00.000Z")
+      const utcDate = new Date(cleanStr);
+      if (isNaN(utcDate.getTime())) {
+        console.error('[DatePickerPopover] Invalid UTC date string:', cleanStr);
+        return null;
+      }
+      
+      // Return the Date object - it's already in local time after parsing UTC
+      // The Date object automatically converts UTC to local when created
+      return utcDate;
+    }
+    
+    // No timezone indicator - treat as local time (timezone-naive DATETIME)
+    // Remove any timezone suffix that might be present (shouldn't be, but just in case)
     if (cleanStr.endsWith('Z')) {
       cleanStr = cleanStr.slice(0, -1);
     }

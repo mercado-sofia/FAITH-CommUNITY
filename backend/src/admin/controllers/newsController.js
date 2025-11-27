@@ -6,7 +6,7 @@ import { signAccessToken } from "../../utils/jwt.js";
 import { findValidRefreshToken, rotateRefreshToken } from "../../utils/jwt.js";
 import { getAccessTokenCookieOptions, getRefreshCookieOptions } from "../../utils/jwt.js";
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js";
-import { formatTimestampForDB, convertLocalToUTC, formatUTCDateForDatabase, validateTimezoneOffset } from "../../utils/dateUtils.js";
+import { formatTimestampForDB, convertLocalToUTC, formatUTCDateForDatabase, validateTimezoneOffset, parseDatabaseDateTimeAsUTC } from "../../utils/dateUtils.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
 
@@ -281,6 +281,46 @@ function mapNewsToResponse(n) {
     return timestamp;
   };
   
+  // Convert published_at DATETIME to ISO format (treating as UTC)
+  // IMPORTANT: published_at is stored in UTC for scheduled news, so we need to indicate this
+  // by converting to ISO format with 'Z' suffix, just like TIMESTAMP fields
+  const convertPublishedAtToISO = (publishedAt) => {
+    if (!publishedAt) return null;
+    
+    // If it's already in ISO format with timezone, return as-is
+    if (typeof publishedAt === 'string' && (publishedAt.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(publishedAt))) {
+      return publishedAt;
+    }
+    
+    // If it's a Date object, convert to ISO
+    if (publishedAt instanceof Date) {
+      return publishedAt.toISOString();
+    }
+    
+    // If it's a DATETIME string (YYYY-MM-DD HH:mm:ss or YYYY-MM-DDTHH:mm:ss), treat as UTC
+    // Parse it as UTC and convert to ISO format
+    try {
+      const utcDate = parseDatabaseDateTimeAsUTC(publishedAt);
+      if (utcDate && !isNaN(utcDate.getTime())) {
+        return utcDate.toISOString();
+      }
+    } catch (e) {
+      // If parsing fails, try fallback
+    }
+    
+    // Fallback: try to parse as date string
+    try {
+      const date = new Date(publishedAt);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    } catch (e) {
+      // If all parsing fails, return as-is
+    }
+    
+    return publishedAt;
+  };
+  
   return {
     id: n.id || null,
     title: n.title || '',
@@ -289,7 +329,7 @@ function mapNewsToResponse(n) {
     description: n.excerpt || '', // Map excerpt to description for backward compatibility
     excerpt: n.excerpt || '',
     featured_image: n.featured_image || null,
-    published_at: n.published_at || null, // DATETIME - timezone-naive, keep as-is
+    published_at: convertPublishedAtToISO(n.published_at), // DATETIME stored as UTC - convert to ISO format
     date: convertTimestampToISO(n.date || n.created_at), // TIMESTAMP - convert to ISO
     created_at: convertTimestampToISO(n.created_at), // TIMESTAMP - convert to ISO
     updated_at: convertTimestampToISO(n.updated_at), // TIMESTAMP - convert to ISO
@@ -461,10 +501,22 @@ export const createNews = async (req, res) => {
       // Use centralized timezone conversion utility
       // This converts user's local time to UTC for database storage
       try {
+        // Log input for debugging
+        console.log('[createNews] SCHEDULING INPUT:', {
+          receivedLocalTime: normalizedPublishedAt,
+          receivedTimezoneOffset: timezoneOffset,
+          timestamp: new Date().toISOString()
+        });
+        
         // Convert local time to UTC using the utility function
         const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
         
         if (!utcDate || isNaN(utcDate.getTime())) {
+          console.error('[createNews] Invalid UTC conversion:', {
+            localTime: normalizedPublishedAt,
+            timezoneOffset,
+            utcDate
+          });
           return res.status(400).json({ 
             success: false, 
             message: "Invalid date and time format. Please provide a valid date and time." 
@@ -475,11 +527,26 @@ export const createNews = async (req, res) => {
         finalPublishedAt = formatUTCDateForDatabase(utcDate);
         
         if (!finalPublishedAt) {
+          console.error('[createNews] Failed to format UTC date:', { utcDate });
           return res.status(400).json({ 
             success: false, 
             message: "Failed to format date for database storage." 
           });
         }
+        
+        // Log conversion result for debugging
+        console.log('[createNews] SCHEDULING CONVERSION:', {
+          inputLocalTime: normalizedPublishedAt,
+          inputTimezoneOffset: timezoneOffset,
+          convertedUTCDate: utcDate.toISOString(),
+          storedInDatabase: finalPublishedAt,
+          utcYear: utcDate.getUTCFullYear(),
+          utcMonth: utcDate.getUTCMonth() + 1,
+          utcDay: utcDate.getUTCDate(),
+          utcHour: utcDate.getUTCHours(),
+          utcMinute: utcDate.getUTCMinutes(),
+          timestamp: new Date().toISOString()
+        });
         
         // Validate that scheduled date is in the future
         // Compare UTC times to ensure consistency
@@ -491,15 +558,6 @@ export const createNews = async (req, res) => {
           return res.status(400).json({ 
             success: false, 
             message: "Scheduled date and time must be at least 1 minute in the future" 
-          });
-        }
-        
-        // Log timezone conversion in development for debugging
-        if (process.env.NODE_ENV === 'development' && timezoneOffset) {
-          console.log('[createNews] Timezone conversion:', {
-            localTime: normalizedPublishedAt,
-            timezoneOffset,
-            utcTime: finalPublishedAt
           });
         }
         
@@ -1028,6 +1086,34 @@ export const getApprovedNews = async (req, res) => {
               return timestamp;
             };
             
+            // Convert published_at DATETIME to ISO format (treating as UTC)
+            const convertPublishedAtToISO = (publishedAt) => {
+              if (!publishedAt) return null;
+              if (typeof publishedAt === 'string' && (publishedAt.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(publishedAt))) {
+                return publishedAt;
+              }
+              if (publishedAt instanceof Date) {
+                return publishedAt.toISOString();
+              }
+              try {
+                const utcDate = parseDatabaseDateTimeAsUTC(publishedAt);
+                if (utcDate && !isNaN(utcDate.getTime())) {
+                  return utcDate.toISOString();
+                }
+              } catch (e) {
+                // Fallback
+              }
+              try {
+                const date = new Date(publishedAt);
+                if (!isNaN(date.getTime())) {
+                  return date.toISOString();
+                }
+              } catch (e) {
+                // Fallback
+              }
+              return publishedAt;
+            };
+            
             return {
               id: row?.id || null,
               title: row?.title || 'Untitled',
@@ -1036,7 +1122,7 @@ export const getApprovedNews = async (req, res) => {
               description: row?.excerpt || '',
               excerpt: row?.excerpt || '',
               featured_image: row?.featured_image || null,
-              published_at: row?.published_at || null, // DATETIME - timezone-naive, keep as-is
+              published_at: convertPublishedAtToISO(row?.published_at), // DATETIME stored as UTC - convert to ISO format
               date: convertTimestampToISO(row?.date || row?.created_at), // TIMESTAMP - convert to ISO
               created_at: convertTimestampToISO(row?.created_at), // TIMESTAMP - convert to ISO
               updated_at: convertTimestampToISO(row?.updated_at), // TIMESTAMP - convert to ISO
@@ -1983,10 +2069,22 @@ export const updateNews = async (req, res) => {
         
         // Use centralized timezone conversion utility (same as createNews)
         try {
+          // Log input for debugging
+          console.log('[updateNews] SCHEDULING INPUT:', {
+            receivedLocalTime: normalizedPublishedAt,
+            receivedTimezoneOffset: timezoneOffset,
+            timestamp: new Date().toISOString()
+          });
+          
           // Convert local time to UTC using the utility function
           const utcDate = convertLocalToUTC(normalizedPublishedAt, timezoneOffset);
           
           if (!utcDate || isNaN(utcDate.getTime())) {
+            console.error('[updateNews] Invalid UTC conversion:', {
+              localTime: normalizedPublishedAt,
+              timezoneOffset,
+              utcDate
+            });
             return res.status(400).json({ 
               success: false, 
               message: "Invalid date and time format. Please provide a valid date and time." 
@@ -1997,6 +2095,7 @@ export const updateNews = async (req, res) => {
           finalPublishedAt = formatUTCDateForDatabase(utcDate);
           
           if (!finalPublishedAt) {
+            console.error('[updateNews] Failed to format UTC date:', { utcDate });
             return res.status(400).json({ 
               success: false, 
               message: "Failed to format date for database storage." 
@@ -2006,6 +2105,20 @@ export const updateNews = async (req, res) => {
           // Extract date portion for date column
           dateValue = finalPublishedAt.split(' ')[0];
           
+          // Log conversion result for debugging
+          console.log('[updateNews] SCHEDULING CONVERSION:', {
+            inputLocalTime: normalizedPublishedAt,
+            inputTimezoneOffset: timezoneOffset,
+            convertedUTCDate: utcDate.toISOString(),
+            storedInDatabase: finalPublishedAt,
+            utcYear: utcDate.getUTCFullYear(),
+            utcMonth: utcDate.getUTCMonth() + 1,
+            utcDay: utcDate.getUTCDate(),
+            utcHour: utcDate.getUTCHours(),
+            utcMinute: utcDate.getUTCMinutes(),
+            timestamp: new Date().toISOString()
+          });
+          
           // Validate that scheduled date is in the future
           const now = new Date();
           const bufferTime = new Date(now.getTime() + 60000); // 1 minute buffer
@@ -2013,15 +2126,6 @@ export const updateNews = async (req, res) => {
             return res.status(400).json({ 
               success: false, 
               message: "Scheduled date and time must be at least 1 minute in the future" 
-            });
-          }
-          
-          // Log timezone conversion in development for debugging
-          if (process.env.NODE_ENV === 'development' && timezoneOffset) {
-            console.log('[updateNews] Timezone conversion:', {
-              localTime: normalizedPublishedAt,
-              timezoneOffset,
-              utcTime: finalPublishedAt
             });
           }
         } catch (formatError) {

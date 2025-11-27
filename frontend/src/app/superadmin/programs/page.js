@@ -632,6 +632,48 @@ const SuperadminProgramsPage = () => {
                   searchQuery={searchQuery}
                   onSearchChange={handleSearchChange}
                 />
+                <div className={styles.dropdownWrapper}>
+                  <div
+                    className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
+                    onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
+                  >
+                    {organizationsLoading ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        <span className={styles.organizationLabel}>Organization:</span>
+                        <span className={styles.organizationValue}>
+                          {selectedOrganization === "all" ? "All" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym || "All"}
+                        </span>
+                      </>
+                    )}
+                    <FiChevronDown className={styles.icon} />
+                  </div>
+                  {showDropdown === "organization" && (
+                    <ul className={styles.options}>
+                      <li key="all" onClick={() => {
+                        setSelectedOrganization("all");
+                        setShowDropdown(null);
+                      }}>
+                        All
+                      </li>
+                      {organizationsLoading ? (
+                        <li style={{ padding: '0.5rem', textAlign: 'center', color: '#666' }}>
+                          Loading organizations...
+                        </li>
+                      ) : (
+                        organizationOptions.map(org => (
+                          <li key={org.id} onClick={() => {
+                            setSelectedOrganization(org.id.toString());
+                            setShowDropdown(null);
+                          }}>
+                            {org.acronym}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -743,47 +785,9 @@ const SuperadminProgramsPage = () => {
       {/* Programs by Organization - show when 'All' or status tabs are active */}
       {(activeTab === 'all' || activeTab === 'upcoming' || activeTab === 'active' || activeTab === 'completed') && (
         <div className={styles.programsSection}>
-        {/* Header with title and filter */}
+        {/* Header with title */}
         <div className={styles.programsHeader}>
           <h2 className={styles.sectionTitle}>Programs by Organization</h2>
-          <div className={styles.filtersContainer}>
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Organization:</label>
-              <div className={styles.dropdownWrapper}>
-              <div
-                className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
-                onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
-              >
-                {organizationsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym + " - " + organizationOptions.find(org => org.id.toString() === selectedOrganization)?.name}
-                <FiChevronDown className={styles.icon} />
-              </div>
-              {showDropdown === "organization" && (
-                <ul className={styles.options}>
-                  <li key="all" onClick={() => {
-                    setSelectedOrganization("all");
-                    setShowDropdown(null);
-                  }}>
-                    All Organizations
-                  </li>
-                  {organizationsLoading ? (
-                    <li style={{ padding: '0.5rem', textAlign: 'center', color: '#666' }}>
-                      Loading organizations...
-                    </li>
-                  ) : (
-                    organizationOptions.map(org => (
-                      <li key={org.id} onClick={() => {
-                        setSelectedOrganization(org.id.toString());
-                        setShowDropdown(null);
-                      }}>
-                        {org.acronym} - {org.name}
-                      </li>
-                    ))
-                  )}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
         </div>
 
         {/* Show empty state when there are no organizations or programs */}

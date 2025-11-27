@@ -36,6 +36,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
+      WHERE pp.status != 'archived'
       ORDER BY o.orgName ASC, pp.created_at DESC
     `;
     
@@ -227,6 +228,7 @@ export const getProgramsStatistics = async (req, res) => {
           ELSE 0 
         END) as completed_previous_year
       FROM programs_projects
+      WHERE status != 'archived'
     `;
     
     const [results] = await db.execute(statisticsQuery, [currentYear, currentYear, previousYear, previousYear]);

@@ -1010,6 +1010,20 @@ export const checkFeaturedStatus = async (req, res) => {
   try {
     const { id: highlightId } = req.params;
     
+    // First check if highlight is archived - archived highlights cannot be featured
+    const [statusRows] = await promisePool.execute(
+      'SELECT status FROM admin_highlights WHERE id = ?',
+      [highlightId]
+    );
+    
+    // If highlight is archived, return false for featured status
+    if (statusRows.length > 0 && statusRows[0].status === 'archived') {
+      return res.json({ 
+        isFeatured: false,
+        displayOrder: null
+      });
+    }
+    
     const [rows] = await promisePool.execute(
       'SELECT display_order FROM featured_highlights WHERE highlight_id = ?',
       [highlightId]
@@ -1128,9 +1142,18 @@ export const unarchiveHighlight = async (req, res) => {
     }
     
     // Restore status to approved (since it was previously approved before archiving)
+    // Ensure featured status is not restored - if highlight was featured before archiving,
+    // it should remain unfeatured after restoration
     await connection.execute(
       'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
       ['approved', id]
+    );
+    
+    // Explicitly ensure highlight is not in featured_highlights table after unarchiving
+    // (This is a safety check - archive already removes it, but ensure it stays removed)
+    await connection.execute(
+      'DELETE FROM featured_highlights WHERE highlight_id = ?',
+      [id]
     );
     
     await connection.commit();

@@ -7,7 +7,7 @@ import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import StarButton from './StarButton'
 import styles from './styles/HighlightCard.module.css'
 
-const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
+const HighlightCard = ({ highlight, onViewDetails, searchQuery = '', onRestore = null }) => {
   const [imageError, setImageError] = useState(false)
   const [videoError, setVideoError] = useState(false)
 
@@ -244,12 +244,13 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
           </div>
         )}
         
-        {/* Star Button - Only show for approved highlights */}
-        {isApproved && (
+        {/* Star Button - Only show for approved highlights that are not archived */}
+        {isApproved && highlight.status !== 'archived' && (
           <StarButton 
             highlightId={highlight.id}
             highlightTitle={highlight.title}
             organizationId={highlight.organization_id}
+            highlightStatus={highlight.status}
             onStarChange={() => {
               // Trigger refresh when star changes
               if (typeof window !== 'undefined') {
@@ -257,6 +258,13 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
               }
             }}
           />
+        )}
+        
+        {/* Archived Badge - show if highlight is archived, positioned where star icon was */}
+        {highlight.status === 'archived' && (
+          <div className={styles.archivedBadge}>
+            <span>Archived</span>
+          </div>
         )}
       </div>
       
@@ -325,6 +333,16 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
           >
             View Details
           </button>
+          {/* Restore Button - only show if onRestore handler is provided */}
+          {onRestore && (
+            <button 
+              className={styles.viewDetailsButton}
+              onClick={() => onRestore(highlight)}
+              style={{ marginTop: '0.5rem' }}
+            >
+              Restore
+            </button>
+          )}
         </div>
       </div>
     </div>

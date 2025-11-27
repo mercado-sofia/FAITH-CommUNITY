@@ -6,7 +6,8 @@ import styles from './styles/SearchBar.module.css';
 
 const SearchBar = ({
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  placeholder = "Search highlights..."
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
 
@@ -19,7 +20,7 @@ const SearchBar = ({
       <div className={styles.searchInputContainer}>
         <input
           type="text"
-          placeholder="Search highlights..."
+          placeholder={placeholder}
           value={localQuery}
           onChange={(e) => {
             setLocalQuery(e.target.value);

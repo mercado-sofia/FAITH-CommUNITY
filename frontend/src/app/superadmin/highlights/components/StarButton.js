@@ -4,19 +4,20 @@ import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
-const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange }) => {
+const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange, highlightStatus }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showUnfeatureModal, setShowUnfeatureModal] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(false)
 
   // Check if highlight is already featured using API
+  // Skip query if highlight is archived
   const { 
     data: featuredStatus, 
     isLoading: statusLoading,
     refetch: refetchStatus
   } = useCheckFeaturedStatusQuery(highlightId, {
-    skip: !highlightId
+    skip: !highlightId || highlightStatus === 'archived'
   })
 
   // Mutations for starring/unstarring
@@ -24,18 +25,49 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange 
   const [removeFeaturedHighlight] = useRemoveFeaturedHighlightMutation()
 
   // Update starred state when API response changes
+  // Also check highlight status - if archived, always set to false
   useEffect(() => {
+    if (highlightStatus === 'archived') {
+      setIsStarred(false)
+      return
+    }
     if (featuredStatus) {
       setIsStarred(featuredStatus.isFeatured || false)
     }
-  }, [featuredStatus])
+  }, [featuredStatus, highlightStatus])
 
   // Refetch status when highlightId changes
   useEffect(() => {
-    if (highlightId) {
+    if (highlightId && highlightStatus !== 'archived') {
       refetchStatus()
     }
-  }, [highlightId, refetchStatus])
+  }, [highlightId, highlightStatus, refetchStatus])
+
+  // Listen for highlight status changes (archive/unarchive) and refetch featured status
+  useEffect(() => {
+    const handleHighlightStatusChanged = () => {
+      // Refetch featured status when highlight status changes
+      if (highlightStatus !== 'archived') {
+        refetchStatus()
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('highlightStatusChanged', handleHighlightStatusChanged)
+      
+      return () => {
+        window.removeEventListener('highlightStatusChanged', handleHighlightStatusChanged)
+      }
+    }
+  }, [refetchStatus, highlightStatus])
+
+  // Refetch featured status when highlight status changes from archived to non-archived
+  useEffect(() => {
+    if (highlightStatus && highlightStatus !== 'archived' && highlightId) {
+      // If highlight was just restored (status changed from archived), refetch featured status
+      refetchStatus()
+    }
+  }, [highlightStatus, highlightId, refetchStatus])
 
   const handleStarClick = async (e) => {
     e.preventDefault()

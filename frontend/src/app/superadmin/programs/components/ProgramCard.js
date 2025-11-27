@@ -13,7 +13,8 @@ const ProgramCard = ({
   program, 
   onViewDetails, 
   showOrganizationBadge = false, 
-  organizationData = null 
+  organizationData = null,
+  onRestore = null
 }) => {
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
@@ -59,7 +60,21 @@ const ProgramCard = ({
           </div>
         )}
         
-        <StarButton programId={program.id} programTitle={program.title} />
+        {/* Star Button - only show if program is not archived */}
+        {program.status !== 'archived' && (
+          <StarButton 
+            programId={program.id} 
+            programTitle={program.title}
+            programStatus={program.status}
+          />
+        )}
+        
+        {/* Archived Badge - show if program is archived, positioned where star icon was */}
+        {program.status === 'archived' && (
+          <div className={styles.archivedBadge}>
+            <span>Archived</span>
+          </div>
+        )}
       </div>
       
       <div className={styles.cardContent}>
@@ -154,9 +169,12 @@ const ProgramCard = ({
                 />
               );
             })()}
-            <span className={`${styles.statusBadge} ${styles[programStatus?.toLowerCase()]}`}>
-              {programStatus}
-            </span>
+            {/* Don't show status badge if program is archived (we show it as a badge on the image instead) */}
+            {program.status !== 'archived' && (
+              <span className={`${styles.statusBadge} ${styles[programStatus?.toLowerCase()]}`}>
+                {programStatus}
+              </span>
+            )}
           </div>
           <span className={styles.cardDate}>
             {formatProgramDatesForCard(program)}
@@ -171,6 +189,16 @@ const ProgramCard = ({
           >
             View Details
           </button>
+          {/* Restore Button - only show if onRestore handler is provided */}
+          {onRestore && (
+            <button 
+              className={styles.viewDetailsButton}
+              onClick={() => onRestore(program)}
+              style={{ marginTop: '0.5rem' }}
+            >
+              Restore
+            </button>
+          )}
         </div>
       </div>
     </div>

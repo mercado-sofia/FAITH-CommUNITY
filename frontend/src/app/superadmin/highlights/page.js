@@ -356,10 +356,17 @@ const SuperadminHighlightsPage = () => {
       fetchFeaturedHighlights()
     }
 
+    // Listen for highlight status changes (archive/unarchive) to refetch featured highlights
+    const handleHighlightStatusChanged = () => {
+      fetchFeaturedHighlights()
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('starredHighlightsChanged', handleStarredChange)
+      window.addEventListener('highlightStatusChanged', handleHighlightStatusChanged)
       return () => {
         window.removeEventListener('starredHighlightsChanged', handleStarredChange)
+        window.removeEventListener('highlightStatusChanged', handleHighlightStatusChanged)
       }
     }
   }, [])
@@ -484,7 +491,7 @@ const SuperadminHighlightsPage = () => {
                         <p className={styles.label}>Total Highlights</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.approvedCount}>— Featured</span>
+                            <span className={styles.approvedCount}>— Featured Highlights</span>
                           </div>
                         </div>
                       </div>
@@ -518,7 +525,7 @@ const SuperadminHighlightsPage = () => {
                         <p className={styles.label}>Total Highlights</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.approvedCount}>— Featured</span>
+                            <span className={styles.approvedCount}>— Featured Highlights</span>
                           </div>
                         </div>
                       </div>
@@ -605,10 +612,10 @@ const SuperadminHighlightsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {featuredCount} Total Featured
+                              {featuredCount} Total Featured Highlights
                             </span>
                             {statistics.archivedHighlights > 0 && (
-                              <span className={styles.archivedCount} style={{ marginLeft: '1rem', color: '#6b7280' }}>
+                              <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>
                                 {statistics.archivedHighlights} Archived
                               </span>
                             )}
@@ -654,7 +661,7 @@ const SuperadminHighlightsPage = () => {
         {activeTab === 'featured' && (
           <div className={styles.featuredCountInfo}>
             <span className={styles.featuredCountText}>
-              {currentOrgFeaturedCount} Featured {selectedOrganization !== 'all' ? 'for this organization' : ''}
+              {currentOrgFeaturedCount} Featured Highlights {selectedOrganization !== 'all' ? 'for this organization' : ''}
             </span>
             {currentOrgFeaturedCount > 0 && (
               <div className={styles.impactLevelBreakdown}>

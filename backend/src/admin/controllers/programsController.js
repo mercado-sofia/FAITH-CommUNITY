@@ -1131,6 +1131,12 @@ export const getProgramById = async (req, res) => {
 
     const program = rows[0];
     
+    // If program is archived, ensure is_featured is always false
+    // This prevents archived programs from showing as featured
+    const isFeatured = program.status === 'archived' 
+      ? false 
+      : (program.is_featured === true || program.is_featured === 1 || program.is_featured === '1');
+    
     res.json({
       success: true,
       data: {
@@ -1142,7 +1148,7 @@ export const getProgramById = async (req, res) => {
         image: program.image,
         event_start_date: program.event_start_date,
         event_end_date: program.event_end_date,
-        is_featured: program.is_featured,
+        is_featured: isFeatured,
         orgAcronym: program.orgAcronym,
         orgName: program.orgName,
         orgColor: program.orgColor,
@@ -1171,6 +1177,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
       WHERE p.is_featured = TRUE
+      AND p.status != 'archived'
       ORDER BY p.created_at DESC
     `);
 
@@ -2314,10 +2321,12 @@ export const getProgramsStatistics = async (req, res) => {
     
     const statisticsQuery = `
       SELECT 
-        COUNT(*) as total_programs,
+        SUM(CASE WHEN LOWER(status) != 'archived' THEN 1 ELSE 0 END) as total_programs,
         SUM(CASE WHEN LOWER(status) = 'upcoming' THEN 1 ELSE 0 END) as upcoming_programs,
         SUM(CASE WHEN LOWER(status) = 'active' THEN 1 ELSE 0 END) as active_programs,
         SUM(CASE WHEN LOWER(status) = 'completed' THEN 1 ELSE 0 END) as completed_programs,
+        SUM(CASE WHEN LOWER(status) = 'archived' THEN 1 ELSE 0 END) as archived_programs,
+        SUM(CASE WHEN (is_featured = TRUE OR is_featured = 1) AND LOWER(status) != 'archived' THEN 1 ELSE 0 END) as featured_programs,
         COUNT(DISTINCT organization_id) as total_organizations,
         -- Completed programs in current year
         SUM(CASE 
@@ -2491,16 +2500,31 @@ export const archiveProgram = async (req, res) => {
   }
 
   try {
-    // Check if program exists and admin has permission
-    const [programRows] = await db.execute(`
-      SELECT p.*, o.orgName 
-      FROM programs_projects p
-      LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.id = ? AND (p.organization_id = ? OR p.id IN (
-        SELECT program_id FROM program_collaborations 
-        WHERE collaborator_admin_id = ? AND status = 'accepted'
-      ))
-    `, [id, req.admin?.organization_id, req.admin?.id]);
+    // Check if program exists
+    // For superadmin, allow archiving any program
+    // For admin, only allow archiving programs from their organization or collaborative programs
+    let programRows;
+    
+    if (req.superadmin) {
+      // Superadmin can archive any program
+      [programRows] = await db.execute(`
+        SELECT p.*, o.orgName 
+        FROM programs_projects p
+        LEFT JOIN organizations o ON p.organization_id = o.id
+        WHERE p.id = ?
+      `, [id]);
+    } else {
+      // Admin can only archive programs from their organization or collaborative programs
+      [programRows] = await db.execute(`
+        SELECT p.*, o.orgName 
+        FROM programs_projects p
+        LEFT JOIN organizations o ON p.organization_id = o.id
+        WHERE p.id = ? AND (p.organization_id = ? OR p.id IN (
+          SELECT program_id FROM program_collaborations 
+          WHERE collaborator_admin_id = ? AND status = 'accepted'
+        ))
+      `, [id, req.admin?.organization_id, req.admin?.id]);
+    }
 
     if (programRows.length === 0) {
       return res.status(404).json({
@@ -2512,8 +2536,10 @@ export const archiveProgram = async (req, res) => {
     const program = programRows[0];
 
     // Update program status to archived
+    // Always set is_featured = FALSE when archiving, regardless of current featured status
+    // This ensures that archived programs never retain featured status
     await db.execute(
-      "UPDATE programs_projects SET status = 'archived', manual_status_override = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE programs_projects SET status = 'archived', is_featured = FALSE, manual_status_override = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       [id]
     );
 
@@ -2548,15 +2574,30 @@ export const unarchiveProgram = async (req, res) => {
 
   try {
     // Check if program exists, is archived, and admin has permission
-    const [programRows] = await db.execute(`
-      SELECT p.*, o.orgName 
-      FROM programs_projects p
-      LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.id = ? AND p.status = 'archived' AND (p.organization_id = ? OR p.id IN (
-        SELECT program_id FROM program_collaborations 
-        WHERE collaborator_admin_id = ? AND status = 'accepted'
-      ))
-    `, [id, req.admin?.organization_id, req.admin?.id]);
+    // For superadmin, allow unarchiving any program
+    // For admin, only allow unarchiving programs from their organization or collaborative programs
+    let programRows;
+    
+    if (req.superadmin) {
+      // Superadmin can unarchive any program
+      [programRows] = await db.execute(`
+        SELECT p.*, o.orgName 
+        FROM programs_projects p
+        LEFT JOIN organizations o ON p.organization_id = o.id
+        WHERE p.id = ? AND p.status = 'archived'
+      `, [id]);
+    } else {
+      // Admin can only unarchive programs from their organization or collaborative programs
+      [programRows] = await db.execute(`
+        SELECT p.*, o.orgName 
+        FROM programs_projects p
+        LEFT JOIN organizations o ON p.organization_id = o.id
+        WHERE p.id = ? AND p.status = 'archived' AND (p.organization_id = ? OR p.id IN (
+          SELECT program_id FROM program_collaborations 
+          WHERE collaborator_admin_id = ? AND status = 'accepted'
+        ))
+      `, [id, req.admin?.organization_id, req.admin?.id]);
+    }
 
     if (programRows.length === 0) {
       return res.status(404).json({
@@ -2586,8 +2627,10 @@ export const unarchiveProgram = async (req, res) => {
     }
 
     // Update program status to restored status
+    // Always set is_featured = FALSE when unarchiving, regardless of previous featured status
+    // This ensures that restored programs never automatically regain featured status
     const [updateResult] = await db.execute(
-      "UPDATE programs_projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'archived'",
+      "UPDATE programs_projects SET status = ?, is_featured = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'archived'",
       [restoreStatus, id]
     );
 

@@ -330,7 +330,8 @@
   border-top: 1px solid #e5e7eb;
   background: #f8fafc;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .closeModalButton {
@@ -352,6 +353,39 @@
 
 .closeModalButton:active {
   transform: translateY(0);
+}
+
+.footerDate {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.archiveButton {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.archiveButton:hover:not(:disabled) {
+  background: #4b5563;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.archiveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Collaborator Section Styles */

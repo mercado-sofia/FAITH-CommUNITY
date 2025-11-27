@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiChevronDown } from 'react-icons/fi'
+import { FiChevronDown, FiArchive } from 'react-icons/fi'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
@@ -360,6 +360,10 @@ const SuperadminProgramsPage = () => {
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
+                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                            <span className={styles.approvedCount}>— Total Featured</span>
+                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -469,6 +473,10 @@ const SuperadminProgramsPage = () => {
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
+                          </div>
+                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                            <span className={styles.approvedCount}>— Total Featured</span>
+                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -698,6 +706,16 @@ const SuperadminProgramsPage = () => {
                               {statistics.completedPrograms || 0} Completed
                             </span>
                           </div>
+                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                            <span className={styles.approvedCount}>
+                              {statistics.featuredPrograms || 0} Total Featured
+                            </span>
+                            {statistics.archivedPrograms > 0 && (
+                              <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>
+                                {statistics.archivedPrograms} Archived
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -715,6 +733,10 @@ const SuperadminProgramsPage = () => {
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
                           </div>
+                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                            <span className={styles.approvedCount}>— Total Featured</span>
+                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -731,6 +753,10 @@ const SuperadminProgramsPage = () => {
                             <span className={styles.activeCount}>— Active</span>
                             <span className={styles.upcomingCount}>— Upcoming</span>
                             <span className={styles.completedCount}>— Completed</span>
+                          </div>
+                          <div className={styles.statusCounts} style={{ marginTop: '0.5rem' }}>
+                            <span className={styles.approvedCount}>— Total Featured</span>
+                            <span className={styles.approvedCount} style={{ marginLeft: '1rem' }}>— Archived</span>
                           </div>
                         </div>
                       </div>
@@ -777,6 +803,12 @@ const SuperadminProgramsPage = () => {
             Completed
           </button>
         </div>
+        <button
+          onClick={() => router.push('/superadmin/programs/archive')}
+          className={styles.archiveButton}
+        >
+          <FiArchive /> Archive
+        </button>
       </div>
 
       {/* Content based on active tab */}

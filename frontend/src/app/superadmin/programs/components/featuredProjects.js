@@ -71,8 +71,11 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
       .map(item => item.project)
   }
 
+  // Filter out archived programs - they should only appear in the archive page
+  const nonArchivedFeaturedProjects = featuredProjects.filter(project => project.status !== 'archived')
+  
   // Filter featured projects based on search query
-  const filteredFeaturedProjects = searchFeaturedProjects(featuredProjects, searchQuery)
+  const filteredFeaturedProjects = searchFeaturedProjects(nonArchivedFeaturedProjects, searchQuery)
 
   // Helper function to extract detailed error information
   const getErrorDetails = (error) => {

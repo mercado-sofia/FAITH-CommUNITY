@@ -360,7 +360,7 @@
 }
 
 .archiveButton {
-  background: #3b82f6;
+  background: #6b7280;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -375,9 +375,9 @@
 }
 
 .archiveButton:hover:not(:disabled) {
-  background: #2563eb;
+  background: #4b5563;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
 .archiveButton:disabled {
@@ -387,9 +387,9 @@
 }
 
 .deleteButton {
-  background: #ef4444;
-  color: white;
-  border: none;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #ef4444;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
@@ -402,7 +402,7 @@
 }
 
 .deleteButton:hover:not(:disabled) {
-  background: #dc2626;
+  background: #fef2f2;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }

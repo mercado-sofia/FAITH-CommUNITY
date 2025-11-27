@@ -18,7 +18,7 @@ export const superadminHighlightsApi = createApi({
       return headers
     },
   }),
-  tagTypes: ["SuperadminHighlight"],
+  tagTypes: ["SuperadminHighlight", "FeaturedStatus"],
   endpoints: (builder) => ({
     // Get all highlights for superadmin (all organizations)
     getAllHighlights: builder.query({
@@ -79,7 +79,18 @@ export const superadminHighlightsApi = createApi({
     // Check if highlight is featured (for star functionality)
     checkFeaturedStatus: builder.query({
       query: (highlightId) => `/admin/highlights/${highlightId}/featured`,
-      providesTags: ["SuperadminHighlight"],
+      providesTags: (result, error, highlightId) => [
+        { type: "SuperadminHighlight", id: highlightId },
+        { type: "FeaturedStatus", id: highlightId }
+      ],
+      transformResponse: (response) => {
+        // If highlight is archived, it cannot be featured
+        // Backend already handles this, but add safety check here too
+        if (response && response.isFeatured === false) {
+          return { isFeatured: false, displayOrder: null };
+        }
+        return response || { isFeatured: false, displayOrder: null };
+      },
     }),
 
     // Add highlight to featured
@@ -110,7 +121,11 @@ export const superadminHighlightsApi = createApi({
         url: `/admin/highlights/${highlightId}/archive`,
         method: "POST",
       }),
-      invalidatesTags: ["SuperadminHighlight"],
+      invalidatesTags: (result, error, highlightId) => [
+        "SuperadminHighlight",
+        { type: "SuperadminHighlight", id: highlightId },
+        { type: "FeaturedStatus", id: highlightId }
+      ],
     }),
 
     // Unarchive a highlight
@@ -119,7 +134,11 @@ export const superadminHighlightsApi = createApi({
         url: `/admin/highlights/${highlightId}/unarchive`,
         method: "POST",
       }),
-      invalidatesTags: ["SuperadminHighlight"],
+      invalidatesTags: (result, error, highlightId) => [
+        "SuperadminHighlight",
+        { type: "SuperadminHighlight", id: highlightId },
+        { type: "FeaturedStatus", id: highlightId }
+      ],
     }),
 
     // Delete a highlight (superadmin only, immediate deletion)

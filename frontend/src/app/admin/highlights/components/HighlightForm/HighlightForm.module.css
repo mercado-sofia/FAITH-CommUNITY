@@ -339,13 +339,33 @@
   white-space: nowrap;
 }
 
-/* Upload Complete Section */
-.uploadCompleteSection {
+/* Upload Complete Toast Overlay */
+.uploadCompleteToast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+  max-width: 400px;
+}
+
+.uploadCompleteToastContent {
   background: #d1fae5;
   border: 1px solid #6ee7b7;
   border-radius: 0.5rem;
   padding: 1rem;
-  animation: fadeIn 0.3s ease-in;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes fadeIn {
@@ -457,7 +477,7 @@
   height: 24px;
   background: none;
   border: none;
-  color: #dc2626;
+  color: #6b7280;
   cursor: pointer;
   border-radius: 0.25rem;
   transition: background-color 0.2s;
@@ -466,7 +486,8 @@
 }
 
 .removeButton:hover {
-  background-color: #fef2f2;
+  background-color: #f3f4f6;
+  color: #374151;
 }
 
 .removeButton:disabled {
@@ -490,7 +511,7 @@
   height: 24px;
   background: none;
   border: none;
-  color: #059669;
+  color: #6b7280;
   cursor: pointer;
   border-radius: 0.25rem;
   transition: background-color 0.2s;
@@ -499,7 +520,8 @@
 }
 
 .previewButton:hover {
-  background-color: #ecfdf5;
+  background-color: #f3f4f6;
+  color: #374151;
 }
 
 .previewButton:disabled {

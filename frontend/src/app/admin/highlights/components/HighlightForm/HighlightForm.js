@@ -77,14 +77,13 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     year: null
   });
   const [errors, setErrors] = useState({});
-  const [dragActive, setDragActive] = useState({ images: false, videos: false });
+  const [dragActive, setDragActive] = useState({ media: false });
   const [uploadingFiles, setUploadingFiles] = useState([]);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [programs, setPrograms] = useState([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
-  const imageInputRef = useRef(null);
-  const videoInputRef = useRef(null);
+  const mediaInputRef = useRef(null);
 
   // Fetch programs for dropdown
   useEffect(() => {
@@ -277,8 +276,8 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       textContent.innerHTML = DOMPurify.sanitize(formData.description);
       const plainText = (textContent.textContent || textContent.innerText || '').trim();
       if (!plainText) {
-      newErrors.description = 'Description is required';
-    }
+        newErrors.description = 'Description is required';
+      }
     }
     
     // Year is required
@@ -340,77 +339,36 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     }
   }, []);
 
-  // Handle file selection for images
-  const handleImageFiles = useCallback(async (files) => {
-    const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(file => {
-      // Check file type (images only)
-      const validImageTypes = [
-        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'
-      ];
-      
-      if (!validImageTypes.includes(file.type)) {
-        return false;
-      }
-      
-      return true;
-    });
-
-    if (validFiles.length === 0) return;
-
-    // Add files to uploading state
-    setUploadingFiles(prev => [...prev, ...validFiles.map(f => f.name)]);
-
-    try {
-      setUploadComplete(false);
-      const uploadPromises = validFiles.map(file => uploadFile(file));
-      const uploadedFiles = await Promise.all(uploadPromises);
-      
-      setFormData(prev => ({
-        ...prev,
-        media: [...prev.media, ...uploadedFiles]
-      }));
-      
-      // Show success message after upload completes
-      setUploadComplete(true);
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setUploadComplete(false);
-      }, 3000);
-    } catch (error) {
-      // Files failed to upload - show error message
-      console.error('Image upload failed:', error);
-      alert(`Failed to upload image(s): ${error.message || 'Unknown error'}`);
-      setUploadComplete(false);
-    } finally {
-      setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
-    }
-  }, [uploadFile]);
-
-  // Handle file selection for videos
-  const handleVideoFiles = useCallback(async (files) => {
+  // Handle file selection for media (images and videos)
+  const handleMediaFiles = useCallback(async (files) => {
     const fileArray = Array.from(files);
     const validFiles = [];
     const errors = [];
     
+    const validImageTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'
+    ];
+    
+    const validVideoTypes = [
+      'video/mp4', 'video/mpeg', // MP4
+      'video/quicktime', // MOV (QuickTime)
+      'video/x-msvideo', // AVI
+      'video/x-ms-wmv', // WMV
+      'video/x-flv', // FLV
+      'video/webm' // WebM
+    ];
+    
     fileArray.forEach(file => {
-      // Check file type (videos only) - use correct browser MIME types
-      const validVideoTypes = [
-        'video/mp4', 'video/mpeg', // MP4
-        'video/quicktime', // MOV (QuickTime)
-        'video/x-msvideo', // AVI
-        'video/x-ms-wmv', // WMV
-        'video/x-flv', // FLV
-        'video/webm' // WebM
-      ];
+      const isImage = validImageTypes.includes(file.type);
+      const isVideo = validVideoTypes.includes(file.type);
       
-      if (!validVideoTypes.includes(file.type)) {
-        errors.push(`${file.name}: Invalid video format. Allowed: MP4, MOV, AVI, WMV, FLV, WebM`);
+      if (!isImage && !isVideo) {
+        errors.push(`${file.name}: Invalid file format. Allowed: Images (JPEG, PNG, GIF, WebP) or Videos (MP4, MOV, AVI, WMV, FLV, WebM)`);
         return;
       }
       
       // Check file size (5MB minimum for videos)
-      if (file.size < 5 * 1024 * 1024) {
+      if (isVideo && file.size < 5 * 1024 * 1024) {
         errors.push(`${file.name}: Video must be at least 5MB`);
         return;
       }
@@ -420,7 +378,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
 
     // Show errors if any
     if (errors.length > 0) {
-      alert('Video upload errors:\n' + errors.join('\n'));
+      alert('Media upload errors:\n' + errors.join('\n'));
     }
 
     if (validFiles.length === 0) return;
@@ -446,87 +404,50 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       }, 3000);
     } catch (error) {
       // Files failed to upload - show error message
-      console.error('Video upload failed:', error);
-      alert(`Failed to upload video(s): ${error.message || 'Unknown error'}`);
+      console.error('Media upload failed:', error);
+      alert(`Failed to upload media file(s): ${error.message || 'Unknown error'}`);
       setUploadComplete(false);
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
     }
   }, [uploadFile]);
 
-  // Handle drag events for images
-  const handleImageDragEnter = useCallback((e) => {
+  // Handle drag events for media
+  const handleMediaDragEnter = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(prev => ({ ...prev, images: true }));
+    setDragActive(prev => ({ ...prev, media: true }));
   }, []);
 
-  const handleImageDragLeave = useCallback((e) => {
+  const handleMediaDragLeave = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(prev => ({ ...prev, images: false }));
+    setDragActive(prev => ({ ...prev, media: false }));
   }, []);
 
-  const handleImageDragOver = useCallback((e) => {
+  const handleMediaDragOver = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
   }, []);
 
-  const handleImageDrop = useCallback((e) => {
+  const handleMediaDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(prev => ({ ...prev, images: false }));
+    setDragActive(prev => ({ ...prev, media: false }));
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleImageFiles(files);
+      handleMediaFiles(files);
     }
-  }, [handleImageFiles]);
+  }, [handleMediaFiles]);
 
-  // Handle drag events for videos
-  const handleVideoDragEnter = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(prev => ({ ...prev, videos: true }));
-  }, []);
-
-  const handleVideoDragLeave = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(prev => ({ ...prev, videos: false }));
-  }, []);
-
-  const handleVideoDragOver = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleVideoDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(prev => ({ ...prev, videos: false }));
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleVideoFiles(files);
-    }
-  }, [handleVideoFiles]);
-
-  // Handle file input change for images
-  const handleImageInputChange = useCallback((e) => {
+  // Handle file input change for media
+  const handleMediaInputChange = useCallback((e) => {
     const files = e.target.files;
     if (files.length > 0) {
-      handleImageFiles(files);
+      handleMediaFiles(files);
     }
-  }, [handleImageFiles]);
-
-  // Handle file input change for videos
-  const handleVideoInputChange = useCallback((e) => {
-    const files = e.target.files;
-    if (files.length > 0) {
-      handleVideoFiles(files);
-    }
-  }, [handleVideoFiles]);
+  }, [handleMediaFiles]);
 
   // Remove media file
   const removeMedia = useCallback((index) => {
@@ -741,79 +662,40 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
               </div>
             </div>
 
-            {/* Image Upload Container */}
+            {/* Media Upload Container */}
             <div className={styles.container}>
-              <h3 className={styles.containerTitle}>Image Upload</h3>
+              <h3 className={styles.containerTitle}>Media Upload</h3>
               <div
-                className={`${styles.uploadArea} ${dragActive.images ? styles.dragActive : ''}`}
-                onDragEnter={handleImageDragEnter}
-                onDragLeave={handleImageDragLeave}
-                onDragOver={handleImageDragOver}
-                onDrop={handleImageDrop}
+                className={`${styles.uploadArea} ${dragActive.media ? styles.dragActive : ''}`}
+                onDragEnter={handleMediaDragEnter}
+                onDragLeave={handleMediaDragLeave}
+                onDragOver={handleMediaDragOver}
+                onDrop={handleMediaDrop}
               >
                 <div className={styles.uploadContent}>
                   <button
                     type="button"
                     className={styles.uploadButton}
-                    onClick={() => imageInputRef.current?.click()}
+                    onClick={() => mediaInputRef.current?.click()}
                     disabled={isSubmitting}
                   >
                     <LuUpload className={styles.uploadIcon} />
                     Upload
                   </button>
                   <input
-                    ref={imageInputRef}
+                    ref={mediaInputRef}
                     type="file"
                     multiple
-                    accept="image/*"
-                    onChange={handleImageInputChange}
+                    accept="image/*,video/*"
+                    onChange={handleMediaInputChange}
                     className={styles.hiddenInput}
                     disabled={isSubmitting}
                   />
                   <p className={styles.uploadText}>
-                    Choose images or drag & drop it here.
+                    Choose images or videos or drag & drop them here.
                   </p>
                   <p className={styles.uploadSubtext}>
-                    JPG, JPEG, PNG and WEBP. Max 20 MB.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Video Upload Container */}
-            <div className={styles.container}>
-              <h3 className={styles.containerTitle}>Video Upload</h3>
-              <div
-                className={`${styles.uploadArea} ${dragActive.videos ? styles.dragActive : ''}`}
-                onDragEnter={handleVideoDragEnter}
-                onDragLeave={handleVideoDragLeave}
-                onDragOver={handleVideoDragOver}
-                onDrop={handleVideoDrop}
-              >
-                <div className={styles.uploadContent}>
-                  <button
-                    type="button"
-                    className={styles.uploadButton}
-                    onClick={() => videoInputRef.current?.click()}
-                    disabled={isSubmitting}
-                  >
-                    <LuUpload className={styles.uploadIcon} />
-                    Upload
-                  </button>
-                  <input
-                    ref={videoInputRef}
-                    type="file"
-                    multiple
-                    accept="video/*"
-                    onChange={handleVideoInputChange}
-                    className={styles.hiddenInput}
-                    disabled={isSubmitting}
-                  />
-                  <p className={styles.uploadText}>
-                    Choose videos or drag & drop it here.
-                  </p>
-                  <p className={styles.uploadSubtext}>
-                    MP4, AVI, MOV, WMV, FLV, and WebM. Min 5 MB.
+                    Images: JPG, JPEG, PNG, GIF, WebP. Videos: MP4, MOV, AVI, WMV, FLV, WebM (min 5 MB).
                   </p>
                 </div>
               </div>
@@ -840,20 +722,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
               </div>
             )}
 
-            {/* Upload Complete Message */}
-            {uploadComplete && uploadingFiles.length === 0 && (
-              <div className={styles.container}>
-                <div className={styles.uploadCompleteSection}>
-                  <div className={styles.uploadCompleteHeader}>
-                    <FaCheckCircle className={styles.successIcon} />
-                    <h4 className={styles.uploadCompleteTitle}>Upload complete!</h4>
-                  </div>
-                  <p className={styles.uploadCompleteMessage}>
-                    Your files have been successfully uploaded and are ready to use.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Media Preview */}
             {formData.media.length > 0 && (
@@ -962,6 +830,21 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Complete Toast Overlay */}
+      {uploadComplete && uploadingFiles.length === 0 && (
+        <div className={styles.uploadCompleteToast}>
+          <div className={styles.uploadCompleteToastContent}>
+            <div className={styles.uploadCompleteHeader}>
+              <FaCheckCircle className={styles.successIcon} />
+              <h4 className={styles.uploadCompleteTitle}>Upload complete!</h4>
+            </div>
+            <p className={styles.uploadCompleteMessage}>
+              Your files have been successfully uploaded and are ready to use.
+            </p>
           </div>
         </div>
       )}

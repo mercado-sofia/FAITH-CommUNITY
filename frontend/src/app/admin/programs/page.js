@@ -19,6 +19,7 @@ import { FiArchive } from 'react-icons/fi';
 import { IoMdCheckboxOutline } from 'react-icons/io';
 import { LuCalendarClock } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked } from 'react-icons/md';
+import { HiLightningBolt } from 'react-icons/hi';
 
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
@@ -184,18 +185,25 @@ export default function AdminProgramsPage() {
               { key: 'completed', label: 'Completed', icon: <IoMdCheckboxOutline /> },
               { key: 'collaborations', label: 'Collaborations', icon: <FaUsers /> },
               { key: 'archived', label: 'Archived', icon: <FiArchive /> }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                className={`${styles.statusTab} ${filters.activeTab === tab.key ? styles.activeTab : ''}`}
-                onClick={() => {
-                  filters.handleTabChange(tab.key);
-                }}
-              >
-                {tab.icon && <span className={styles.statusTabIcon}>{tab.icon}</span>}
-                {tab.label}
-              </button>
-            ))}
+            ].map((tab) => {
+              const isActive = filters.activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  className={`${styles.statusTab} ${isActive ? styles.activeTab : ''}`}
+                  onClick={() => {
+                    filters.handleTabChange(tab.key);
+                  }}
+                >
+                  {tab.icon && (
+                    <span className={styles.statusTabIcon}>
+                      {isActive ? <HiLightningBolt /> : tab.icon}
+                    </span>
+                  )}
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Programs Grid or Collaborations Section */}

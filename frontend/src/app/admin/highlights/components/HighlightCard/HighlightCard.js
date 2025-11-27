@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage } from 'react-icons/fi';
+import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage, FiVideo } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import DOMPurify from 'dompurify';
 import styles from './HighlightCard.module.css';
@@ -31,28 +31,51 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  const getImageUrl = () => {
+  const getFirstMediaItem = () => {
     if (!highlight.media || highlight.media.length === 0) return null;
-    
-    // Get the first image from media array
-    const firstImage = highlight.media.find(item => 
-      item.type === 'image' || 
-      item.mimetype?.startsWith('image/') ||
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url)
-    );
-    
-    return firstImage?.url || firstImage?.filename || null;
+    return highlight.media[0];
   };
 
-  const imageUrl = getImageUrl();
+  const isVideo = (item) => {
+    if (!item) return false;
+    return item.type === 'video' || 
+           item.mimetype?.startsWith('video/') ||
+           /\.(mp4|avi|mov|wmv|flv|webm)$/i.test(item.filename || item.url || '');
+  };
+
+  const isImage = (item) => {
+    if (!item) return false;
+    return item.type === 'image' || 
+           item.mimetype?.startsWith('image/') ||
+           /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url || '');
+  };
+
+  const firstMediaItem = getFirstMediaItem();
+  const firstMediaIsVideo = firstMediaItem ? isVideo(firstMediaItem) : false;
+  const firstMediaIsImage = firstMediaItem ? isImage(firstMediaItem) : false;
+  const firstMediaUrl = firstMediaItem?.url || firstMediaItem?.filename || null;
 
   return (
     <div className={styles.card}>
-      {/* Image Section */}
+      {/* Media Section */}
       <div className={styles.imageSection}>
-        {imageUrl && !imageError ? (
+        {firstMediaIsVideo && firstMediaUrl ? (
+          <div className={styles.videoContainer}>
+            <video
+              className={styles.video}
+              preload="metadata"
+              muted
+            >
+              <source src={firstMediaUrl} type={firstMediaItem?.mimetype || 'video/mp4'} />
+              Your browser does not support the video tag.
+            </video>
+            <div className={styles.videoOverlay}>
+              <FiVideo className={styles.videoIcon} />
+            </div>
+          </div>
+        ) : firstMediaIsImage && firstMediaUrl && !imageError ? (
           <Image
-            src={imageUrl}
+            src={firstMediaUrl}
             alt={highlight.title || 'Highlight image'}
             className={styles.image}
             width={300}
@@ -62,8 +85,17 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
           />
         ) : (
           <div className={styles.placeholderImage}>
-            <FiImage className={styles.placeholderIcon} />
-            <span>No Image</span>
+            {firstMediaItem ? (
+              <>
+                <FiVideo className={styles.placeholderIcon} />
+                <span>Media Preview</span>
+              </>
+            ) : (
+              <>
+                <FiImage className={styles.placeholderIcon} />
+                <span>No Media</span>
+              </>
+            )}
           </div>
         )}
         

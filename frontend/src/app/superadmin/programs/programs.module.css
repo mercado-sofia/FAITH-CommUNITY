@@ -89,6 +89,11 @@
   gap: 0.75rem;
 }
 
+/* Add more space below search section on archive pages */
+.header:has(.archiveCountInfo) .searchSection {
+  margin-bottom: 2rem;
+}
+
 .pageTitle {
   font-size: 1.25rem;
   font-weight: 700;

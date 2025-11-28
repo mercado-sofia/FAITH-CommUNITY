@@ -247,7 +247,10 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
       <div className={styles.featuredSection}>
         <h2 className={styles.sectionTitle}>Featured Projects</h2>
         <div className={styles.emptyState}>
-          <p>No featured projects available at the moment.</p>
+          <h3 className={styles.emptyStateTitle}>No featured projects found</h3>
+          <p className={styles.emptyStateText}>
+            No featured projects yet. Star approved programs to add them here.
+          </p>
         </div>
       </div>
     )
@@ -259,7 +262,10 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
       <div className={styles.featuredSection}>
         <h2 className={styles.sectionTitle}>Featured Projects</h2>
         <div className={styles.emptyState}>
-          <p>No featured projects found matching &quot;{searchQuery}&quot;.</p>
+          <h3 className={styles.emptyStateTitle}>No featured projects found</h3>
+          <p className={styles.emptyStateText}>
+            No featured projects found matching your current filters.
+          </p>
         </div>
       </div>
     )

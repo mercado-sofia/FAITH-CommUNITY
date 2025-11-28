@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { useAdminPrograms, useArchivedPrograms } from '@/hooks/admin/useAdminData';
+import { useAdminPrograms } from '@/hooks/admin/useAdminData';
 import { useCollaborationRequests } from './hooks';
 import { ViewDetailsModal, ProgramsContainer, CollaborationsContainer, SearchAndFilterControls } from './components';
 import ProgramForm from './components/ProgramForm/ProgramForm';
@@ -23,14 +23,12 @@ import { HiLightningBolt } from 'react-icons/hi';
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
 
   // Use SWR hook for programs data
   const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms();
-  
-  // Fetch archived programs when archive tab is active
-  const { programs: archivedPrograms = [], isLoading: archivedLoading, mutate: refreshArchivedPrograms } = useArchivedPrograms(currentAdmin?.org);
   
   // Use collaboration requests hook
   const { 
@@ -42,10 +40,17 @@ export default function AdminProgramsPage() {
     fetchCollaborations
   } = useCollaborationRequests();
   
-  // Get the appropriate programs list based on active tab (must be before useEffect that uses them)
-  const activeTabFromUrl = searchParams.get('tab') || 'active';
-  const allPrograms = activeTabFromUrl === 'archived' ? archivedPrograms : programs;
-  const allProgramsLoading = activeTabFromUrl === 'archived' ? archivedLoading : isLoading;
+  // Get the appropriate programs list
+  const allPrograms = programs;
+  const allProgramsLoading = isLoading;
+  
+  // Redirect to archive page if someone tries to access archived tab via URL
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab === 'archived') {
+      router.push('/admin/programs/archive');
+    }
+  }, [searchParams, router]);
   
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -90,13 +95,10 @@ export default function AdminProgramsPage() {
   // Use custom hooks
   const modals = useModalManagement();
   
-  // Create a refresh function that refreshes both regular and archived programs
+  // Create a refresh function that refreshes programs
   const refreshAllPrograms = useCallback(() => {
     refreshPrograms();
-    if (currentAdmin?.org) {
-      refreshArchivedPrograms();
-    }
-  }, [refreshPrograms, refreshArchivedPrograms, currentAdmin?.org]);
+  }, [refreshPrograms]);
   
   const programsManagement = useProgramsManagement(
     currentAdmin, 
@@ -151,7 +153,24 @@ export default function AdminProgramsPage() {
           {/* Header Section - Consistent with other admin pages */}
           <div className={styles.header}>
             <div className={styles.headerTop}>
-              <h1>Programs</h1>
+              <div>
+                <h1>Programs</h1>
+                <div className={styles.resultsCount}>
+                  {filters.activeTab === 'collaborations' ? (
+                    filters.filteredAndSortedCollaborations()?.length === (collaborations?.length || 0) ? (
+                      <span>{collaborations?.length || 0} collaboration{(collaborations?.length || 0) !== 1 ? 's' : ''}</span>
+                    ) : (
+                      <span>{filters.filteredAndSortedCollaborations()?.length || 0} of {collaborations?.length || 0} collaborations</span>
+                    )
+                  ) : (
+                    filters.filteredAndSortedPrograms()?.length === (allPrograms?.length || 0) ? (
+                      <span>{allPrograms?.length || 0} program{allPrograms?.length !== 1 ? 's' : ''}</span>
+                    ) : (
+                      <span>{filters.filteredAndSortedPrograms()?.length || 0} of {allPrograms?.length || 0} programs</span>
+                    )
+                  )}
+                </div>
+              </div>
               <button 
                 onClick={() => modals.setPageMode('create')}
                 className={styles.addButton}
@@ -171,38 +190,46 @@ export default function AdminProgramsPage() {
             isCollaborationTab={filters.activeTab === 'collaborations'}
             collaborationStatusFilter={filters.collaborationStatusFilter}
             onCollaborationStatusChange={filters.handleCollaborationStatusChange}
-            // Count props
-            totalCount={filters.activeTab === 'collaborations' ? collaborations?.length || 0 : allPrograms?.length || 0}
-            filteredCount={filters.activeTab === 'collaborations' ? filters.filteredAndSortedCollaborations()?.length || 0 : filters.filteredAndSortedPrograms()?.length || 0}
+            archiveButton={
+              <button
+                className={styles.archiveToggleButton}
+                onClick={() => router.push('/admin/programs/archive')}
+                title="View Archived Programs"
+              >
+                <FiArchive className={styles.archiveIcon} />
+                Archive
+              </button>
+            }
           />
 
           {/* Status Navigation Tabs */}
           <div className={styles.statusTabs}>
-            {[
-              { key: 'active', label: 'Active', icon: <HiLightningBolt /> },
-              { key: 'upcoming', label: 'Upcoming', icon: <LuCalendarClock /> },
-              { key: 'completed', label: 'Completed', icon: <IoMdCheckboxOutline /> },
-              { key: 'collaborations', label: 'Collaborations', icon: <FaUsers /> },
-              { key: 'archived', label: 'Archived', icon: <FiArchive /> }
-            ].map((tab) => {
-              const isActive = filters.activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  className={`${styles.statusTab} ${isActive ? styles.activeTab : ''}`}
-                  onClick={() => {
-                    filters.handleTabChange(tab.key);
-                  }}
-                >
-                  {tab.icon && (
-                    <span className={styles.statusTabIcon}>
-                      {tab.icon}
-                    </span>
-                  )}
-                  {tab.label}
-                </button>
-              );
-            })}
+            <div className={styles.statusTabsLeft}>
+              {[
+                { key: 'active', label: 'Active', icon: <HiLightningBolt /> },
+                { key: 'upcoming', label: 'Upcoming', icon: <LuCalendarClock /> },
+                { key: 'completed', label: 'Completed', icon: <IoMdCheckboxOutline /> },
+                { key: 'collaborations', label: 'Collaborations', icon: <FaUsers /> }
+              ].map((tab) => {
+                const isActive = filters.activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    className={`${styles.statusTab} ${isActive ? styles.activeTab : ''}`}
+                    onClick={() => {
+                      filters.handleTabChange(tab.key);
+                    }}
+                  >
+                    {tab.icon && (
+                      <span className={styles.statusTabIcon}>
+                        {tab.icon}
+                      </span>
+                    )}
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Programs Grid or Collaborations Section */}

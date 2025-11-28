@@ -175,3 +175,10 @@
   font-size: 18px;
   color: #000;
 }
+
+/* Archive Button Wrapper */
+.archiveButtonWrapper {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}

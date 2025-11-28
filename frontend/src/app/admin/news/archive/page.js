@@ -116,13 +116,10 @@ export default function ArchiveNewsPage() {
       modals.handleCloseUnarchiveModal();
     } else if (modals.selectedItems.length > 0) {
       // Bulk unarchive
-      const selectedNewsItems = news.filter(n => modals.selectedItems.includes(n.id));
-      for (const item of selectedNewsItems) {
-        await newsOperations.handleUnarchiveNews(item.id);
-      }
+      await newsOperations.handleBulkUnarchive(modals.selectedItems);
       modals.handleCloseUnarchiveModal();
     }
-  }, [modals, newsOperations, news]);
+  }, [modals, newsOperations]);
 
   // Display error message if there's an error and we have a valid admin
   if (error && currentAdmin?.org) {

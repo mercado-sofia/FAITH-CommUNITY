@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage, FiVideo } from 'react-icons/fi';
+import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage, FiVideo, FiArchive } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import DOMPurify from 'dompurify';
 import styles from './HighlightCard.module.css';
 
-export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
+export default function HighlightCard({ highlight, onEdit, onView, onDelete, onArchive, onUnarchive }) {
   const [imageError, setImageError] = useState(false);
 
   const formatDate = (dateString) => {
@@ -121,20 +121,41 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
             >
               <FiEye />
             </button>
-            <button
-              className={styles.actionButton}
-              onClick={() => onEdit(highlight)}
-              title="Edit Highlight"
-            >
-              <FiEdit3 />
-            </button>
-            <button
-              className={`${styles.actionButton} ${styles.deleteButton}`}
-              onClick={() => onDelete(highlight)}
-              title="Delete Highlight"
-            >
-              <FiTrash2 />
-            </button>
+            {highlight.status !== 'archived' && onEdit && (
+              <button
+                className={styles.actionButton}
+                onClick={() => onEdit(highlight)}
+                title="Edit Highlight"
+              >
+                <FiEdit3 />
+              </button>
+            )}
+            {highlight.status === 'archived' && onUnarchive ? (
+              <button
+                className={styles.actionButton}
+                onClick={() => onUnarchive(highlight)}
+                title="Unarchive Highlight"
+              >
+                <FiArchive />
+              </button>
+            ) : highlight.status !== 'archived' && onArchive ? (
+              <button
+                className={styles.actionButton}
+                onClick={() => onArchive(highlight)}
+                title="Archive Highlight"
+              >
+                <FiArchive />
+              </button>
+            ) : null}
+            {highlight.status !== 'archived' && onDelete && (
+              <button
+                className={`${styles.actionButton} ${styles.deleteButton}`}
+                onClick={() => onDelete(highlight)}
+                title="Delete Highlight"
+              >
+                <FiTrash2 />
+              </button>
+            )}
           </div>
         </div>
 

@@ -448,6 +448,47 @@ export const useArchivedPrograms = (orgId) => {
   };
 };
 
+// Custom hook for archived highlights data
+export const useArchivedHighlights = () => {
+  const shouldFetch = typeof window !== 'undefined';
+  
+  const { data, error, isLoading, mutate } = useSWR(
+    shouldFetch ? `${API_BASE_URL}/api/admin/highlights/archived` : null,
+    adminFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 120000, // Cache for 2 minutes
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
+        const status = error?.status || error?.response?.status;
+        // If status is undefined, allow retry (might be network error)
+        if (status === undefined || status === null) return true;
+        // Don't retry on specific error statuses
+        return status !== 401 && status !== 404 && status !== 429 && !(status >= 500);
+      },
+      onError: (error) => {
+        // Only log if error hasn't been logged already by the fetcher
+        if (!error._alreadyLogged) {
+          logger.swrError(`${API_BASE_URL}/api/admin/highlights/archived`, error);
+        }
+      }
+    }
+  );
+
+  // Ensure we always return an array for highlights
+  const highlights = data?.highlights && Array.isArray(data.highlights) ? data.highlights : [];
+
+  return {
+    highlights,
+    isLoading,
+    error,
+    mutate
+  };
+};
+
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
   // Guard clause: only make API call if orgAcronym is valid

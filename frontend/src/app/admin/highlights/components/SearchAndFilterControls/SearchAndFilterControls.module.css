@@ -1,9 +1,12 @@
+.controlsContainer {
+  margin-bottom: 1.4rem;
+}
+
 .controlsRow {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 1.4rem;
   gap: 1rem;
 }
 
@@ -192,11 +195,9 @@
   color: #000;
 }
 
-/* Results Count */
-.resultsCount {
-  font-size: 14px;
-  color: #6b7280;
-  font-family: var(--font-inter);
-  white-space: nowrap;
+/* Archive Button Wrapper */
+.archiveButtonWrapper {
+  display: flex;
+  align-items: center;
   margin-left: auto;
 }

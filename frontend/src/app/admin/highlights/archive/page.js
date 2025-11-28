@@ -218,8 +218,6 @@ export default function ArchiveHighlightsPage() {
           onFilterChange={handleFilterChange}
           programs={programsData}
           programsLoading={programsLoading}
-          totalCount={archivedHighlights?.length || 0}
-          filteredCount={filteredAndSortedHighlights()?.length || 0}
         />
 
         {/* Highlights Grid */}

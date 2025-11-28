@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import db from "../database.js"
+import { getCookieSameSite, getCookieSecure } from "./cookieUtils.js"
 
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || "15m"
 const REFRESH_TOKEN_TTL_MS = Number(process.env.REFRESH_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000)
@@ -32,18 +33,43 @@ export async function issueRefreshToken(userId, { userAgent, ipAddress } = {}) {
 }
 
 export async function rotateRefreshToken(oldToken, userId, { userAgent, ipAddress } = {}) {
-  const connection = await db.getConnection?.() || null
+  const connection = await db.getConnection()
   try {
-    if (connection) await connection.beginTransaction()
-    await db.execute(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = ? AND user_id = ?`, [oldToken, userId])
-    const { token, expiresAt } = await issueRefreshToken(userId, { userAgent, ipAddress })
-    if (connection) await connection.commit()
-    return { token, expiresAt }
+    await connection.beginTransaction()
+    
+    // Validate old token first (inside transaction)
+    const [rows] = await connection.execute(
+      `SELECT * FROM refresh_tokens 
+       WHERE token = ? AND user_id = ? AND revoked_at IS NULL AND expires_at > NOW()`,
+      [oldToken, userId]
+    )
+    
+    if (rows.length === 0) {
+      throw new Error('Invalid or expired refresh token')
+    }
+    
+    // Revoke old token
+    await connection.execute(
+      `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = ? AND user_id = ?`,
+      [oldToken, userId]
+    )
+    
+    // Issue new token (inline logic since issueRefreshToken doesn't support transactions)
+    const newToken = crypto.randomBytes(48).toString("hex")
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+    await connection.execute(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at, user_agent, ip_address) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, newToken, expiresAt, (userAgent || null), (ipAddress || null)]
+    )
+    
+    await connection.commit()
+    return { token: newToken, expiresAt }
   } catch (e) {
-    if (connection) await connection.rollback()
+    await connection.rollback()
     throw e
   } finally {
-    if (connection) connection.release?.()
+    connection.release()
   }
 }
 
@@ -90,35 +116,14 @@ export function getAccessTokenCookieOptions(req = null) {
     });
   }
   
-  // CRITICAL: Detect cross-domain scenarios (e.g., Vercel frontend + Railway backend)
-  // For cross-domain, we MUST use SameSite=None with Secure=true
-  // For same-domain, we can use SameSite=Lax (more secure)
-  let sameSiteValue = process.env.COOKIE_SAMESITE 
-    ? (process.env.COOKIE_SAMESITE).toLowerCase()
-    : null; // Will be determined based on cross-domain detection
+  // Use shared utility for SameSite and Secure determination
+  const sameSiteValue = getCookieSameSite(req);
+  const mustBeSecure = getCookieSecure(req);
   
-  // Detect if this is a cross-domain request
+  // Detect if this is a cross-domain request (for domain handling)
   const isCrossDomain = req && req.headers && req.headers.origin && req.headers.host && 
     req.headers.origin !== `https://${req.headers.host}` && 
     req.headers.origin !== `http://${req.headers.host}`;
-  
-  // If not explicitly set, determine based on cross-domain detection
-  if (!sameSiteValue) {
-    if (isCrossDomain) {
-      // Cross-domain (e.g., Vercel -> Railway): MUST use None with Secure
-      sameSiteValue = "none";
-    } else if (isDevelopment) {
-      // Development same-domain: Use Lax (works for localhost)
-      sameSiteValue = "lax";
-    } else {
-      // Production same-domain: Use Lax (more secure)
-      sameSiteValue = "lax";
-    }
-  }
-  
-  // CRITICAL: If SameSite=None, Secure MUST be true (browser requirement)
-  // Override secure setting if SameSite=None is used
-  const mustBeSecure = sameSiteValue === "none" || process.env.NODE_ENV === "production";
   
   const cookieOptions = {
     httpOnly: true,
@@ -208,35 +213,14 @@ export function getAccessTokenCookieOptions(req = null) {
 export function getRefreshCookieOptions(req = null) {
   const isDevelopment = process.env.NODE_ENV !== "production";
   
-  // CRITICAL: Detect cross-domain scenarios (e.g., Vercel frontend + Railway backend)
-  // For cross-domain, we MUST use SameSite=None with Secure=true
-  // For same-domain, we can use SameSite=Lax (more secure)
-  let sameSiteValue = process.env.COOKIE_SAMESITE 
-    ? (process.env.COOKIE_SAMESITE).toLowerCase()
-    : null; // Will be determined based on cross-domain detection
+  // Use shared utility for SameSite and Secure determination
+  const sameSiteValue = getCookieSameSite(req);
+  const mustBeSecure = getCookieSecure(req);
   
-  // Detect if this is a cross-domain request
+  // Detect if this is a cross-domain request (for domain handling)
   const isCrossDomain = req && req.headers && req.headers.origin && req.headers.host && 
     req.headers.origin !== `https://${req.headers.host}` && 
     req.headers.origin !== `http://${req.headers.host}`;
-  
-  // If not explicitly set, determine based on cross-domain detection
-  if (!sameSiteValue) {
-    if (isCrossDomain) {
-      // Cross-domain (e.g., Vercel -> Railway): MUST use None with Secure
-      sameSiteValue = "none";
-    } else if (isDevelopment) {
-      // Development same-domain: Use Lax (works for localhost)
-      sameSiteValue = "lax";
-    } else {
-      // Production same-domain: Use Lax (more secure)
-      sameSiteValue = "lax";
-    }
-  }
-  
-  // CRITICAL: If SameSite=None, Secure MUST be true (browser requirement)
-  // Override secure setting if SameSite=None is used
-  const mustBeSecure = sameSiteValue === "none" || process.env.NODE_ENV === "production";
   
   // CRITICAL: Express res.cookie() maxAge is in MILLISECONDS, not seconds!
   // REFRESH_TOKEN_TTL_MS is already in milliseconds, so use it directly

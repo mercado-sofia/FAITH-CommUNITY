@@ -7,8 +7,9 @@
 **Token Structure:**
 - **Access Token**: JWT with 15-minute expiration
   - Payload: `{ id, email, role: 'user' }`
-  - Stored in: `localStorage` (frontend)
-  - Used in: `Authorization: Bearer <token>` header
+  - Stored in: httpOnly cookie (backend) - XSS protection
+  - Automatically sent with requests via cookies
+  - Also returned in response body for frontend storage if needed
 
 - **Refresh Token**: Random 48-byte hex string
   - Expiration: 7 days
@@ -19,17 +20,16 @@
 1. User logs in with email/password
 2. Backend validates credentials
 3. Backend issues:
-   - Access token (JWT) → returned in response body
+   - Access token (JWT) → set as httpOnly cookie + returned in response body
    - Refresh token → set as httpOnly cookie
-4. Frontend stores access token in localStorage
-5. Frontend includes access token in API requests
+4. Frontend receives tokens via cookies (automatically sent with requests)
+5. Backend middleware reads access token from cookies or Authorization header
 6. When access token expires:
-   - Frontend detects expiration (60-second buffer)
    - Frontend calls `/api/users/refresh` with refresh token cookie
    - Backend validates refresh token
    - Backend rotates refresh token (revokes old, issues new)
-   - Backend returns new access token
-   - Frontend updates localStorage with new access token
+   - Backend sets new access token as httpOnly cookie
+   - New access token automatically available for subsequent requests
 
 **Token Refresh Mechanism:**
 - **Proactive Refresh**: Tokens refreshed 60 seconds before expiration
@@ -47,8 +47,9 @@
 **Token Structure:**
 - **Access Token**: JWT with 15-minute expiration (uses unified `ACCESS_TOKEN_TTL`)
   - Payload: `{ id, email, role: 'admin', organization_id, org, orgName }`
-  - Stored in: `localStorage` (frontend)
-  - Used in: `Authorization: Bearer <token>` header
+  - Stored in: httpOnly cookie (backend) - XSS protection
+  - Automatically sent with requests via cookies
+  - Also returned in response body for frontend storage if needed
 
 - **Refresh Token**: Random 48-byte hex string
   - Expiration: 7 days
@@ -105,8 +106,9 @@
 **Token Structure:**
 - **Access Token**: JWT with 15-minute expiration (uses unified `ACCESS_TOKEN_TTL`)
   - Payload: `{ id, email, role: 'superadmin' }`
-  - Stored in: `localStorage` (frontend)
-  - Used in: `Authorization: Bearer <token>` header
+  - Stored in: httpOnly cookie (backend) - XSS protection
+  - Automatically sent with requests via cookies
+  - Also returned in response body for frontend storage if needed
 
 - **Refresh Token**: Random 48-byte hex string
   - Expiration: 7 days
@@ -155,16 +157,18 @@
 ## Session Storage
 
 **Public Users:**
-- Access Token: `localStorage.getItem('userToken')`
+- Access Token: httpOnly cookie (automatically sent with requests, XSS protected)
 - Refresh Token: httpOnly cookie (not accessible to JavaScript)
 
 **Admin Users:**
-- Access Token: `localStorage.getItem('adminToken')`
-- Session: Database (`admin_sessions` table)
+- Access Token: httpOnly cookie (automatically sent with requests, XSS protected)
+- Session: Database (`admin_sessions` table) - for IP/UA fingerprinting
 
 **Superadmin Users:**
-- Access Token: `localStorage.getItem('superAdminToken')`
-- Session: Database (`admin_sessions` table, similar to admin)
+- Access Token: httpOnly cookie (automatically sent with requests, XSS protected)
+- Session: Database (`admin_sessions` table, similar to admin) - for IP/UA fingerprinting
+
+**Note:** Access tokens are stored in httpOnly cookies for enhanced security against XSS attacks. CSRF protection is provided via the double-submit cookie pattern. The backend middleware supports both cookie-based and Authorization header-based token reading for flexibility.
 
 ## Logout Process
 

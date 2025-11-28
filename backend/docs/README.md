@@ -15,10 +15,7 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 - [Profile Photo Upload](./03-file-management/PROFILE_PHOTO_UPLOAD.md) - Profile photo upload implementation
 
 ## 🚢 04-Deployment
-- [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md) - Complete guide for deploying to Railway
-- [Railway Troubleshooting](./04-deployment/RAILWAY_TROUBLESHOOTING.md) - Common deployment issues and solutions
-- [Railway SendGrid Setup](./04-deployment/RAILWAY_SENDGRID_SETUP.md) - Email service configuration
-- [When Backend Crashes](./04-deployment/WHEN_BACKEND_CRASHES.md) - Troubleshooting guide for backend crashes
+- [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md) - Complete Railway deployment guide including setup, SendGrid configuration, troubleshooting, and crash recovery
 - [Deployment Guide](./04-deployment/DEPLOYMENT_GUIDE.md) - General deployment guide for multiple platforms
 
 ## 🎯 Project Overview
@@ -148,9 +145,9 @@ See [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md) for comple
 ### Common Issues
 
 - **Database Connection**: See [Setup Guide](./01-setup/SETUP_GUIDE.md#troubleshooting)
-- **Deployment Issues**: See [Railway Troubleshooting](./04-deployment/RAILWAY_TROUBLESHOOTING.md)
-- **Backend Crashes**: See [When Backend Crashes](./04-deployment/WHEN_BACKEND_CRASHES.md)
-- **Email Issues**: See [Railway SendGrid Setup](./04-deployment/RAILWAY_SENDGRID_SETUP.md)
+- **Deployment Issues**: See [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md#troubleshooting)
+- **Backend Crashes**: See [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md#when-backend-crashes)
+- **Email Issues**: See [Railway Deployment Guide](./04-deployment/RAILWAY_DEPLOYMENT.md#sendgrid-email-configuration)
 
 ---
 

@@ -134,8 +134,6 @@ export default function ArchiveProgramsPage() {
               sortBy={sortBy}
               onSearchChange={handleSearchChange}
               onFilterChange={handleFilterChange}
-              totalCount={archivedPrograms?.length || 0}
-              filteredCount={filteredAndSortedPrograms()?.length || 0}
             />
 
             {/* Programs Grid */}

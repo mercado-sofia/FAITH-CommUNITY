@@ -630,7 +630,9 @@ const SuperadminProgramsPage = () => {
           <div className={styles.twoColumnLayout}>
             {/* Left Column - 50% width */}
             <div className={styles.leftColumn}>
-              <h1 className={styles.pageTitle}>Programs Management</h1>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '1rem' }}>
+                <h1 className={styles.pageTitle}>Programs Management</h1>
+              </div>
               <div className={styles.searchSection}>
                 <SearchBar
                   searchQuery={searchQuery}

@@ -439,19 +439,30 @@ export default function PendingApprovalsPage() {
         return;
       }
       
+      // IMPORTANT: Don't close if clicking on the action dropdown button itself
+      // This must be checked first to prevent interference with toggle behavior
+      if (e.target.closest('[data-action-dropdown-button]') ||
+          e.target.hasAttribute('data-action-dropdown-button')) {
+        return; // Let the button's onClick handler handle the toggle
+      }
+      
       // Don't close if clicking on SearchAndFilterControls dropdowns
       if (e.target.closest('[data-search-filter-controls]')) {
         return;
       }
       
-      // Don't close if clicking on dropdown options or inside dropdown containers
-      if (e.target.closest(`.${styles.actionDropdownOptions}`) ||
-          e.target.closest(`.${styles.options}`)) {
+      // Don't close if clicking on the action dropdown wrapper or options
+      if (e.target.closest('[data-action-dropdown-wrapper]') ||
+          e.target.closest('[data-action-dropdown-options]')) {
         return;
       }
       
-      if (!e.target.closest(`.${styles.dropdownWrapper}`) && 
-          !e.target.closest(`.${styles.actionDropdownWrapper}`)) {
+      // Don't close if clicking on other dropdown options or inside dropdown containers
+      if (e.target.closest(`.${styles.options}`)) {
+        return;
+      }
+      
+      if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
         setShowDropdown(null);
         setDropdownPosition({});
       }
@@ -482,7 +493,7 @@ export default function PendingApprovalsPage() {
           
           // Check if scrolling inside action dropdowns (table row actions)
           if (!e.target.closest(`.${styles.dropdownWrapper}`) && 
-              !e.target.closest(`.${styles.actionDropdownWrapper}`) &&
+              !e.target.closest('[data-action-dropdown-wrapper]') &&
               !e.target.closest('[data-search-filter-controls]')) {
             setShowDropdown(null);
             setDropdownPosition({});
@@ -495,12 +506,15 @@ export default function PendingApprovalsPage() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use 'click' instead of 'mousedown' so it runs after button's onClick handler
+    // This ensures the toggle logic completes before checking if we should close
+    // Use bubble phase (false) so it runs after the button's onClick
+    document.addEventListener('click', handleClickOutside);
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll, true);
     
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll, true);
     };

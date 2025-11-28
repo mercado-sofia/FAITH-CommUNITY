@@ -350,6 +350,11 @@ const ArchiveProgramsPage = () => {
             </button>
           </div>
         </div>
+        <div className={styles.archiveCountInfo}>
+          <span className={styles.archiveCountText}>
+            {processedPrograms.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'Programs'}
+          </span>
+        </div>
         <div className={styles.searchSection}>
           <SearchBar
             searchQuery={searchQuery}
@@ -392,17 +397,6 @@ const ArchiveProgramsPage = () => {
               </ul>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Organization Filter Header */}
-      <div className={styles.programsHeader}>
-        <div className={styles.programsHeaderTop}>
-        </div>
-        <div className={styles.featuredCountInfo}>
-          <span className={styles.featuredCountText}>
-            {processedPrograms.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'Programs'}
-          </span>
         </div>
       </div>
 

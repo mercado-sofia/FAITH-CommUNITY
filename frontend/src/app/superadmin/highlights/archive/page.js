@@ -333,6 +333,11 @@ const ArchiveHighlightsPage = () => {
             </button>
           </div>
         </div>
+        <div className={styles.archiveCountInfo}>
+          <span className={styles.archiveCountText}>
+            {processedHighlights.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'highlights'}
+          </span>
+        </div>
         <div className={styles.searchSection}>
           <SearchBar
             searchQuery={searchQuery}
@@ -375,15 +380,6 @@ const ArchiveHighlightsPage = () => {
               </ul>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Organization Filter Header */}
-      <div className={styles.highlightsHeader}>
-        <div className={styles.featuredCountInfo}>
-          <span className={styles.featuredCountText}>
-            {processedHighlights.length} Archived {selectedOrganization !== 'all' ? 'for this organization' : 'highlights'}
-          </span>
         </div>
       </div>
 

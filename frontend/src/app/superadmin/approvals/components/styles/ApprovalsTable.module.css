@@ -55,18 +55,18 @@
 
 /* Table Columns - Enhanced layout */
 .numberColumn {
-  width: 4%;
+  width: 5%;
   text-align: center !important;
   min-width: 50px;
 }
 
 .selectColumn {
   width: 4%;
-  text-align: center !important;
+  text-align: left !important;
 }
 
 .organizationColumn {
-  width: 16%;
+  width: 14%;
   text-align: left !important;
 }
 
@@ -76,24 +76,23 @@
 }
 
 .titleColumn {
-  width: 22%;
+  width: 20%;
   text-align: left !important;
 }
 
 .dateColumn {
-  width: 10%;
+  width: 12%;
   text-align: left !important;
 }
 
 .statusColumn {
-  width: 15%;
+  width: 12%;
   text-align: center !important;
 }
 
 .actionsColumn {
-  width: 5%;
+  width: 8%;
   text-align: center !important;
-  padding: 14px 20px 14px 0 !important;
 }
 
 /* Table Cells */
@@ -106,7 +105,7 @@
 }
 
 .selectCell {
-  text-align: center;
+  text-align: left !important;
   padding: 12px 14px !important;
 }
 
@@ -190,8 +189,12 @@
 }
 
 .actionsCell {
-  text-align: center;
-  padding: 12px 20px 12px 0 !important;
+  text-align: center !important;
+  padding: 12px 0 12px !important;
+}
+
+.actionsCell > div {
+  justify-content: center !important;
 }
 
 /* Checkbox styling - matching dashboard table */

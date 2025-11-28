@@ -1010,13 +1010,8 @@ export const checkFeaturedStatus = async (req, res) => {
   }
 };
 
-// Archive a highlight (superadmin only)
+// Archive a highlight (admin or superadmin)
 export const archiveHighlight = async (req, res) => {
-  // Check if user is superadmin
-  if (!req.superadmin) {
-    return res.status(403).json({ error: 'Only superadmin can archive highlights' });
-  }
-  
   const connection = await promisePool.getConnection();
   
   try {
@@ -1029,12 +1024,24 @@ export const archiveHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Invalid highlight ID' });
     }
     
-    // Check if highlight exists
-    const checkQuery = 'SELECT * FROM admin_highlights WHERE id = ?';
-    const [checkRows] = await connection.execute(checkQuery, [id]);
+    // Check if highlight exists and verify permissions
+    let checkQuery;
+    let checkParams;
+    
+    if (req.superadmin) {
+      // Superadmin can archive any highlight
+      checkQuery = 'SELECT * FROM admin_highlights WHERE id = ?';
+      checkParams = [id];
+    } else {
+      // Admin can only archive highlights from their organization
+      checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
+      checkParams = [id, req.admin?.organization_id];
+    }
+    
+    const [checkRows] = await connection.execute(checkQuery, checkParams);
     
     if (checkRows.length === 0) {
-      return res.status(404).json({ error: 'Highlight not found' });
+      return res.status(404).json({ error: 'Highlight not found or you don\'t have permission to archive it' });
     }
     
     const currentHighlight = checkRows[0];
@@ -1075,11 +1082,6 @@ export const archiveHighlight = async (req, res) => {
 
 // Unarchive a highlight (restore from archived status)
 export const unarchiveHighlight = async (req, res) => {
-  // Check if user is superadmin
-  if (!req.superadmin) {
-    return res.status(403).json({ error: 'Only superadmin can unarchive highlights' });
-  }
-  
   const connection = await promisePool.getConnection();
   
   try {
@@ -1092,12 +1094,24 @@ export const unarchiveHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Invalid highlight ID' });
     }
     
-    // Check if highlight exists and is archived
-    const checkQuery = 'SELECT * FROM admin_highlights WHERE id = ?';
-    const [checkRows] = await connection.execute(checkQuery, [id]);
+    // Check if highlight exists and verify permissions
+    let checkQuery;
+    let checkParams;
+    
+    if (req.superadmin) {
+      // Superadmin can unarchive any highlight
+      checkQuery = 'SELECT * FROM admin_highlights WHERE id = ?';
+      checkParams = [id];
+    } else {
+      // Admin can only unarchive highlights from their organization
+      checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
+      checkParams = [id, req.admin?.organization_id];
+    }
+    
+    const [checkRows] = await connection.execute(checkQuery, checkParams);
     
     if (checkRows.length === 0) {
-      return res.status(404).json({ error: 'Highlight not found' });
+      return res.status(404).json({ error: 'Highlight not found or you don\'t have permission to unarchive it' });
     }
     
     const currentHighlight = checkRows[0];
@@ -1139,13 +1153,8 @@ export const unarchiveHighlight = async (req, res) => {
   }
 };
 
-// Get all archived highlights (superadmin only)
+// Get all archived highlights (admin or superadmin)
 export const getArchivedHighlights = async (req, res) => {
-  // Check if user is superadmin
-  if (!req.superadmin) {
-    return res.status(403).json({ error: 'Only superadmin can view archived highlights' });
-  }
-  
   try {
     // Check if program_id column exists
     const [columnCheck] = await promisePool.execute(`
@@ -1174,6 +1183,17 @@ export const getArchivedHighlights = async (req, res) => {
     const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
     const yearSelect = hasYearColumn ? ', h.year' : '';
     
+    // Build WHERE clause based on user role
+    let whereClause = 'WHERE h.status = \'archived\'';
+    let queryParams = [];
+    
+    if (!req.superadmin && req.admin) {
+      // Admin can only see archived highlights from their organization
+      whereClause += ' AND h.organization_id = ?';
+      queryParams.push(req.admin.organization_id);
+    }
+    // Superadmin can see all archived highlights (no additional filter)
+    
     const query = `
       SELECT 
         h.id,
@@ -1192,11 +1212,11 @@ export const getArchivedHighlights = async (req, res) => {
       LEFT JOIN organizations o ON h.organization_id = o.id
       LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
       ${programJoin}
-      WHERE h.status = 'archived'
+      ${whereClause}
       ORDER BY h.updated_at DESC, h.created_at DESC
     `;
     
-    const [rows] = await promisePool.execute(query);
+    const [rows] = await promisePool.execute(query, queryParams);
     
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => {

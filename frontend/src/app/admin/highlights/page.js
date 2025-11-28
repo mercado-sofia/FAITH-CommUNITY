@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaPlus } from 'react-icons/fa';
+import { FiArchive } from 'react-icons/fi';
 import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, HighlightForm } from './components';
@@ -22,6 +23,8 @@ export default function AdminHighlightsPage() {
   const [viewingHighlight, setViewingHighlight] = useState(null);
   const [deletingHighlight, setDeletingHighlight] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [archivingHighlight, setArchivingHighlight] = useState(null);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [highlights, setHighlights] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +60,14 @@ export default function AdminHighlightsPage() {
       });
     }
   }, [error]);
+
+  // Redirect to archive page if someone tries to access archived tab via URL
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab === 'archived') {
+      router.push('/admin/highlights/archive');
+    }
+  }, [searchParams, router]);
 
   // Sync URL parameters with state when URL changes
   useEffect(() => {
@@ -216,7 +227,7 @@ export default function AdminHighlightsPage() {
       return acc;
     }, []);
 
-    // Filter to only show approved highlights (similar to programs page)
+    // Filter to only show approved highlights (exclude archived)
     let filtered = uniqueHighlights.filter(highlight => highlight.status === 'approved');
 
     // Apply program filter
@@ -298,6 +309,11 @@ export default function AdminHighlightsPage() {
     setDeletingHighlight(highlight);
   }, []);
 
+  // Handle archive highlight
+  const handleArchiveHighlight = useCallback((highlight) => {
+    setArchivingHighlight(highlight);
+  }, []);
+
   // Confirm delete highlight
   const confirmDeleteHighlight = useCallback(async () => {
     if (!deletingHighlight) return;
@@ -343,6 +359,50 @@ export default function AdminHighlightsPage() {
       setDeletingHighlight(null);
     }
   }, [deletingHighlight, loadHighlights]);
+
+  // Confirm archive highlight
+  const confirmArchiveHighlight = useCallback(async () => {
+    if (!archivingHighlight) return;
+
+    try {
+      setIsArchiving(true);
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${archivingHighlight.id}/archive`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const shouldRedirect = response.status === 401;
+        const errorInfo = handleApiError({ status: response.status }, 'highlights_archive', {
+          redirectOnAuth: shouldRedirect,
+          logError: true
+        });
+        throw new Error(errorInfo.message);
+      }
+
+      // Refresh the highlights list to ensure we have the latest data
+      await loadHighlights();
+      
+      setSuccessModal({
+        isVisible: true,
+        message: 'Highlight archived successfully',
+        type: 'success'
+      });
+    } catch (err) {
+      setSuccessModal({
+        isVisible: true,
+        message: 'Failed to archive highlight. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsArchiving(false);
+      setArchivingHighlight(null);
+    }
+  }, [archivingHighlight, loadHighlights]);
 
   // Handle form submission
   const handleFormSubmit = useCallback(async (formData) => {
@@ -447,7 +507,16 @@ export default function AdminHighlightsPage() {
           {/* Header Section - Consistent with other admin pages */}
           <div className={styles.header}>
             <div className={styles.headerTop}>
-              <h1>Highlights</h1>
+              <div>
+                <h1>Highlights</h1>
+                <div className={styles.resultsCount}>
+                  {filteredAndSortedHighlights().length === (highlights?.filter(h => h.status === 'approved')?.length || 0) ? (
+                    <span>{highlights?.filter(h => h.status === 'approved')?.length || 0} highlight{(highlights?.filter(h => h.status === 'approved')?.length || 0) !== 1 ? 's' : ''}</span>
+                  ) : (
+                    <span>{filteredAndSortedHighlights().length} of {highlights?.filter(h => h.status === 'approved')?.length || 0} highlights</span>
+                  )}
+                </div>
+              </div>
               <button 
                 onClick={handleCreateHighlight}
                 className={styles.addButton}
@@ -466,8 +535,16 @@ export default function AdminHighlightsPage() {
             onFilterChange={handleFilterChange}
             programs={programsData}
             programsLoading={programsLoading}
-            totalCount={highlights?.filter(h => h.status === 'approved')?.length || 0}
-            filteredCount={filteredAndSortedHighlights()?.length || 0}
+            archiveButton={
+              <button
+                className={styles.archiveToggleButton}
+                onClick={() => router.push('/admin/highlights/archive')}
+                title="View Archived Highlights"
+              >
+                <FiArchive className={styles.archiveIcon} />
+                Archive
+              </button>
+            }
           />
 
           {/* Highlights Grid */}
@@ -481,6 +558,7 @@ export default function AdminHighlightsPage() {
                     onEdit={handleEditHighlight}
                     onView={handleViewHighlight}
                     onDelete={handleDeleteHighlight}
+                    onArchive={handleArchiveHighlight}
                   />
                 ))}
               </div>
@@ -535,6 +613,18 @@ export default function AdminHighlightsPage() {
         onConfirm={confirmDeleteHighlight}
         onCancel={() => setDeletingHighlight(null)}
         isDeleting={isDeleting}
+      />
+
+      {/* Archive Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!archivingHighlight}
+        itemName={archivingHighlight?.title || 'this highlight'}
+        itemType="highlight"
+        actionType="archive"
+        customMessage={`Are you sure you want to archive "${archivingHighlight?.title || 'this highlight'}"? This will hide the highlight from the public portal, but it will still be visible in your admin interface. You can unarchive it later if needed.`}
+        onConfirm={confirmArchiveHighlight}
+        onCancel={() => setArchivingHighlight(null)}
+        isLoading={isArchiving}
       />
 
       {/* Success Modal */}

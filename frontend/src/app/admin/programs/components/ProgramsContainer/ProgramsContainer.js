@@ -12,14 +12,16 @@ const ProgramsContainer = ({
   onShowSuccessModal,
   onToggleVolunteerAcceptance,
   onArchive,
-  onUnarchive
+  onUnarchive,
+  emptyStateTitle = 'No programs found',
+  emptyStateText = 'No programs match your current filters. Try adjusting your search criteria.'
 }) => {
   if ((filteredPrograms?.length || 0) === 0) {
     return (
       <div className={styles.programsSection}>
         <div className={styles.emptyState}>
-          <div className={styles.emptyTitle}>No programs found</div>
-          <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
+          <div className={styles.emptyTitle}>{emptyStateTitle}</div>
+          <div className={styles.emptyText}>{emptyStateText}</div>
         </div>
       </div>
     );

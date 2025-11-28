@@ -26,8 +26,6 @@ export const useProgramFilters = (programs, collaborations) => {
         return 'Upcoming';
       case 'completed':
         return 'Completed';
-      case 'archived':
-        return 'archived';
       case 'collaborations':
         return null; // No status filter for collaborations
       default:
@@ -102,9 +100,14 @@ export const useProgramFilters = (programs, collaborations) => {
 
   // Handle tab changes
   const handleTabChange = useCallback((tab) => {
+    // Prevent setting tab to 'archived' - should navigate to archive page instead
+    if (tab === 'archived') {
+      router.push('/admin/programs/archive');
+      return;
+    }
     setActiveTab(tab);
     updateURLParams({ tab });
-  }, [updateURLParams]);
+  }, [updateURLParams, router]);
 
   return {
     // State

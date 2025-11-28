@@ -557,6 +557,52 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     }
   }, [refreshNews, setSuccessModal]);
 
+  // Handle bulk news unarchiving
+  const handleBulkUnarchive = useCallback(async (selectedNewsIds) => {
+    setIsDeleting(true);
+    try {
+      // Unarchive each selected news item
+      const unarchivePromises = selectedNewsIds.map(newsId =>
+        fetch(`${API_BASE_URL || ''}/api/news/restore/${newsId}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
+
+      const results = await Promise.allSettled(unarchivePromises);
+      const failedUnarchives = results.filter(result => 
+        result.status === 'rejected' || 
+        (result.status === 'fulfilled' && !result.value.ok)
+      ).length;
+      
+      if (failedUnarchives > 0) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length - failedUnarchives} news items unarchived successfully. ${failedUnarchives} failed to unarchive.`, 
+          type: 'warning' 
+        });
+      } else {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length} news items unarchived successfully!`, 
+          type: 'success' 
+        });
+      }
+
+      refreshNews();
+      invalidateNewsCache();
+      return { success: true, failedCount: failedUnarchives };
+    } catch (error) {
+      setSuccessModal({ isVisible: true, message: 'Failed to unarchive news items. Please try again.', type: 'error' });
+      return { success: false, error: error.message };
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshNews, setSuccessModal]);
+
   return {
     // State
     isSubmitting,
@@ -570,6 +616,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     handleUnarchiveNews,
     handleBulkDelete,
     handleBulkArchive,
+    handleBulkUnarchive,
     
     // Utilities
     validateNewsData

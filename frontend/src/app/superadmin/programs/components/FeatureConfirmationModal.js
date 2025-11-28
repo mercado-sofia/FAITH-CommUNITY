@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { FiStar } from 'react-icons/fi'
 import styles from './styles/FeatureConfirmationModal.module.css'
 
 const FeatureConfirmationModal = ({ 
@@ -8,9 +7,10 @@ const FeatureConfirmationModal = ({
   onClose, 
   onConfirm, 
   projectTitle, 
-  isLoading = false 
+  isLoading = false,
+  mode = 'add' // 'add' or 'remove'
 }) => {
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open and handle ESC key
   useEffect(() => {
     if (typeof document !== 'undefined' && document.body) {
       if (isOpen) {
@@ -29,20 +29,59 @@ const FeatureConfirmationModal = ({
     }
   }, [isOpen])
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!isOpen || isLoading) return
+
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose()
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [isOpen, isLoading, onClose])
+
   const handleBackdropClick = (e) => {
+    // Prevent closing during loading
+    if (isLoading || !onClose) return
     if (e.target === e.currentTarget) {
       onClose()
     }
   }
 
+  const handleClose = () => {
+    if (isLoading || !onClose) return
+    onClose()
+  }
+
+  const handleConfirm = () => {
+    if (isLoading || !onConfirm) return
+    onConfirm()
+  }
+
+  // Determine content based on mode
+  const isAddMode = mode === 'add'
+  const title = isAddMode ? 'Add to Featured Projects' : 'Remove from Featured'
+  const infoText = isAddMode
+    ? 'This will make the project appear prominently in the Featured Projects section, giving it more visibility to users.'
+    : 'This action will make the project no longer appear in the Featured Projects section, but it will remain in the regular Programs by Organization section.'
+  const buttonText = isAddMode ? 'Add' : 'Remove'
+  const loadingText = isAddMode ? 'Adding...' : 'Removing...'
+
   const modalContent = (
     <div className={styles.modalOverlay} onClick={handleBackdropClick}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Add to Featured Projects</h2>
+          <h2 className={styles.modalTitle}>{title}</h2>
           <button 
             className={styles.closeButton}
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isLoading}
           >
             ×
@@ -50,40 +89,29 @@ const FeatureConfirmationModal = ({
         </div>
         
         <div className={styles.modalBody}>
-          <div className={styles.successIcon}>
-            <FiStar />
-          </div>
-          
           <p className={styles.confirmationText}>
-            Are you sure you want to add <strong>&ldquo;{projectTitle}&rdquo;</strong> to the Featured Projects section?
+            Are you sure you want to {isAddMode ? 'add' : 'remove'} <strong>&ldquo;{projectTitle || 'this project'}&rdquo;</strong> {isAddMode ? 'to' : 'from'} the Featured Projects section?
           </p>
           
           <p className={styles.infoText}>
-            This will make the project appear prominently in the Featured Projects section, giving it more visibility to users.
+            {infoText}
           </p>
         </div>
         
         <div className={styles.modalFooter}>
           <button 
             className={styles.cancelButton}
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isLoading}
           >
             Cancel
           </button>
           <button 
             className={styles.confirmButton}
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <div className={styles.loadingSpinner}></div>
-                Adding...
-              </>
-            ) : (
-              'Add to Featured'
-            )}
+            {isLoading ? loadingText : buttonText}
           </button>
         </div>
       </div>

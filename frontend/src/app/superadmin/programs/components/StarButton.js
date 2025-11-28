@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAddFeaturedProjectMutation, useRemoveFeaturedProjectMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/programsApi'
-import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
@@ -30,8 +29,10 @@ const StarButton = ({ programId, programTitle, programStatus }) => {
       setIsStarred(false)
       return
     }
+    // Only update if featuredStatus has been fetched (not undefined)
+    // Handle null as false (explicitly not featured)
     if (featuredStatus !== undefined) {
-      setIsStarred(featuredStatus)
+      setIsStarred(Boolean(featuredStatus))
     }
   }, [featuredStatus, programStatus])
 
@@ -63,7 +64,11 @@ const StarButton = ({ programId, programTitle, programStatus }) => {
     e.preventDefault()
     e.stopPropagation()
     
+    // Prevent opening modals if already loading or if status is being fetched
     if (isLoading || statusLoading) return
+    
+    // Prevent opening if no programId
+    if (!programId) return
 
     if (isStarred) {
       // Show confirmation modal for unfeaturing
@@ -111,22 +116,42 @@ const StarButton = ({ programId, programTitle, programStatus }) => {
   }
 
   const handleUnfeatureConfirm = async () => {
-    await removeFromFeatured()
-    setShowUnfeatureModal(false)
+    try {
+      await removeFromFeatured()
+    } finally {
+      // Always close modal, even if there's an error
+      setShowUnfeatureModal(false)
+    }
   }
 
   const handleUnfeatureCancel = () => {
+    // Prevent closing if loading
+    if (isLoading) return
     setShowUnfeatureModal(false)
   }
 
   const handleFeatureConfirm = async () => {
-    await addToFeatured()
-    setShowFeatureModal(false)
+    try {
+      await addToFeatured()
+    } finally {
+      // Always close modal, even if there's an error
+      setShowFeatureModal(false)
+    }
   }
 
   const handleFeatureCancel = () => {
+    // Prevent closing if loading
+    if (isLoading) return
     setShowFeatureModal(false)
   }
+
+  // Cleanup: close modals on unmount or when programId changes
+  useEffect(() => {
+    return () => {
+      setShowUnfeatureModal(false)
+      setShowFeatureModal(false)
+    }
+  }, [programId])
 
   if (statusLoading) {
     return (
@@ -159,12 +184,13 @@ const StarButton = ({ programId, programTitle, programStatus }) => {
         )}
       </button>
 
-      <UnfeatureConfirmationModal
+      <FeatureConfirmationModal
         isOpen={showUnfeatureModal}
         onClose={handleUnfeatureCancel}
         onConfirm={handleUnfeatureConfirm}
         projectTitle={programTitle}
         isLoading={isLoading}
+        mode="remove"
       />
 
       <FeatureConfirmationModal
@@ -173,6 +199,7 @@ const StarButton = ({ programId, programTitle, programStatus }) => {
         onConfirm={handleFeatureConfirm}
         projectTitle={programTitle}
         isLoading={isLoading}
+        mode="add"
       />
     </>
   )

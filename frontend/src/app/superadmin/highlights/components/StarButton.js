@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useAddFeaturedHighlightMutation, useRemoveFeaturedHighlightMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/highlightsApi'
-import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
@@ -31,8 +30,10 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
       setIsStarred(false)
       return
     }
-    if (featuredStatus) {
-      setIsStarred(featuredStatus.isFeatured || false)
+    // Only update if featuredStatus has been fetched (not undefined)
+    // Handle null as false (explicitly not featured)
+    if (featuredStatus !== undefined && featuredStatus !== null) {
+      setIsStarred(Boolean(featuredStatus?.isFeatured))
     }
   }, [featuredStatus, highlightStatus])
 
@@ -73,7 +74,11 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
     e.preventDefault()
     e.stopPropagation()
     
-    if (isLoading) return
+    // Prevent opening modals if already loading or if status is being fetched
+    if (isLoading || statusLoading) return
+    
+    // Prevent opening if no highlightId
+    if (!highlightId) return
 
     if (isStarred) {
       // Show confirmation modal for unfeaturing
@@ -85,6 +90,12 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
   }
 
   const addToFeatured = async (impactLevel = 'average') => {
+    // Validate required fields
+    if (!highlightId || !organizationId) {
+      alert('Missing required information to add highlight to featured')
+      return
+    }
+
     setIsLoading(true)
     
     try {
@@ -107,6 +118,12 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
   }
 
   const removeFromFeatured = async () => {
+    // Validate required field
+    if (!highlightId) {
+      alert('Missing highlight ID to remove from featured')
+      return
+    }
+
     setIsLoading(true)
     
     try {
@@ -129,22 +146,42 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
   }
 
   const handleUnfeatureConfirm = async () => {
-    await removeFromFeatured()
-    setShowUnfeatureModal(false)
+    try {
+      await removeFromFeatured()
+    } finally {
+      // Always close modal, even if there's an error
+      setShowUnfeatureModal(false)
+    }
   }
 
   const handleUnfeatureCancel = () => {
+    // Prevent closing if loading
+    if (isLoading) return
     setShowUnfeatureModal(false)
   }
 
   const handleFeatureConfirm = async (impactLevel) => {
-    await addToFeatured(impactLevel)
-    setShowFeatureModal(false)
+    try {
+      await addToFeatured(impactLevel)
+    } finally {
+      // Always close modal, even if there's an error
+      setShowFeatureModal(false)
+    }
   }
 
   const handleFeatureCancel = () => {
+    // Prevent closing if loading
+    if (isLoading) return
     setShowFeatureModal(false)
   }
+
+  // Cleanup: close modals on unmount or when highlightId changes
+  useEffect(() => {
+    return () => {
+      setShowUnfeatureModal(false)
+      setShowFeatureModal(false)
+    }
+  }, [highlightId])
 
   // Show loading state while checking featured status
   if (statusLoading) {
@@ -178,12 +215,13 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
         )}
       </button>
 
-      <UnfeatureConfirmationModal
+      <FeatureConfirmationModal
         isOpen={showUnfeatureModal}
         onClose={handleUnfeatureCancel}
         onConfirm={handleUnfeatureConfirm}
         highlightTitle={highlightTitle}
         isLoading={isLoading}
+        mode="remove"
       />
 
       <FeatureConfirmationModal
@@ -192,6 +230,7 @@ const StarButton = ({ highlightId, highlightTitle, organizationId, onStarChange,
         onConfirm={handleFeatureConfirm}
         highlightTitle={highlightTitle}
         isLoading={isLoading}
+        mode="add"
       />
     </>
   )

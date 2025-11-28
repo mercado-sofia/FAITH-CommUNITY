@@ -838,8 +838,8 @@ const SuperadminProgramsPage = () => {
                         src={getOrganizationImageUrl(org.orgLogo, 'logo')}
                         alt={`${org.organizationName} logo`}
                         className={styles.orgLogo}
-                        width={80}
-                        height={80}
+                        width={60}
+                        height={60}
                         onError={(e) => e.target.style.display = 'none'}
                       />
                     )}

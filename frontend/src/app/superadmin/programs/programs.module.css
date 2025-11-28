@@ -470,7 +470,7 @@ ul.options:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   background: #f9fafb;
   border-radius: 8px;
@@ -479,9 +479,9 @@ ul.options:focus-visible {
 
 .emptyProgramSection p {
   color: #6b7280;
-  font-size: 15px;
+  font-size: 13px;
   margin: 0;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* Featured Projects Section */
@@ -569,49 +569,34 @@ ul.options:focus-visible {
 }
 
 .organizationHeader {
-  background: #f1f5f9;
+  background: #f9fafb;
   color: #2d3748;
-  padding: 2rem 2.5rem;
+  padding: 1.25rem 1.5rem;
   position: relative;
   overflow: hidden;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.organizationHeader::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.6) 100%);
-  pointer-events: none;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .organizationInfo {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
   position: relative;
   z-index: 1;
 }
 
 .orgLogo {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: none;
   transition: all 0.3s ease;
   background: white;
 }
 
 .orgLogo:hover {
   transform: scale(1.05);
-  border-color: #cbd5e0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .organizationDetails {
@@ -619,54 +604,35 @@ ul.options:focus-visible {
 }
 
 .organizationName {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 1.2rem 0;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  color: #2d3748;
+  gap: 0.75rem;
+  color: #000;
 }
 
 .organizationAcronym {
-  padding: 0.6rem 1.2rem;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.organizationAcronym:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
 }
 
 .organizationStats {
   display: flex;
-  gap: 1.5rem;
-  font-size: 0.9rem;
-  opacity: 0.95;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
   flex-wrap: wrap;
 }
 
 .organizationStats span {
-  background: white;
-  padding: 0.6rem 1.2rem;
-  border-radius: 24px;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
-  color: #4a5568;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.organizationStats span:hover {
-  background: #f7fafc;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  font-weight: 400;
+  color: #6b7280;
 }
 
 .organizationPrograms {
@@ -678,9 +644,9 @@ ul.options:focus-visible {
 }
 
 .programSectionTitle {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: #000;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #e2e8f0;

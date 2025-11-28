@@ -1021,6 +1021,7 @@ export const archiveHighlight = async (req, res) => {
     
     // Validate ID parameter
     if (!id || id === '0' || isNaN(parseInt(id))) {
+      await connection.rollback();
       return res.status(400).json({ error: 'Invalid highlight ID' });
     }
     
@@ -1034,13 +1035,19 @@ export const archiveHighlight = async (req, res) => {
       checkParams = [id];
     } else {
       // Admin can only archive highlights from their organization
+      const organizationId = req.admin?.organization_id;
+      if (!organizationId) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Admin organization ID is missing' });
+      }
       checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
-      checkParams = [id, req.admin?.organization_id];
+      checkParams = [id, organizationId];
     }
     
     const [checkRows] = await connection.execute(checkQuery, checkParams);
     
     if (checkRows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: 'Highlight not found or you don\'t have permission to archive it' });
     }
     
@@ -1048,6 +1055,7 @@ export const archiveHighlight = async (req, res) => {
     
     // Don't allow archiving if already archived
     if (currentHighlight.status === 'archived') {
+      await connection.rollback();
       return res.status(400).json({ error: 'Highlight is already archived' });
     }
     
@@ -1091,6 +1099,7 @@ export const unarchiveHighlight = async (req, res) => {
     
     // Validate ID parameter
     if (!id || id === '0' || isNaN(parseInt(id))) {
+      await connection.rollback();
       return res.status(400).json({ error: 'Invalid highlight ID' });
     }
     
@@ -1104,13 +1113,19 @@ export const unarchiveHighlight = async (req, res) => {
       checkParams = [id];
     } else {
       // Admin can only unarchive highlights from their organization
+      const organizationId = req.admin?.organization_id;
+      if (!organizationId) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Admin organization ID is missing' });
+      }
       checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
-      checkParams = [id, req.admin?.organization_id];
+      checkParams = [id, organizationId];
     }
     
     const [checkRows] = await connection.execute(checkQuery, checkParams);
     
     if (checkRows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: 'Highlight not found or you don\'t have permission to unarchive it' });
     }
     
@@ -1118,6 +1133,7 @@ export const unarchiveHighlight = async (req, res) => {
     
     // Only allow unarchiving if currently archived
     if (currentHighlight.status !== 'archived') {
+      await connection.rollback();
       return res.status(400).json({ error: 'Highlight is not archived' });
     }
     
@@ -1189,8 +1205,12 @@ export const getArchivedHighlights = async (req, res) => {
     
     if (!req.superadmin && req.admin) {
       // Admin can only see archived highlights from their organization
+      const organizationId = req.admin?.organization_id;
+      if (!organizationId) {
+        return res.status(400).json({ error: 'Admin organization ID is missing' });
+      }
       whereClause += ' AND h.organization_id = ?';
-      queryParams.push(req.admin.organization_id);
+      queryParams.push(organizationId);
     }
     // Superadmin can see all archived highlights (no additional filter)
     

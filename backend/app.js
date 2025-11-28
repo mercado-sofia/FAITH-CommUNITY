@@ -355,6 +355,8 @@ let cleanupInterval = null;
 let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
 let initialScheduledNewsTimeout = null;
+let sessionCleanupInterval = null;
+let initialSessionCleanupTimeout = null;
 
 httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
@@ -530,6 +532,41 @@ httpServer.listen(PORT, async () => {
       }
       initialScheduledNewsTimeout = null;
     }, 3000); // 3 second delay to ensure database is fully initialized
+    
+    // Session cleanup job (runs every hour)
+    sessionCleanupInterval = setInterval(async () => {
+      try {
+        const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
+        await SessionSecurity.cleanExpiredSessions();
+        
+        // Also cleanup expired/revoked refresh tokens
+        const db = await import("./src/database.js");
+        await db.default.execute(
+          'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
+        );
+        
+        console.log('✅ Session cleanup completed');
+      } catch (error) {
+        console.error('Error in session cleanup:', error);
+      }
+    }, 60 * 60 * 1000); // 1 hour
+    
+    // Run initial session cleanup on startup (with delay to ensure DB is ready)
+    initialSessionCleanupTimeout = setTimeout(async () => {
+      try {
+        const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
+        await SessionSecurity.cleanExpiredSessions();
+        const db = await import("./src/database.js");
+        await db.default.execute(
+          'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
+        );
+        console.log('✅ Initial session cleanup completed');
+      } catch (error) {
+        console.error('Initial session cleanup failed:', error);
+      } finally {
+        initialSessionCleanupTimeout = null;
+      }
+    }, 30000); // 30 seconds after startup
   } else {
     // In serverless environments, cleanup should be triggered via:
     // - API endpoint (e.g., /api/admin/cleanup)
@@ -565,6 +602,18 @@ const gracefulShutdown = (signal) => {
   if (initialScheduledNewsTimeout) {
     clearTimeout(initialScheduledNewsTimeout);
     initialScheduledNewsTimeout = null;
+  }
+  
+  // Clear session cleanup interval
+  if (sessionCleanupInterval) {
+    clearInterval(sessionCleanupInterval);
+    sessionCleanupInterval = null;
+  }
+  
+  // Clear initial session cleanup timeout
+  if (initialSessionCleanupTimeout) {
+    clearTimeout(initialSessionCleanupTimeout);
+    initialSessionCleanupTimeout = null;
   }
   
   // Store forced shutdown timeout so we can clear it on successful shutdown

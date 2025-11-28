@@ -18,6 +18,7 @@ import { LoginAttemptTracker } from '../../utils/loginAttemptTracker.js';
 import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 import { logError } from '../../utils/logger.js';
+import { SessionSecurity } from '../../utils/sessionSecurity.js';
 
 export const registerUser = async (req, res) => {
   try {
@@ -986,12 +987,18 @@ export const getNewsletterStatus = async (req, res) => {
 export const logoutUser = async (req, res) => {
   try {
     const userId = req.user?.id || req.admin?.id || req.superadmin?.id;
+    const role = req.user?.role || req.admin?.role || req.superadmin?.role;
     
     if (userId) {
       await db.query(
         'UPDATE users SET last_login = NOW() WHERE id = ?',
         [userId]
       );
+      
+      // Revoke admin/superadmin sessions
+      if (role === 'admin' || role === 'superadmin') {
+        await SessionSecurity.revokeAllAdminSessions(userId);
+      }
     }
 
     const presented = req.cookies?.refresh_token

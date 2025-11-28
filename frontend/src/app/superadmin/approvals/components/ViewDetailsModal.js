@@ -503,8 +503,8 @@ const ViewDetailsModal = ({
                       <Image 
                         src={getProgramImageUrl(programData.image) || '/defaults/default-profile.png'} 
                         alt="Program Main Image" 
-                        width={400}
-                        height={300}
+                        width={300}
+                        height={180}
                         style={{objectFit: 'cover', borderRadius: '12px'}} 
                         className={styles.mainImage}
                       />
@@ -531,8 +531,8 @@ const ViewDetailsModal = ({
                         <Image 
                           src={getProgramImageUrl(image) || '/defaults/default-profile.png'} 
                           alt={`Additional image ${index + 1}`} 
-                          width={120}
-                          height={120}
+                          width={200}
+                          height={112}
                           style={{objectFit: 'cover', borderRadius: '8px'}} 
                           className={styles.additionalImage}
                         />
@@ -835,56 +835,34 @@ const ViewDetailsModal = ({
                       
                       if (isVideo && rawMediaUrl) {
                         const videoUrl = getVideoUrl(rawMediaUrl);
-                        return <VideoPlayer key={index} videoUrl={videoUrl} media={media} index={index} />;
+                        return (
+                          <div key={index} className={styles.mediaItem}>
+                            <VideoPlayer videoUrl={videoUrl} media={media} index={index} />
+                          </div>
+                        );
                       } else if (isImage && rawMediaUrl) {
                         const mediaUrl = rawMediaUrl;
                         return (
-                          <div 
-                            key={index} 
-                            className={styles.additionalImageWrapper}
-                            onClick={() => openImageViewer(highlightsData.media_files
-                              .filter(m => {
-                                const mUrl = m.url || m.filename;
-                                const mIsImage = m.type === 'image' || 
-                                               m.mimetype?.startsWith('image/') ||
-                                               /\.(jpg|jpeg|png|gif|webp)$/i.test(m.filename || m.url || '');
-                                return mIsImage && mUrl;
-                              })
-                              .map(m => ({
-                                src: m.url || m.filename || '/defaults/default-profile.png',
-                                alt: m.filename || `Media ${index + 1}`,
-                                type: 'media'
-                              })), highlightsData.media_files
-                              .filter(m => {
-                                const mUrl = m.url || m.filename;
-                                const mIsImage = m.type === 'image' || 
-                                               m.mimetype?.startsWith('image/') ||
-                                               /\.(jpg|jpeg|png|gif|webp)$/i.test(m.filename || m.url || '');
-                                return mIsImage && mUrl;
-                              })
-                              .findIndex(m => (m.url || m.filename) === mediaUrl))}
-                          >
+                          <div key={index} className={styles.mediaItem}>
                             <Image 
                               src={mediaUrl} 
                               alt={media.filename || `Media ${index + 1}`} 
-                              width={120}
+                              width={200}
                               height={120}
-                              style={{objectFit: 'cover', borderRadius: '8px'}} 
-                              className={styles.additionalImage}
+                              style={{objectFit: 'cover'}} 
                               onError={(e) => {
                                 e.target.src = '/defaults/default-profile.png';
                               }}
                             />
-                            <div className={styles.imageOverlay}>
-                              <FaEye className={styles.viewIcon} />
-                            </div>
                           </div>
                         );
                       } else {
                         return (
-                          <div key={index} className={styles.mediaPlaceholder}>
-                            <FaFile className={styles.fileIcon} />
-                            <span>{media.type || 'File'}</span>
+                          <div key={index} className={styles.mediaItem}>
+                            <div className={styles.mediaPlaceholder}>
+                              <FaFile className={styles.fileIcon} />
+                              <span>{media.type || 'File'}</span>
+                            </div>
                           </div>
                         );
                       }

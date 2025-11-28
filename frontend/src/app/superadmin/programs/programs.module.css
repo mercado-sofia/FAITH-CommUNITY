@@ -27,6 +27,11 @@
   margin-bottom: 2rem;
 }
 
+/* Reduce headerTop margin when archiveCountInfo follows (archive pages) */
+.header:has(.archiveCountInfo) .headerTop:has(.headerActions) {
+  margin-bottom: 0;
+}
+
 .headerActions {
   display: flex;
   gap: 0.75rem;
@@ -93,6 +98,17 @@
   margin: 0;
   line-height: 1.2;
   width: 100%;
+}
+
+.archiveCountInfo {
+  margin-top: 0.125rem;
+  margin-bottom: 1.5rem;
+}
+
+.archiveCountText {
+  font-size: 13px;
+  color: #6b7280;
+  font-family: var(--font-inter);
 }
 
 /* Navigation Section */

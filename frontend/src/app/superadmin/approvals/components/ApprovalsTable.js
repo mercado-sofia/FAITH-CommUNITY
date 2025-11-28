@@ -180,16 +180,35 @@ export default function ApprovalsTable({
                   </td>
                   <td className={styles.actionsCell}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <div className={styles.actionDropdownWrapper}>
+                      <div className={styles.actionDropdownWrapper} data-action-dropdown-wrapper>
                         <div className={styles.actionDropdownButtonWrapper}>
                           <div
                             className={styles.actionDropdown}
+                            data-action-dropdown-button
+                            onMouseDown={(e) => {
+                              e.preventDefault(); // Prevent default behavior
+                              e.stopPropagation(); // Prevent mousedown from triggering click-outside handler
+                            }}
                             onClick={(e) => {
+                              e.preventDefault(); // Prevent default behavior
+                              e.stopPropagation(); // Prevent event bubbling
+                              
                               const uniqueId = item.uniqueKey || item.id;
                               const dropdownId = `action-${uniqueId}`;
-                              if (showDropdown === dropdownId) {
+                              
+                              // Check current state and toggle
+                              const isCurrentlyOpen = showDropdown === dropdownId;
+                              
+                              if (isCurrentlyOpen) {
+                                // Close dropdown on second click
                                 setShowDropdown(null);
+                                setDropdownPosition(prev => {
+                                  const newPos = { ...prev };
+                                  delete newPos[dropdownId];
+                                  return newPos;
+                                });
                               } else {
+                                // Open dropdown on first click
                                 const position = calculateDropdownPosition(e.currentTarget);
                                 setDropdownPosition(prev => ({
                                   ...prev,
@@ -203,6 +222,7 @@ export default function ApprovalsTable({
                           </div>
                           {showDropdown === `action-${item.uniqueKey || item.id}` && (
                             <ul 
+                              data-action-dropdown-options
                               className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${item.uniqueKey || item.id}`]?.position === 'above' ? styles.above : ''}`}
                               style={{
                                 top: `${dropdownPosition[`action-${item.uniqueKey || item.id}`]?.top || 0}px`,

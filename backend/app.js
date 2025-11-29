@@ -479,9 +479,7 @@ httpServer.listen(PORT, async () => {
   try {
     const { getPusher } = await import("./src/utils/pusher.js");
     const pusher = getPusher();
-    if (pusher) {
-      console.log('✅ Pusher is ready for real-time notifications');
-    } else {
+    if (!pusher) {
       console.warn('⚠️  Pusher is not configured. Real-time notifications will be disabled.');
     }
   } catch (error) {

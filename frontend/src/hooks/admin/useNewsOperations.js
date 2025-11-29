@@ -622,3 +622,4 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     validateNewsData
   };
 };
+

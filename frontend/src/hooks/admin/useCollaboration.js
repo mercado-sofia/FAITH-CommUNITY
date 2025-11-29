@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchAvailableAdmins, addCollaboratorToProgram, removeCollaboratorFromProgram, fetchProgramCollaborators } from '../services/collaborationService';
+import { fetchAvailableAdmins, addCollaboratorToProgram, removeCollaboratorFromProgram, fetchProgramCollaborators } from '@/app/admin/programs/services/collaborationService';
 
 export const useCollaboration = (isEditMode = false, programId = null) => {
   const [collaboratorInput, setCollaboratorInput] = useState('');
@@ -272,3 +272,4 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     setSelectedAdminForInvite
   };
 };
+

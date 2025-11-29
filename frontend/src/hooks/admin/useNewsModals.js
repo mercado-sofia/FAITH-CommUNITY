@@ -215,3 +215,4 @@ export const useNewsModals = (urlState = null) => {
     setPageMode
   };
 };
+

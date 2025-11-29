@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { optOutCollaboration } from '../services/collaborationService';
+import { optOutCollaboration } from '@/app/admin/programs/services/collaborationService';
 
 export const useProgramActions = ({
   normalizedData,
@@ -287,3 +287,4 @@ export const useProgramActions = ({
     cancelDeclineCollaboration
   };
 };
+

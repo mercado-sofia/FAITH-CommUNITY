@@ -4,7 +4,9 @@ import { useEffect } from 'react'
 import Image from 'next/image'
 import { FaCamera } from 'react-icons/fa'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
-import { useModalScrollLock, useModalMessage, useFormChanges } from '../../hooks'
+import { useModalScrollLock } from '@/hooks/admin/useModalScrollLock';
+import { useModalMessage } from '@/hooks/admin/useModalMessage';
+import { useFormChanges } from '@/hooks/admin/useFormChanges';
 import styles from './EditModal.module.css'
 
 export default function EditModal({

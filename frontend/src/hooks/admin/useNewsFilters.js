@@ -67,3 +67,4 @@ export const useNewsFilters = (news, searchQuery, sortBy, statusFilter = 'all') 
     displayedNews
   };
 };
+

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { VALIDATION_RULES, ERROR_MESSAGES } from '../constants/programConstants';
+import { VALIDATION_RULES, ERROR_MESSAGES } from '@/app/admin/programs/constants/programConstants';
 
 export const useImageUpload = () => {
   const [imagePreview, setImagePreview] = useState(null);
@@ -205,3 +205,4 @@ export const useImageUpload = () => {
     setAdditionalImagePreviews
   };
 };
+

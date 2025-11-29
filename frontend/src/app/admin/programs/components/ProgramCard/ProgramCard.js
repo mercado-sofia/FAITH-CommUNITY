@@ -13,7 +13,7 @@ import DOMPurify from 'dompurify';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
-import { useProgramActions } from '../../hooks';
+import { useProgramActions } from '@/hooks/admin/useProgramActions';
 import styles from './ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut, onShowSuccessModal, onToggleVolunteerAcceptance, onAcceptCollaboration, onDeclineCollaboration, onArchive, onUnarchive, isCollaborationCard = false }) => {

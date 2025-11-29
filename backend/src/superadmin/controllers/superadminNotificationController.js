@@ -1,6 +1,7 @@
 import db from '../../database.js';
 import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 import { logError } from '../../utils/logger.js';
+import { publishNotification, authenticateChannel } from '../../utils/pusher.js';
 
 class SuperAdminNotificationController {
   static async getNotifications(req, res) {
@@ -337,15 +338,68 @@ class SuperAdminNotificationController {
 
       const [result] = await db.execute(query, [superAdminId, type, title, message, messageTemplate, section, submissionId, organizationId]);
 
+      const notificationId = result.insertId;
+      
+      // Publish to Pusher for real-time delivery
+      const channelName = `private-superadmin-${superAdminId}`;
+      const notificationData = {
+        id: notificationId,
+        superadminId: superAdminId,
+        type,
+        title,
+        message,
+        messageTemplate,
+        section,
+        submissionId,
+        organizationId,
+        is_read: false,
+        created_at: new Date().toISOString()
+      };
+      
+      await publishNotification(channelName, 'new-notification', notificationData);
+
       return {
         success: true,
-        notificationId: result.insertId
+        notificationId
       };
     } catch (error) {
       return {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  // Pusher authentication endpoint for superadmin private channels
+  static async authenticatePusher(req, res) {
+    try {
+      const { socket_id, channel_name } = req.body;
+
+      if (!socket_id || !channel_name) {
+        return res.status(400).json({ error: 'socket_id and channel_name are required' });
+      }
+
+      // Verify the superadmin is authenticated (req.superadmin is set by verifySuperadminToken middleware)
+      if (!req.superadmin || !req.superadmin.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Verify the channel name matches the superadmin's ID
+      const expectedChannel = `private-superadmin-${req.superadmin.id}`;
+      if (channel_name !== expectedChannel) {
+        return res.status(403).json({ error: 'Unauthorized channel access' });
+      }
+
+      const auth = authenticateChannel(socket_id, channel_name);
+
+      if (!auth) {
+        return res.status(500).json({ error: 'Failed to authenticate channel' });
+      }
+
+      res.json(auth);
+    } catch (error) {
+      console.error('❌ Superadmin Pusher authentication error:', error);
+      res.status(500).json({ error: 'Authentication failed' });
     }
   }
 

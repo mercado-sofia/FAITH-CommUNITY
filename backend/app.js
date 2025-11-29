@@ -168,6 +168,71 @@ app.get("/api/health", (req, res) => {
   })
 })
 
+// Pusher test endpoint (for debugging)
+app.get("/api/pusher/test", async (req, res) => {
+  try {
+    const { getPusher, publishNotification } = await import("./src/utils/pusher.js");
+    const pusher = getPusher();
+    
+    if (!pusher) {
+      return res.status(503).json({
+        success: false,
+        message: "Pusher not configured",
+        env: {
+          hasAppId: !!process.env.PUSHER_APP_ID,
+          hasKey: !!process.env.PUSHER_KEY,
+          hasSecret: !!process.env.PUSHER_SECRET,
+          cluster: process.env.PUSHER_CLUSTER || 'not set',
+          clusterTrimmed: process.env.PUSHER_CLUSTER?.trim().toLowerCase() || 'not set',
+          appIdPreview: process.env.PUSHER_APP_ID ? `${process.env.PUSHER_APP_ID.substring(0, 4)}...` : 'missing',
+          keyPreview: process.env.PUSHER_KEY ? `${process.env.PUSHER_KEY.substring(0, 8)}...` : 'missing'
+        }
+      });
+    }
+
+    // Try to publish a test notification
+    const testChannel = 'test-channel';
+    const testData = { message: 'Test notification', timestamp: new Date().toISOString() };
+    
+    let published = false;
+    let publishError = null;
+    
+    try {
+      published = await publishNotification(testChannel, 'test-event', testData);
+    } catch (err) {
+      publishError = {
+        message: err.message,
+        status: err.status,
+        body: err.body
+      };
+    }
+
+    res.json({
+      success: published,
+      message: published ? "Pusher is configured and working" : "Pusher initialized but publish failed",
+      pusher: {
+        initialized: !!pusher,
+        cluster: process.env.PUSHER_CLUSTER?.trim().toLowerCase() || 'not set',
+        clusterRaw: process.env.PUSHER_CLUSTER || 'not set',
+        testPublish: published ? 'success' : 'failed',
+        error: publishError
+      },
+      credentials: {
+        appIdPreview: process.env.PUSHER_APP_ID ? `${process.env.PUSHER_APP_ID.substring(0, 4)}...` : 'missing',
+        keyPreview: process.env.PUSHER_KEY ? `${process.env.PUSHER_KEY.substring(0, 8)}...` : 'missing',
+        hasSecret: !!process.env.PUSHER_SECRET
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Pusher test failed",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+})
+
 
 // Public Routes
 import applyRoutes from "./src/(public)/routes/apply.js"
@@ -408,6 +473,19 @@ httpServer.listen(PORT, async () => {
     if (process.env.NODE_ENV === "production") {
       process.exit(1);
     }
+  }
+
+  // Test Pusher initialization on server start
+  try {
+    const { getPusher } = await import("./src/utils/pusher.js");
+    const pusher = getPusher();
+    if (pusher) {
+      console.log('✅ Pusher is ready for real-time notifications');
+    } else {
+      console.warn('⚠️  Pusher is not configured. Real-time notifications will be disabled.');
+    }
+  } catch (error) {
+    console.error('❌ Failed to check Pusher initialization:', error.message);
   }
 
   // Verify email configuration (SMTP or SendGrid API)

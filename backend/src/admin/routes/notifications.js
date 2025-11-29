@@ -23,4 +23,7 @@ router.put('/:adminId/mark-all-read', NotificationController.markAllAsRead);
 // Delete a notification
 router.delete('/:notificationId', NotificationController.deleteNotification);
 
+// Pusher authentication for real-time notifications
+router.post('/pusher/auth', NotificationController.authenticatePusher);
+
 export default router;

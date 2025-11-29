@@ -19,6 +19,7 @@ import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 import { logError } from '../../utils/logger.js';
 import { SessionSecurity } from '../../utils/sessionSecurity.js';
+import { publishNotification } from '../../utils/pusher.js';
 
 export const registerUser = async (req, res) => {
   try {
@@ -1527,6 +1528,54 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
+/**
+ * Pusher authentication endpoint for user private channels
+ * Verifies JWT token and authorizes access to private-user-{userId} channel
+ */
+export const authenticatePusher = async (req, res) => {
+  try {
+    const { socket_id, channel_name } = req.body;
+
+    if (!socket_id || !channel_name) {
+      return res.status(400).json({ error: 'socket_id and channel_name are required' });
+    }
+
+    // Verify the user is authenticated
+    const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-me-in-env', {
+      issuer: process.env.JWT_ISS || 'faith-community-api',
+      audience: process.env.JWT_AUD || 'faith-community-client'
+    });
+
+    // Verify the channel name matches the user's ID
+    const expectedChannel = `private-user-${decoded.id}`;
+    if (channel_name !== expectedChannel) {
+      return res.status(403).json({ error: 'Unauthorized channel access' });
+    }
+
+    // Import Pusher utility
+    const { authenticateChannel } = await import('../../utils/pusher.js');
+    const auth = authenticateChannel(socket_id, channel_name);
+
+    if (!auth) {
+      return res.status(500).json({ error: 'Failed to authenticate channel' });
+    }
+
+    res.json(auth);
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    console.error('❌ Pusher authentication error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+};
+
 export const getUserNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1695,7 +1744,23 @@ export const createUserNotification = async (userId, type, title, message, secti
     );
     
     if (result && result.insertId) {
-      return result.insertId;
+      const notificationId = result.insertId;
+      
+      // Publish to Pusher for real-time delivery
+      const channelName = `private-user-${userId}`;
+      const notificationData = {
+        id: notificationId,
+        userId,
+        type,
+        title,
+        message,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      await publishNotification(channelName, 'new-notification', notificationData);
+      
+      return notificationId;
     } else {
       console.error('❌ createUserNotification: Insert succeeded but no insertId returned', {
         userId,

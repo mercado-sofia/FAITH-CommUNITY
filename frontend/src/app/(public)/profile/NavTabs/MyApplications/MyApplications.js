@@ -6,7 +6,7 @@ import { FiCalendar } from 'react-icons/fi';
 import { FaRegClock } from 'react-icons/fa6';
 import Image from 'next/image';
 import Link from 'next/link';
-import { makeAuthenticatedRequest } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '@/utils/(public)/profileApi';
 import { formatDateShort, formatApplicationProgramDates } from '@/utils/shared/dateUtils';
 import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';

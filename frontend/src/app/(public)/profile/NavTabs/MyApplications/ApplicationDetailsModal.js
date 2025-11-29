@@ -6,7 +6,7 @@ import { FaTimes, FaUser, FaFileAlt, FaTimesCircle, FaCheckCircle } from 'react-
 import { FiCalendar, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
-import { makeAuthenticatedRequest } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '@/utils/(public)/profileApi';
 import { formatDateLong, formatApplicationProgramDates } from '@/utils/shared/dateUtils';
 import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';

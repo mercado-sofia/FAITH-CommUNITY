@@ -9,7 +9,7 @@ import { useCollaboration } from '@/hooks/admin/useCollaboration';
 import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } from './components';
 import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
-import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
+import { ROLE_OPTIONS } from '@/utils/admin/roleHierarchy';
 import logger from '@/utils/shared/logger';
 import styles from './ProgramForm.module.css';
 

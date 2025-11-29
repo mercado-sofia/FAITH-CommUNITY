@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { FaEye, FaEyeSlash, FaCheck, FaSpinner } from 'react-icons/fa';
 import { FiTrash2, FiX } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
-import { getApiUrl, getAuthHeaders } from '../../../utils/profileApi';
+import { getApiUrl, getAuthHeaders } from '@/utils/(public)/profileApi';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import styles from './DeleteAccount.module.css';
 

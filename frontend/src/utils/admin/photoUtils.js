@@ -308,3 +308,4 @@ export class ImageCache {
 
 // Global image cache instance
 export const imageCache = new ImageCache();
+

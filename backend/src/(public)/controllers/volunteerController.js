@@ -4,7 +4,7 @@ import { createUserNotification } from './userController.js';
 import { calculateAge } from '../../utils/dateUtils.js';
 import { getVolunteerStatusEmail } from '../../utils/volunteerEmailTemplates.js';
 import { getSiteName } from '../../utils/siteName.js';
-import sendMail from '../../utils/mailer.js';
+import { sendMail } from '../../utils/mailer.js';
 
 // Status validation constants
 const VALID_STATUSES = ['Pending', 'Approved', 'Declined', 'Cancelled', 'Completed'];
@@ -508,8 +508,13 @@ export const updateVolunteerStatus = async (req, res) => {
     }
     
     // First, get the volunteer details to find the user and current status
+    // Use v.user_id directly as the source of truth (from volunteers table)
+    // Join with users table to get email and verify user exists
     const [volunteerRows] = await db.execute(`
-      SELECT v.*, p.title as program_name, u.id as user_id, u.email,
+      SELECT v.id, v.user_id, v.program_id, v.reason, v.status, v.created_at, v.updated_at,
+             p.title as program_name, 
+             u.id as user_exists, 
+             u.email,
              CONCAT(up.first_name, ' ', up.last_name) as user_name
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
@@ -526,6 +531,20 @@ export const updateVolunteerStatus = async (req, res) => {
     }
     
     const volunteer = volunteerRows[0];
+    
+    // Validate user_id exists
+    if (!volunteer.user_id) {
+      console.error(`❌ Volunteer ${id} has no user_id in volunteers table`);
+      return res.status(400).json({
+        success: false,
+        message: "Volunteer record is missing user_id"
+      });
+    }
+    
+    if (!volunteer.user_exists) {
+      console.error(`❌ Volunteer ${id} references user_id ${volunteer.user_id} but user not found in users table`);
+      // Continue anyway - notification will fail but status update can proceed
+    }
     
     // Validate status transition
     if (!isValidStatusTransition(volunteer.status, status)) {
@@ -567,35 +586,72 @@ export const updateVolunteerStatus = async (req, res) => {
       }
       
       if (notificationTitle && notificationMessage) {
-        // Get site name for email
-        const siteName = await getSiteName();
-
-        // Prepare email content
-        const emailContent = getVolunteerStatusEmail({
-          userName,
-          programName,
-          status,
-          siteName
-        });
-
-        // Create in-app notification and get the notification ID
-        const notificationId = await createUserNotification(
-          volunteer.user_id,
-          'volunteer_status',
-          notificationTitle,
-          notificationMessage
-        );
+        // Create in-app notification FIRST - this must succeed even if email fails
+        let notificationId = null;
+        try {
+          notificationId = await createUserNotification(
+            volunteer.user_id,
+            'volunteer_status',
+            notificationTitle,
+            notificationMessage
+          );
+          
+          if (notificationId) {
+            console.log(`✅ [updateVolunteerStatus] Notification created successfully for user ${volunteer.user_id} (notification ID: ${notificationId})`);
+          } else {
+            console.error(`❌ [updateVolunteerStatus] Failed to create notification for user ${volunteer.user_id} - createUserNotification returned null`);
+            console.error('   → This usually means missing parameters or database insert failed');
+          }
+        } catch (notificationError) {
+          console.error(`❌ [updateVolunteerStatus] Error creating notification for user ${volunteer.user_id}:`, notificationError.message);
+          console.error('   → Notification error details:', {
+            userId: volunteer.user_id,
+            type: 'volunteer_status',
+            title: notificationTitle,
+            error: notificationError.message,
+            stack: notificationError.stack
+          });
+          // Continue execution - notification failure shouldn't block status update
+        }
 
         // Send email notification (don't block the response if email fails)
-        sendMail({
-          to: volunteer.email,
-          subject: emailContent.subject,
-          html: emailContent.html,
-          text: emailContent.text
-        }).catch(() => {
-          // Don't throw - email failure shouldn't block the status update
-        });
+        // This runs independently of notification creation
+        if (volunteer.email) {
+          try {
+            // Get site name for email
+            const siteName = await getSiteName();
 
+            // Prepare email content
+            const emailContent = getVolunteerStatusEmail({
+              userName,
+              programName,
+              status,
+              siteName
+            });
+
+            // Attempt to send email
+            await sendMail({
+              to: volunteer.email,
+              subject: emailContent.subject,
+              html: emailContent.html,
+              text: emailContent.text
+            });
+            
+            console.log(`✅ Email sent successfully to ${volunteer.email} for volunteer application status update`);
+          } catch (emailError) {
+            // Log email error but don't throw - email failure shouldn't block the status update
+            console.error(`❌ Failed to send email to ${volunteer.email}:`, emailError.message);
+            console.error('   → Email error details:', {
+              to: volunteer.email,
+              subject: `Volunteer application ${status}`,
+              error: emailError.message,
+              code: emailError.code || 'UNKNOWN'
+            });
+            // Continue - email failure is non-critical
+          }
+        } else {
+          console.warn(`⚠️  No email address found for user ${volunteer.user_id} - skipping email notification`);
+        }
       }
     }
     

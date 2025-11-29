@@ -474,9 +474,21 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
   // Continue with SMTP implementation
   if (!isSMTPConfigured()) {
     const status = getSMTPStatus();
-    const error = new Error(`SMTP not configured. Missing: ${status.missing.join(', ')}`);
+    const missingVars = status.missing.join(', ');
+    const error = new Error(
+      `SMTP email service is not configured. Missing environment variables: ${missingVars}. ` +
+      `Please set SMTP_HOST, SMTP_USER, and SMTP_PASS in your environment variables. ` +
+      `Alternatively, set USE_SENDGRID_API=true and provide SENDGRID_API_KEY for SendGrid API.`
+    );
     error.code = 'SMTP_NOT_CONFIGURED';
     error.status = status;
+    console.error('❌ SMTP Configuration Error:', {
+      missing: status.missing,
+      host: status.host,
+      port: status.port,
+      user: status.user,
+      suggestion: 'Set SMTP_HOST, SMTP_USER, SMTP_PASS or use USE_SENDGRID_API=true with SENDGRID_API_KEY'
+    });
     throw error;
   }
 

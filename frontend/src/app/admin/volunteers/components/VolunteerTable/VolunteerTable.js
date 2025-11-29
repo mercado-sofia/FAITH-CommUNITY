@@ -58,7 +58,7 @@ const VolunteerAvatar = ({ volunteer, size = 40 }) => {
   );
 };
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10 }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -166,9 +166,16 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     
     // Only process volunteers with actionable statuses (exclude Cancelled and Completed)
     const actionableVolunteerIds = actionableSelectedVolunteers.map(volunteer => volunteer.id)
-    actionableVolunteerIds.forEach(volunteerId => {
-      onStatusUpdate(volunteerId, newStatus)
-    })
+    
+    // Use bulk status update handler if available, otherwise fall back to individual updates
+    if (onBulkStatusUpdate && actionableVolunteerIds.length > 0) {
+      onBulkStatusUpdate(actionableVolunteerIds, newStatus)
+    } else if (onStatusUpdate) {
+      // Fallback to individual updates if bulk handler not available
+      actionableVolunteerIds.forEach(volunteerId => {
+        onStatusUpdate(volunteerId, newStatus)
+      })
+    }
     
     setSelectedVolunteers([])
     setShowBulkModal(false)

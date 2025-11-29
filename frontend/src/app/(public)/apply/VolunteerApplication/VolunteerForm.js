@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import styles from "./VolunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
@@ -24,7 +24,7 @@ function SubmitStatus({ status }) {
   );
 }
 
-export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset, isLoggedIn = false }) {
+export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset }) {
   // Fetch all approved upcoming programs from the API (including already applied ones)
   const {
     programs: programOptions = [],
@@ -34,7 +34,7 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
 
   // State for user applications
   const [userApplications, setUserApplications] = useState([]);
-  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const abortControllerRef = useRef(null);
 
   // Initial form data
   const initialFormData = {
@@ -52,9 +52,16 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
   );
 
   // Fetch user applications
-  const fetchUserApplications = async () => {
+  const fetchUserApplications = useCallback(async () => {
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+
     try {
-      setApplicationsLoading(true);
       // No need to check token - cookies handle authentication
       const { API_BASE_URL } = await import('@/config/api');
       const response = await fetch(`${API_BASE_URL || ''}/api/users/applications`, {
@@ -62,26 +69,60 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         headers: {
           'Content-Type': 'application/json',
           // No Authorization header needed - httpOnly cookies handle authentication
-        }
+        },
+        signal: abortControllerRef.current.signal
       });
 
+      // Check if request was aborted
+      if (abortControllerRef.current.signal.aborted) {
+        return;
+      }
+
       if (response.ok) {
-        const data = await response.json();
-        setUserApplications(data.applications || []);
+        try {
+          const data = await response.json();
+          // Only update state if component is still mounted and request wasn't aborted
+          if (!abortControllerRef.current.signal.aborted) {
+            setUserApplications(data.applications || []);
+          }
+        } catch (parseError) {
+          // Handle JSON parsing errors
+          if (!abortControllerRef.current.signal.aborted) {
+            logger.error("Failed to parse user applications response", parseError);
+            setUserApplications([]);
+          }
+        }
       } else {
-        setUserApplications([]);
+        if (!abortControllerRef.current.signal.aborted) {
+          setUserApplications([]);
+        }
       }
     } catch (error) {
-      setUserApplications([]);
-    } finally {
-      setApplicationsLoading(false);
+      // Don't set state if request was aborted
+      if (error.name === 'AbortError') {
+        return;
+      }
+      
+      // Log error for debugging
+      logger.error("Failed to fetch user applications", error);
+      
+      if (!abortControllerRef.current.signal.aborted) {
+        setUserApplications([]);
+      }
     }
-  };
+  }, []);
 
   // Fetch user applications on component mount
   useEffect(() => {
     fetchUserApplications();
-  }, []);
+
+    // Cleanup: abort request on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchUserApplications]);
 
   // Clear form data and reset program preview when returning from login
   useEffect(() => {
@@ -136,7 +177,14 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
   // Auto-select program if selectedProgramId is provided
   useEffect(() => {
     if (selectedProgramId && programOptions.length > 0 && !formData.program) {
-      const selectedProgram = programOptions.find(program => program.id === parseInt(selectedProgramId));
+      const programId = parseInt(selectedProgramId);
+      // Validate that programId is a valid number
+      if (isNaN(programId)) {
+        logger.warn("Invalid program ID in URL", { selectedProgramId });
+        return;
+      }
+
+      const selectedProgram = programOptions.find(program => program.id === programId);
       if (selectedProgram) {
         setFormData(prev => ({
           ...prev,
@@ -146,6 +194,12 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         if (onProgramSelect) {
           onProgramSelect(selectedProgram);
         }
+      } else {
+        // Program ID in URL doesn't match any available program
+        logger.warn("Program ID from URL not found in available programs", { 
+          programId, 
+          availablePrograms: programOptions.map(p => p.id) 
+        });
       }
     }
   }, [selectedProgramId, programOptions, formData.program, onProgramSelect, setFormData]);
@@ -283,20 +337,50 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           showFieldError(fieldName, errors[fieldName]);
         });
         
-        
         setIsLoading(false);
         return;
       }
 
       // Get user data from localStorage (should exist if authenticated)
-      const storedUserData = JSON.parse(localStorage.getItem('userData'));
-      if (!storedUserData) {
-        // If localStorage doesn't have user data but we're authenticated, 
-        // store it for consistency
-        localStorage.setItem('userData', JSON.stringify(userData));
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const storedUserDataStr = localStorage.getItem('userData');
+          if (storedUserDataStr) {
+            try {
+              const storedUserData = JSON.parse(storedUserDataStr);
+              if (!storedUserData) {
+                // If localStorage doesn't have user data but we're authenticated, 
+                // store it for consistency
+                localStorage.setItem('userData', JSON.stringify(userData));
+              }
+            } catch (parseError) {
+              // Handle corrupted localStorage data
+              logger.error("Failed to parse localStorage userData", parseError);
+              // Clear corrupted data and store fresh data
+              try {
+                localStorage.removeItem('userData');
+                localStorage.setItem('userData', JSON.stringify(userData));
+              } catch (storageError) {
+                logger.error("Failed to update localStorage", storageError);
+              }
+            }
+          } else {
+            // No stored data, save current user data
+            localStorage.setItem('userData', JSON.stringify(userData));
+          }
+        } catch (storageError) {
+          // Handle localStorage access errors (e.g., disabled in private browsing)
+          logger.warn("Failed to access localStorage", storageError);
+          // Continue with submission - localStorage is not critical for submission
+        }
       }
 
       // Submit form with new structure (user_id will be extracted from JWT token)
+      // Additional safety check (validation should have caught this, but extra safety)
+      if (!formData.program || !formData.program.id) {
+        throw new Error("Please select a program before submitting.");
+      }
+
       const requestData = {
         program_id: formData.program.id,
         reason: formData.reason.trim()
@@ -326,6 +410,17 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           // Clear form data using the hook's clear function
           clearFormData();
           
+          // Explicitly reset program in formData to ensure dropdown resets
+          setFormData(prev => ({
+            ...prev,
+            program: null
+          }));
+          
+          // Sync parent's selectedProgram state
+          if (onProgramSelect) {
+            onProgramSelect(null);
+          }
+          
           // Reset dropdown state
           setDropdownOpen(false);
           
@@ -340,7 +435,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           if (onFormReset) {
             onFormReset();
           }
-          
           
           return; // Exit early, don't treat as error
         } else if (status === 400) {
@@ -386,6 +480,17 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
       // Clear form data using the hook's clear function
       clearFormData();
 
+      // Explicitly reset program in formData to ensure dropdown resets
+      setFormData(prev => ({
+        ...prev,
+        program: null
+      }));
+
+      // Sync parent's selectedProgram state
+      if (onProgramSelect) {
+        onProgramSelect(null);
+      }
+
       // Reset dropdown state
       setDropdownOpen(false);
       
@@ -400,7 +505,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
       if (onFormReset) {
         onFormReset();
       }
-
 
     } catch (error) {
       // Log submission error
@@ -431,8 +535,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <>

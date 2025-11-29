@@ -37,7 +37,9 @@ export default function Sidebar({
   const { data: volunteersData = [] } = useGetVolunteersByAdminOrgQuery(currentAdmin?.id, {
     skip: userType !== USER_TYPES.ADMIN || !currentAdmin?.id
   });
-  const volunteersCount = Array.isArray(volunteersData) ? volunteersData.length : 0;
+  const volunteersCount = Array.isArray(volunteersData) 
+    ? volunteersData.filter(volunteer => volunteer.status?.toLowerCase() === 'pending').length 
+    : 0;
 
   // Fetch pending submissions count for admin
   const orgAcronym = currentAdmin?.org;

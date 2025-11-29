@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData, makeAuthenticatedRequest } from '../utils/profileApi';
+import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData, makeAuthenticatedRequest } from '@/utils/(public)/profileApi';
 
 export const useApiCall = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -190,3 +190,4 @@ export const useProfileApi = () => {
     error
   };
 };
+

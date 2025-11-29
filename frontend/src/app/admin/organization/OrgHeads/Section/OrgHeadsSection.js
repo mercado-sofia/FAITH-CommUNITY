@@ -8,7 +8,7 @@ import { BsFillGrid3X3GapFill } from 'react-icons/bs'
 import { FiTrash2 } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgHeadsSection.module.css'
-import { sortHeadsByOrder, filterHeads } from '../../utils/roleHierarchy'
+import { sortHeadsByOrder, filterHeads } from '@/utils/admin/roleHierarchy'
 import DragDropHeadsContainer from '../components/DragDropHeadsContainer/DragDropHeadsContainer'
 
 export default function OrgHeadsSection({

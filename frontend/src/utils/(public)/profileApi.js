@@ -32,3 +32,4 @@ export const getAuthHeadersWithFormData = () => {
     // Don't set Content-Type - browser will set it with boundary for FormData
   };
 };
+

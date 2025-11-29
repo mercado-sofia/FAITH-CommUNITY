@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
-import { makeAuthenticatedRequest } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '@/utils/(public)/profileApi';
 import { useNotifications } from '@/hooks/shared/useNotifications';
 import { useAuthState } from '@/hooks/shared/useAuthState';
 import ConfirmationModal from '../../components/ConfirmationModal';

@@ -5,7 +5,7 @@ import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle, FaSpinner } fr
 import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgHeadModal.module.css'
-import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '../../utils'
+import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '@/utils/admin/organizationUtils'
 import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
 import { API_CONFIG } from '@/utils/admin/constants';
 import { handleApiError } from '@/utils/admin/errorHandler';

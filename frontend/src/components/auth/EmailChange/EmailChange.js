@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaTimes, FaShieldAlt, FaClock, FaSpinner } from 'react-icons/fa';
 import { useEmailChange } from '@/hooks/shared/useEmailChange';
-import { useFormValidation } from '@/app/(public)/profile/hooks/useFormValidation';
+import { useFormValidation } from '@/hooks/(public)/useFormValidation';
 import { useToast } from '@/app/(public)/components/Toast';
 import styles from './EmailChange.module.css';
 

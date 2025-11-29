@@ -1556,6 +1556,7 @@ export const getUserNotifications = async (req, res) => {
       notifications: transformedNotifications
     });
   } catch (error) {
+    console.error(`[getUserNotifications] Error fetching notifications for user_id ${req.user?.id}:`, error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch notifications'
@@ -1574,11 +1575,14 @@ export const getUnreadNotificationCount = async (req, res) => {
       [userId]
     );
 
+    const count = result[0].count;
+
     res.json({
       success: true,
-      count: result[0].count
+      count: count
     });
   } catch (error) {
+    console.error(`[getUnreadNotificationCount] Error fetching unread count for user_id ${req.user?.id}:`, error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch unread count'
@@ -1673,13 +1677,41 @@ export const deleteNotification = async (req, res) => {
 
 export const createUserNotification = async (userId, type, title, message, section = null, relatedId = null) => {
   try {
+    // Validate required parameters
+    if (!userId || !type || !title || !message) {
+      console.error('❌ createUserNotification: Missing required parameters', {
+        userId: !!userId,
+        type: !!type,
+        title: !!title,
+        message: !!message
+      });
+      return null;
+    }
+
     const [result] = await db.execute(
       `INSERT INTO user_notifications (user_id, type, title, message, created_at) 
        VALUES (?, ?, ?, ?, NOW())`,
       [userId, type, title, message]
     );
-    return result.insertId;
+    
+    if (result && result.insertId) {
+      return result.insertId;
+    } else {
+      console.error('❌ createUserNotification: Insert succeeded but no insertId returned', {
+        userId,
+        type,
+        title
+      });
+      return null;
+    }
   } catch (error) {
+    console.error('❌ createUserNotification: Database error', {
+      userId,
+      type,
+      title,
+      error: error.message,
+      code: error.code
+    });
     return null;
   }
 };

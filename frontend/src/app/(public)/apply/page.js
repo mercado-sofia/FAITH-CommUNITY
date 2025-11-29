@@ -13,7 +13,6 @@ import styles from './apply.module.css';
 
 export default function ApplyPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchParams = useSearchParams();
   
   // Use persistence hook for selected program
@@ -33,33 +32,9 @@ export default function ApplyPage() {
     }
   }, [searchParams]);
 
-  // Check user authentication status (for internal use, not for conditional rendering)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const checkAuth = async () => {
-      try {
-        // Check auth status from backend (reads from httpOnly cookie)
-        const { getCurrentUser } = await import('@/utils/shared/authService');
-        const userData = await getCurrentUser();
-      
-        if (userData && userData.role === 'user') {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
   if (pageLoading || !pageReady) {
     return <Loader small centered />;
   }
-
 
   return (
     <>
@@ -81,7 +56,6 @@ export default function ApplyPage() {
                 selectedProgramId={selectedProgramId}
                 onProgramSelect={setSelectedProgram}
                 onFormReset={clearSelectedProgram}
-                isLoggedIn={isLoggedIn}
               />
             </div>
 

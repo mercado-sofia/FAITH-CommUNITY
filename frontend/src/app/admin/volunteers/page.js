@@ -137,6 +137,10 @@ export default function VolunteersPage() {
       return;
     }
 
+    // Find volunteer name for success message
+    const volunteer = volunteersData.find(v => v.id === id);
+    const volunteerName = volunteer?.name || 'volunteer';
+
     try {
       const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${id}/status`, {
         method: 'PUT',
@@ -160,6 +164,12 @@ export default function VolunteersPage() {
       // Reset rate limiter on success
       rateLimiter.current.reset(rateLimitKey);
       
+      // Show success message based on status
+      const actionText = newStatus === 'Approved' ? 'approved' : 'declined';
+      setSuccessMessage(`Volunteer ${volunteerName} has been successfully ${actionText}.`);
+      setSuccessModalType('success');
+      setShowSuccessModal(true);
+      
       // Refresh data after successful update
       refreshVolunteers();
     } catch (error) {
@@ -167,7 +177,71 @@ export default function VolunteersPage() {
       setSuccessModalType('error');
       setShowSuccessModal(true);
     }
-  }, [refreshVolunteers, currentAdmin?.id, showToast])
+  }, [refreshVolunteers, currentAdmin?.id, showToast, volunteersData])
+
+  // Enhanced bulk status update with validation
+  const handleBulkStatusUpdate = useCallback(async (volunteerIds, newStatus) => {
+    if (!volunteerIds || volunteerIds.length === 0) return;
+
+    // Validate status
+    if (!validateStatus(newStatus)) {
+      showToast('Invalid status provided', 'error');
+      return;
+    }
+
+    try {
+      // Process all status updates
+      const updatePromises = volunteerIds.map(async (volunteerId) => {
+        const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${volunteerId}/status`, {
+          method: 'PUT',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
+          headers: {
+            'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to update volunteer ${volunteerId}: ${errorData.message || response.statusText}`);
+        }
+        
+        return { success: true, id: volunteerId };
+      });
+
+      const results = await Promise.allSettled(updatePromises);
+      
+      // Count successes and failures
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      // Show success message
+      const actionText = newStatus === 'Approved' ? 'approved' : 'declined';
+      if (failed === 0) {
+        // All succeeded
+        setSuccessMessage(`${successful} volunteer${successful !== 1 ? 's' : ''} have been successfully ${actionText}.`);
+        setSuccessModalType('success');
+      } else if (successful > 0) {
+        // Partial success
+        setSuccessMessage(`${successful} volunteer${successful !== 1 ? 's' : ''} have been successfully ${actionText}. ${failed} update${failed !== 1 ? 's' : ''} failed.`);
+        setSuccessModalType('success');
+      } else {
+        // All failed
+        const firstError = results.find(r => r.status === 'rejected');
+        throw new Error(firstError?.reason?.message || 'All status updates failed.');
+      }
+      
+      setShowSuccessModal(true);
+      
+      // Refresh data after successful update
+      refreshVolunteers();
+    } catch (error) {
+      setSuccessMessage(error.message || 'Failed to update volunteer statuses. Please try again.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
+    }
+  }, [refreshVolunteers, showToast])
 
   // Enhanced soft delete with rate limiting
   const handleSoftDelete = useCallback(async (id, volunteerName) => {
@@ -512,6 +586,7 @@ export default function VolunteersPage() {
       <VolunteerTable
         volunteers={filteredVolunteers}
         onStatusUpdate={handleStatusUpdate}
+        onBulkStatusUpdate={handleBulkStatusUpdate}
         onSoftDelete={handleSoftDelete}
         onBulkDelete={handleBulkDeleteConfirm}
         itemsPerPage={showCount}

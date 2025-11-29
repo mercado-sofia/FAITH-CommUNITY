@@ -112,7 +112,6 @@ export const usePusherNotifications = (userId, userType, onNewNotification, isAu
 
       // Handle subscription success
       const onSubscriptionSucceeded = () => {
-        console.log(`✅ Subscribed to ${channelName}`);
         isSubscribedRef.current = true;
         retryCountRef.current = 0; // Reset retry count on success
       };
@@ -168,7 +167,6 @@ export const usePusherNotifications = (userId, userType, onNewNotification, isAu
 
       // Listen for new notifications
       channel.bind('new-notification', (data) => {
-        console.log('🔔 New notification received:', data);
         if (onNewNotification && typeof onNewNotification === 'function') {
           onNewNotification(data);
         }

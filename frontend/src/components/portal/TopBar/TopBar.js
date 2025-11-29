@@ -83,8 +83,6 @@ export default function TopBar({
 
   // Handle new admin notification from Pusher
   const handleAdminNotification = useCallback((notificationData) => {
-    console.log('🔔 New admin notification received via Pusher in TopBar:', notificationData);
-    
     // Immediately update local state for instant UI feedback
     setLocalUnreadCount(prev => prev + 1);
     
@@ -190,8 +188,6 @@ export default function TopBar({
 
   // Handle new superadmin notification from Pusher
   const handleSuperAdminNotification = useCallback((notificationData) => {
-    console.log('🔔 New superadmin notification received via Pusher:', notificationData);
-    
     // Immediately update local state for instant UI feedback
     setLocalSuperAdminUnreadCount(prev => prev + 1);
     

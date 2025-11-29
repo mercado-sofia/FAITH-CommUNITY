@@ -23,21 +23,6 @@ export const getPusher = () => {
   // Cluster must be lowercase and trimmed (Pusher is case-sensitive)
   const cluster = (process.env.PUSHER_CLUSTER?.trim() || 'us2').toLowerCase();
 
-  // Detailed logging for debugging
-  console.log('🔍 [Pusher] Checking configuration...', {
-    hasAppId: !!appId,
-    hasKey: !!key,
-    hasSecret: !!secret,
-    cluster: cluster,
-    clusterFromEnv: process.env.PUSHER_CLUSTER,
-    clusterRaw: `"${process.env.PUSHER_CLUSTER}"`,
-    appId: appId ? `${appId.substring(0, 4)}...` : 'missing',
-    key: key ? `${key.substring(0, 8)}...` : 'missing',
-    appIdLength: appId?.length || 0,
-    keyLength: key?.length || 0,
-    secretLength: secret?.length || 0
-  });
-  
   // Warn if cluster might be wrong
   const validClusters = ['us2', 'eu', 'ap1', 'ap2', 'ap3', 'ap4', 'us3'];
   if (cluster && !validClusters.includes(cluster)) {
@@ -66,13 +51,6 @@ export const getPusher = () => {
     };
 
     pusherInstance = new Pusher(pusherConfig);
-
-    console.log('✅ [Pusher] Initialized successfully', {
-      appId: appId.substring(0, 4) + '...',
-      key: key.substring(0, 8) + '...',
-      cluster: cluster || 'auto-detect',
-      configUsed: Object.keys(pusherConfig)
-    });
     return pusherInstance;
   } catch (error) {
     console.error('❌ [Pusher] Failed to initialize:', {
@@ -92,13 +70,6 @@ export const getPusher = () => {
  * @returns {Promise<boolean>} - Success status
  */
 export const publishNotification = async (channelName, eventName, data) => {
-  console.log('📤 [Pusher] Attempting to publish notification...', {
-    channelName,
-    eventName,
-    hasData: !!data,
-    dataKeys: data ? Object.keys(data) : []
-  });
-
   const pusher = getPusher();
   
   if (!pusher) {
@@ -111,23 +82,7 @@ export const publishNotification = async (channelName, eventName, data) => {
 
   try {
     // Pusher trigger returns a promise that resolves when the event is sent
-    console.log('🚀 [Pusher] Calling pusher.trigger()...', {
-      channelName,
-      eventName,
-      dataSize: JSON.stringify(data).length
-    });
-    
-    const result = await pusher.trigger(channelName, eventName, data);
-    
-    // Log the result to see what Pusher returns
-    console.log('✅ [Pusher] Notification published successfully', {
-      channelName,
-      eventName,
-      result: result,
-      resultType: typeof result,
-      resultKeys: result && typeof result === 'object' ? Object.keys(result) : 'N/A'
-    });
-    
+    await pusher.trigger(channelName, eventName, data);
     return true;
   } catch (error) {
     // Enhanced error logging

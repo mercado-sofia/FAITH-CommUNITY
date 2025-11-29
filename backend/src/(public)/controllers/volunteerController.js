@@ -596,9 +596,7 @@ export const updateVolunteerStatus = async (req, res) => {
             notificationMessage
           );
           
-          if (notificationId) {
-            console.log(`✅ [updateVolunteerStatus] Notification created successfully for user ${volunteer.user_id} (notification ID: ${notificationId})`);
-          } else {
+          if (!notificationId) {
             console.error(`❌ [updateVolunteerStatus] Failed to create notification for user ${volunteer.user_id} - createUserNotification returned null`);
             console.error('   → This usually means missing parameters or database insert failed');
           }

@@ -82,14 +82,8 @@ export const getPusherClient = (userId, userType = 'user') => {
         disabledTransports: [],
       });
 
-      // Log connection events for debugging
-      pusherInstance.connection.bind('connected', () => {
-        console.log('✅ Pusher connected');
-      });
-
-      pusherInstance.connection.bind('disconnected', () => {
-        console.log('⚠️  Pusher disconnected');
-      });
+      // Connection events are handled silently
+      // Errors are still logged below
 
       pusherInstance.connection.bind('error', (err) => {
         console.error('❌ Pusher connection error:', err);

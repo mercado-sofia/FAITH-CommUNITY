@@ -60,7 +60,6 @@ export const useNotifications = (isAuthenticated) => {
 
   // Handle new notification from Pusher
   const handleNewNotification = useCallback((notificationData) => {
-    console.log('🔔 New notification received via Pusher:', notificationData);
     setNewNotificationReceived(true);
     
     // Immediately update local state for instant UI feedback

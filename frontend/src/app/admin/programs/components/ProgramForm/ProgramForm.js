@@ -3,7 +3,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { FaSpinner } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
-import { useProgramForm, useImageUpload, useCollaboration } from '../../hooks';
+import { useProgramForm } from '@/hooks/admin/useProgramForm';
+import { useImageUpload } from '@/hooks/admin/useImageUpload';
+import { useCollaboration } from '@/hooks/admin/useCollaboration';
 import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } from './components';
 import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';

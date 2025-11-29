@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PROGRAM_STATUS, DEFAULT_FORM_DATA, VALIDATION_RULES, ERROR_MESSAGES } from '../constants/programConstants';
+import { PROGRAM_STATUS, DEFAULT_FORM_DATA, VALIDATION_RULES, ERROR_MESSAGES } from '@/app/admin/programs/constants/programConstants';
 import DOMPurify from 'dompurify';
 
 // Function to calculate status based on dates
@@ -347,3 +347,4 @@ export const useProgramForm = (mode = 'create', program = null) => {
     resetForm
   };
 };
+

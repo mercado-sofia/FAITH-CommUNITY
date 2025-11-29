@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,20 +8,23 @@ import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { FiXCircle } from "react-icons/fi";
 import { useNavigation } from '@/contexts/NavigationContext';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
   useGetNotificationsQuery, 
   useGetUnreadCountQuery,
   useMarkAsReadMutation,
-  useMarkAllAsReadMutation 
+  useMarkAllAsReadMutation,
+  notificationsApi
 } from '@/rtk/admin/notificationsApi';
 import { useGetUnreadCountQuery as useGetInboxUnreadCountQuery } from '@/rtk/admin/inboxApi';
 import { 
   useGetSuperAdminNotificationsQuery, 
   useGetSuperAdminUnreadCountQuery, 
-  useMarkSuperAdminAsReadMutation 
+  useMarkSuperAdminAsReadMutation,
+  superadminNotificationsApi
 } from '@/rtk/superadmin/superadminNotificationsApi';
+import { usePusherNotifications } from '@/hooks/shared/usePusherNotifications';
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import { USER_TYPES } from '@/utils/shared/authService';
 import { getBreadcrumbParts, adminBreadcrumbConfig, superadminBreadcrumbConfig } from './breadcrumbConfig';
@@ -35,7 +38,11 @@ export default function TopBar({
   const [superAdminData, setSuperAdminData] = useState(null);
   const notificationsRef = useRef(null);
   const bellIconRef = useRef(null);
+  // Local state for immediate UI updates when Pusher notifications arrive
+  const [localUnreadCount, setLocalUnreadCount] = useState(0);
+  const [localSuperAdminUnreadCount, setLocalSuperAdminUnreadCount] = useState(0);
   
+  const dispatch = useDispatch();
   const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const pathname = usePathname();
@@ -74,6 +81,90 @@ export default function TopBar({
   const [markAsRead] = useMarkAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
 
+  // Handle new admin notification from Pusher
+  const handleAdminNotification = useCallback((notificationData) => {
+    console.log('🔔 New admin notification received via Pusher in TopBar:', notificationData);
+    
+    // Immediately update local state for instant UI feedback
+    setLocalUnreadCount(prev => prev + 1);
+    
+    // Normalize Pusher data to match API response structure
+    const normalizedNotification = {
+      ...notificationData,
+      submission_id: notificationData.submissionId || notificationData.submission_id,
+    };
+    if ('submissionId' in normalizedNotification && 'submission_id' in normalizedNotification) {
+      delete normalizedNotification.submissionId;
+    }
+    
+    // Check if cache entries exist before updating
+    const notificationsCache = notificationsApi.util.getQueryData(
+      'getNotifications',
+      { adminId: currentAdmin?.id, limit: 3, offset: 0 }
+    );
+    const unreadCountCache = notificationsApi.util.getQueryData(
+      'getUnreadCount',
+      currentAdmin?.id
+    );
+    
+    // Optimistically update the RTK Query cache immediately if cache exists
+    if (notificationsCache !== undefined) {
+      try {
+        dispatch(
+          notificationsApi.util.updateQueryData(
+            'getNotifications',
+            { adminId: currentAdmin?.id, limit: 3, offset: 0 },
+            (draft) => {
+              const notifications = draft?.notifications || [];
+              const exists = notifications.some(n => n.id === normalizedNotification.id);
+              if (!exists) {
+                return {
+                  ...draft,
+                  notifications: [normalizedNotification, ...notifications],
+                  total: (draft?.total || notifications.length) + 1
+                };
+              }
+              return draft;
+            }
+          )
+        );
+      } catch (error) {
+        console.error('Error updating admin notifications cache in TopBar:', error);
+      }
+    }
+    
+    if (unreadCountCache !== undefined) {
+      try {
+        dispatch(
+          notificationsApi.util.updateQueryData(
+            'getUnreadCount',
+            currentAdmin?.id,
+            (draft) => {
+              return {
+                count: (draft?.count || 0) + 1
+              };
+            }
+          )
+        );
+      } catch (error) {
+        console.error('Error updating admin unread count cache in TopBar:', error);
+      }
+    }
+    
+    // Show popup notification
+    if (typeof window !== 'undefined' && window.showToast) {
+      window.showToast(notificationData.title || 'New notification', 'info', 5000);
+    }
+  }, [dispatch, currentAdmin?.id]);
+
+  // Set up Pusher real-time subscription for admin
+  usePusherNotifications(
+    currentAdmin?.id,
+    'admin',
+    handleAdminNotification,
+    userType === USER_TYPES.ADMIN && !!currentAdmin?.id
+  );
+
   // Superadmin notifications hooks
   const { data: superadminNotificationsData, isLoading: superadminNotificationsLoading } = useGetSuperAdminNotificationsQuery(
     { 
@@ -97,6 +188,100 @@ export default function TopBar({
 
   const [markSuperAdminAsRead] = useMarkSuperAdminAsReadMutation();
 
+  // Handle new superadmin notification from Pusher
+  const handleSuperAdminNotification = useCallback((notificationData) => {
+    console.log('🔔 New superadmin notification received via Pusher:', notificationData);
+    
+    // Immediately update local state for instant UI feedback
+    setLocalSuperAdminUnreadCount(prev => prev + 1);
+    
+    // Check if cache entries exist before updating
+    const notificationsCache = superadminNotificationsApi.util.getQueryData(
+      'getSuperAdminNotifications',
+      { superAdminId: superAdminData?.id, limit: 3, offset: 0 }
+    );
+    const unreadCountCache = superadminNotificationsApi.util.getQueryData(
+      'getSuperAdminUnreadCount',
+      superAdminData?.id
+    );
+    
+    // Optimistically update the RTK Query cache immediately if cache exists
+    if (notificationsCache !== undefined) {
+      try {
+        // Update notifications list cache - add new notification to the beginning
+        dispatch(
+          superadminNotificationsApi.util.updateQueryData(
+            'getSuperAdminNotifications',
+            { superAdminId: superAdminData?.id, limit: 3, offset: 0 },
+            (draft) => {
+              // Superadmin API returns { notifications: [...], total: number }
+              const notifications = draft?.notifications || [];
+              // Check if notification already exists (prevent duplicates)
+              const exists = notifications.some(n => n.id === notificationData.id);
+              if (!exists) {
+                // Add new notification at the beginning
+                // Preserve total field and increment it
+                return {
+                  ...draft,
+                  notifications: [notificationData, ...notifications],
+                  total: (draft?.total || notifications.length) + 1
+                };
+              }
+              return draft;
+            }
+          )
+        );
+      } catch (error) {
+        console.error('Error updating superadmin notifications cache:', error);
+      }
+    }
+    
+    if (unreadCountCache !== undefined) {
+      try {
+        // Update unread count cache - increment by 1
+        dispatch(
+          superadminNotificationsApi.util.updateQueryData(
+            'getSuperAdminUnreadCount',
+            superAdminData?.id,
+            (draft) => {
+              return {
+                count: (draft?.count || 0) + 1
+              };
+            }
+          )
+        );
+      } catch (error) {
+        console.error('Error updating superadmin unread count cache:', error);
+      }
+    }
+    
+    // Show popup notification
+    if (typeof window !== 'undefined' && window.showToast) {
+      window.showToast(notificationData.title || 'New notification', 'info', 5000);
+    }
+  }, [dispatch, superAdminData?.id]);
+
+  // Set up Pusher real-time subscription for superadmin
+  usePusherNotifications(
+    superAdminData?.id,
+    'superadmin',
+    handleSuperAdminNotification,
+    userType === USER_TYPES.SUPERADMIN && !!superAdminData?.id
+  );
+
+  // Sync local state with RTK Query data when it loads
+  useEffect(() => {
+    if (userType === USER_TYPES.ADMIN && adminUnreadCountData?.count !== undefined) {
+      setLocalUnreadCount(adminUnreadCountData.count);
+    }
+  }, [userType, adminUnreadCountData?.count]);
+
+  useEffect(() => {
+    if (userType === USER_TYPES.SUPERADMIN && superadminUnreadCountData?.count !== undefined) {
+      setLocalSuperAdminUnreadCount(superadminUnreadCountData.count);
+    }
+  }, [userType, superadminUnreadCountData?.count]);
+
   // Get notifications data based on user type
   const notifications = userType === USER_TYPES.ADMIN 
     ? (adminNotificationsData?.notifications || [])
@@ -107,8 +292,8 @@ export default function TopBar({
     : superadminNotificationsLoading;
 
   const hasUnreadNotifications = userType === USER_TYPES.ADMIN
-    ? (adminUnreadCountData?.count > 0)
-    : (superadminUnreadCountData?.count > 0);
+    ? ((adminUnreadCountData?.count > 0) || localUnreadCount > 0)
+    : ((superadminUnreadCountData?.count > 0) || localSuperAdminUnreadCount > 0);
 
   const hasUnreadMessages = userType === USER_TYPES.ADMIN 
     ? (inboxUnreadCountData?.data?.count > 0)
@@ -256,6 +441,8 @@ export default function TopBar({
       // Mark all as read for admin when opening
       if (userType === USER_TYPES.ADMIN && hasUnreadNotifications && currentAdmin?.id) {
         markAllAsRead(currentAdmin.id);
+        // Reset local unread count immediately for instant UI feedback
+        setLocalUnreadCount(0);
       }
       setShowNotifications(true);
     }

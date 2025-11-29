@@ -22,5 +22,7 @@ router.put('/:superAdminId/mark-all-read', SuperAdminNotificationController.mark
 // Delete notification
 router.delete('/:notificationId', SuperAdminNotificationController.deleteNotification);
 
+// Pusher authentication for real-time notifications
+router.post('/pusher/auth', SuperAdminNotificationController.authenticatePusher);
 
 export default router;

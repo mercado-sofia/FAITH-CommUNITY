@@ -36,6 +36,7 @@ import {
   cancelApplication,
   deleteApplication,
   completeApplication,
+  authenticatePusher,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -80,6 +81,9 @@ router.get('/notifications/unread-count', verifyToken, getUnreadNotificationCoun
 router.put('/notifications/:notificationId/read', verifyToken, markNotificationAsRead);
 router.put('/notifications/mark-all-read', verifyToken, markAllNotificationsAsRead);
 router.delete('/notifications/:notificationId', verifyToken, deleteNotification);
+
+// Pusher authentication for real-time notifications
+router.post('/pusher/auth', verifyToken, authenticatePusher);
 
 // User applications routes
 router.get('/applications', verifyToken, getUserApplications);

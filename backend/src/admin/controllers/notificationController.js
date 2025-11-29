@@ -1,5 +1,6 @@
 import db from '../../database.js';
 import { logError } from '../../utils/logger.js';
+import { publishNotification, authenticateChannel } from '../../utils/pusher.js';
 
 class NotificationController {
   static async getNotifications(req, res) {
@@ -278,9 +279,27 @@ class NotificationController {
 
       const [result] = await db.execute(query, [adminId, type, title, message, section, submissionId]);
       
+      const notificationId = result.insertId;
+      
+      // Publish to Pusher for real-time delivery
+      const channelName = `private-admin-${adminId}`;
+      const notificationData = {
+        id: notificationId,
+        adminId,
+        type,
+        title,
+        message,
+        section,
+        submissionId,
+        is_read: false,
+        created_at: new Date().toISOString()
+      };
+      
+      await publishNotification(channelName, 'new-notification', notificationData);
+      
       return {
         success: true,
-        notificationId: result.insertId
+        notificationId
       };
     } catch (error) {
       return {
@@ -290,6 +309,38 @@ class NotificationController {
     }
   }
 
+  // Pusher authentication endpoint for admin private channels
+  static async authenticatePusher(req, res) {
+    try {
+      const { socket_id, channel_name } = req.body;
+
+      if (!socket_id || !channel_name) {
+        return res.status(400).json({ error: 'socket_id and channel_name are required' });
+      }
+
+      // Verify the admin is authenticated (req.admin is set by verifyAdminToken middleware)
+      if (!req.admin || !req.admin.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Verify the channel name matches the admin's ID
+      const expectedChannel = `private-admin-${req.admin.id}`;
+      if (channel_name !== expectedChannel) {
+        return res.status(403).json({ error: 'Unauthorized channel access' });
+      }
+
+      const auth = authenticateChannel(socket_id, channel_name);
+
+      if (!auth) {
+        return res.status(500).json({ error: 'Failed to authenticate channel' });
+      }
+
+      res.json(auth);
+    } catch (error) {
+      console.error('❌ Admin Pusher authentication error:', error);
+      res.status(500).json({ error: 'Authentication failed' });
+    }
+  }
 
   // Helper method to format time ago
   static getTimeAgo(createdAt) {

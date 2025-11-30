@@ -20,7 +20,6 @@ The comprehensive system documentation is organized into separate files for bett
 10. **[Authentication Algorithms](./project-documentation/10-algorithms-authentication.md)** - Two-factor authentication (TOTP), email OTP, backup codes, and password verification algorithms
 11. **[Algorithms Overview](./project-documentation/11-algorithms-overview.md)** - Quick reference guide for all algorithms (Final Defense Presentation)
 12. **[Scheduling & Timezone Guide](./project-documentation/SCHEDULING_TIMEZONE_GUIDE.md)** - Comprehensive guide for scheduled news timezone handling
-13. **[Timezone Strategy](./project-documentation/timezone-strategy.md)** - Timezone implementation strategy and verification
 
 ### Component-Specific Documentation
 

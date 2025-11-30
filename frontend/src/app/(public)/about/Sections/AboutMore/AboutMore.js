@@ -43,7 +43,7 @@ export default function AboutMore() {
             About Us
           </h2>
           <p className={`${styles.aboutMoreText} ${styles.fadeInDelay3}`}>
-            {aboutUsData?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pretium vitae est non lacinia. Aenean ullamcorper eleifend massa, eu facilisis lectus ornare vel. Maecenas scelerisque congue metus at imperdiet. Donec et dictum ligula, vitae dapibus libero. Pellentesque odio dui, molestie non porttitor id, dignissim eu mauris. Suspendisse mauris nunc, egestas at nisl id, aliquet mattis erat.'}
+            {aboutUsData?.description || 'No description available yet.'}
           </p>
 
           <div className={styles.aboutMoreIcons}>

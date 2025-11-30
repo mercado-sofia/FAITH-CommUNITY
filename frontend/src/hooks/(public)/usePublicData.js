@@ -727,17 +727,12 @@ export const usePublicAboutUs = () => {
     }
   );
 
-  // Transform data for public consumption with fallbacks
-  const aboutUsData = {
-    description: data?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-    image_url: data?.image_url || '/samples/sample1.jpg',
-    extension_categories: data?.extension_categories || [
-      { name: 'Extension For Education', icon: 'education', color: 'green' },
-      { name: 'Extension For Medical', icon: 'medical', color: 'red' },
-      { name: 'Extension For Community', icon: 'community', color: 'orange' },
-      { name: 'Extension For Foods', icon: 'food', color: 'green' }
-    ]
-  };
+  // Transform data for public consumption - no fallbacks, show empty state if no data
+  const aboutUsData = data ? {
+    description: data.description || null,
+    image_url: data.image_url || null,
+    extension_categories: data.extension_categories || []
+  } : null;
 
   return {
     aboutUsData,

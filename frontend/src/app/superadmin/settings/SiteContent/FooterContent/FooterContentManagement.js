@@ -106,67 +106,11 @@ export default function FooterContentManagement({ showSuccessModal }) {
         if (response && response.ok) {
           const data = await response.json();
           
-          // Default contact values (matching public footer)
-          const defaultPhone = '+163-3654-7896';
-          const defaultEmail = 'info@faithcommunity.com';
+          // Get contact info from response - simple extraction, no auto-insertion
+          const phoneData = data.data.contact?.phone?.url || '';
+          const emailData = data.data.contact?.email?.url || '';
           
-          // Get contact info from response
-          let phoneData = data.data.contact?.phone?.url || '';
-          let emailData = data.data.contact?.email?.url || '';
-          
-          // Check if phone needs auto-insert (missing if no phone object exists OR phone object exists but url is empty/null)
-          const phoneMissing = !data.data.contact?.phone || 
-            (!phoneData || !phoneData.trim());
-          // Check if email needs auto-insert
-          const emailMissing = !data.data.contact?.email || 
-            (!emailData || !emailData.trim());
-          
-          // Auto-insert contact info if missing (similar to copyright logic)
-          if (phoneMissing || emailMissing) {
-            try {
-              const contactBody = {};
-              if (phoneMissing) {
-                contactBody.phone = defaultPhone;
-                phoneData = defaultPhone; // Set for display immediately
-              }
-              if (emailMissing) {
-                contactBody.email = defaultEmail;
-                emailData = defaultEmail; // Set for display immediately
-              }
-              
-              const insertResponse = await makeAuthenticatedRequest(
-                `${baseUrl}/api/superadmin/footer/contact`,
-                {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(contactBody),
-                },
-                'superadmin'
-              );
-              
-              if (insertResponse && insertResponse.ok && isMounted) {
-                // Values already set above
-              }
-              // If auto-insert fails, defaults are already set for display
-            } catch (error) {
-              if (isMounted) {
-                console.error('Auto-insert contact info error:', error);
-                // Defaults are already set for display
-              }
-            }
-          } else {
-            // If contact objects exist but urls are empty, use defaults
-            if (!phoneData || !phoneData.trim()) {
-              phoneData = defaultPhone;
-            }
-            if (!emailData || !emailData.trim()) {
-              emailData = defaultEmail;
-            }
-          }
-          
-          // Set contact info with defaults
+          // Set contact info
           const contactData = {
             phone: phoneData,
             email: emailData

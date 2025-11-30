@@ -22,8 +22,8 @@
 .modalContent {
   background: white;
   border-radius: 12px;
-  padding: 2rem 2rem 1.25rem 2rem;
-  max-width: 500px;
+  padding: 2.4rem 3rem;
+  max-width: 480px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
@@ -39,8 +39,8 @@
 
 .closeButton {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.2rem;
+  right: 1.4rem;
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -176,7 +176,7 @@
   }
 
   .modalContent {
-    padding: 2.25rem 2.25rem 1.5rem 2.25rem;
+    padding: 2.25rem 2.25rem 1.25rem 2.25rem;
     margin: 0;
     width: 100%;
     max-width: 100%;
@@ -216,7 +216,7 @@
 
   .benefits li {
     font-size: 14px;
-    padding: 0.4rem 0;
+    padding: 0.3rem 0;
   }
 
   .benefits li:before {
@@ -248,7 +248,7 @@
   }
 
   .modalContent {
-    padding: 2rem 2rem 1.35rem 2rem;
+    padding: 2rem 2rem 1.3rem 2rem;
     border-radius: 16px;
   }
 
@@ -266,5 +266,6 @@
 
   .benefits li {
     font-size: 13px;
+    padding: 0.25rem 0;
   }
 }

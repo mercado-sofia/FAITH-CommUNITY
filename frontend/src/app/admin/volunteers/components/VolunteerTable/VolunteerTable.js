@@ -58,7 +58,7 @@ const VolunteerAvatar = ({ volunteer, size = 40 }) => {
   );
 };
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10 }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10, isUpdatingStatus = false, isBulkUpdatingStatus = false }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -133,15 +133,18 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     setShowDropdown(null)
   }
 
-  const handleConfirmAction = () => {
-    if (selectedVolunteer && modalType) {
+  const handleConfirmAction = async () => {
+    if (selectedVolunteer && modalType && !isUpdatingStatus) {
       const newStatus = modalType === "approve" ? "Approved" : "Declined"
-      onStatusUpdate(selectedVolunteer.id, newStatus)
+      await onStatusUpdate(selectedVolunteer.id, newStatus)
+      // Only close modal after operation completes (success or error)
+      closeModal()
     }
-    closeModal()
   }
 
   const closeModal = () => {
+    // Prevent closing modal during loading
+    if (isUpdatingStatus) return
     setSelectedVolunteer(null)
     setModalType(null)
   }
@@ -159,8 +162,8 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     }
   }
 
-  const handleConfirmBulkAction = () => {
-    if (selectedVolunteers.length === 0 || !bulkAction) return
+  const handleConfirmBulkAction = async () => {
+    if (selectedVolunteers.length === 0 || !bulkAction || isBulkUpdatingStatus) return
     
     const newStatus = bulkAction === 'approve' ? 'Approved' : 'Declined'
     
@@ -169,20 +172,21 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     
     // Use bulk status update handler if available, otherwise fall back to individual updates
     if (onBulkStatusUpdate && actionableVolunteerIds.length > 0) {
-      onBulkStatusUpdate(actionableVolunteerIds, newStatus)
+      await onBulkStatusUpdate(actionableVolunteerIds, newStatus)
     } else if (onStatusUpdate) {
       // Fallback to individual updates if bulk handler not available
-      actionableVolunteerIds.forEach(volunteerId => {
-        onStatusUpdate(volunteerId, newStatus)
-      })
+      await Promise.all(actionableVolunteerIds.map(volunteerId => onStatusUpdate(volunteerId, newStatus)))
     }
     
+    // Only close modal and clear selections after operation completes
     setSelectedVolunteers([])
     setShowBulkModal(false)
     setBulkAction(null)
   }
 
   const closeBulkModal = () => {
+    // Prevent closing modal during loading
+    if (isBulkUpdatingStatus) return
     setShowBulkModal(false)
     setBulkAction(null)
   }
@@ -434,6 +438,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <button 
               className={styles.modalCloseBtn}
               onClick={closeModal}
+              disabled={isUpdatingStatus}
             >
               <FiX />
             </button>
@@ -455,15 +460,20 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <div className={styles.modalActions}>
               <button 
                 className={styles.modalCancelBtn}
-                onClick={() => setModalType(null)}
+                onClick={closeModal}
+                disabled={isUpdatingStatus}
               >
                 Cancel
               </button>
               <button 
                 className={modalType === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
                 onClick={handleConfirmAction}
+                disabled={isUpdatingStatus}
               >
-                {modalType === 'approve' ? 'Approve' : 'Decline'}
+                {isUpdatingStatus 
+                  ? (modalType === 'approve' ? 'Approving...' : 'Declining...')
+                  : (modalType === 'approve' ? 'Approve' : 'Decline')
+                }
               </button>
             </div>
           </div>
@@ -477,6 +487,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <button 
               className={styles.modalCloseBtn}
               onClick={closeBulkModal}
+              disabled={isBulkUpdatingStatus}
             >
               <FiX />
             </button>
@@ -505,15 +516,20 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <div className={styles.modalActions}>
               <button 
                 className={styles.modalCancelBtn}
-                onClick={() => setShowBulkModal(false)}
+                onClick={closeBulkModal}
+                disabled={isBulkUpdatingStatus}
               >
                 Cancel
               </button>
               <button 
                 className={bulkAction === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
                 onClick={handleConfirmBulkAction}
+                disabled={isBulkUpdatingStatus}
               >
-                {bulkAction === 'approve' ? 'Approve' : 'Decline'}
+                {isBulkUpdatingStatus
+                  ? (bulkAction === 'approve' ? 'Approving...' : 'Declining...')
+                  : (bulkAction === 'approve' ? 'Approve' : 'Decline')
+                }
               </button>
             </div>
           </div>

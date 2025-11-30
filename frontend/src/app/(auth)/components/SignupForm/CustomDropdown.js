@@ -17,19 +17,38 @@ export default function CustomDropdown({
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const dropdownRef = useRef(null)
+  const blurTimeoutRef = useRef(null)
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false)
+        // Clear any pending blur timeout since we're handling it via click-outside
+        if (blurTimeoutRef.current) {
+          clearTimeout(blurTimeoutRef.current)
+          blurTimeoutRef.current = null
+        }
+        // Update focus state immediately when clicking outside
+        setIsFocused(false)
+        onBlur && onBlur()
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current)
+      }
+    }
+  }, [onBlur])
 
   const handleSelect = (optionValue) => {
+    // Clear any pending blur timeout when selecting an option
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
     onChange(optionValue)
     setIsOpen(false)
   }
@@ -46,9 +65,15 @@ export default function CustomDropdown({
           setIsFocused(true)
           onFocus && onFocus()
         }}
-        onBlur={() => {
-          setIsFocused(false)
-          onBlur && onBlur()
+        onBlur={(e) => {
+          // Delay blur handling to allow click-outside handler to run first
+          // Check if the related target (element receiving focus) is outside the dropdown
+          blurTimeoutRef.current = setTimeout(() => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget)) {
+              setIsFocused(false)
+              onBlur && onBlur()
+            }
+          }, 150)
         }}
         disabled={disabled}
       >

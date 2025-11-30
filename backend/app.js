@@ -168,8 +168,16 @@ app.get("/api/health", (req, res) => {
   })
 })
 
-// Pusher test endpoint (for debugging)
+// Pusher test endpoint (for debugging - development only)
 app.get("/api/pusher/test", async (req, res) => {
+  // Security: Only allow in development environment
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({
+      success: false,
+      message: "Not found"
+    });
+  }
+
   try {
     const { getPusher, publishNotification } = await import("./src/utils/pusher.js");
     const pusher = getPusher();
@@ -178,15 +186,7 @@ app.get("/api/pusher/test", async (req, res) => {
       return res.status(503).json({
         success: false,
         message: "Pusher not configured",
-        env: {
-          hasAppId: !!process.env.PUSHER_APP_ID,
-          hasKey: !!process.env.PUSHER_KEY,
-          hasSecret: !!process.env.PUSHER_SECRET,
-          cluster: process.env.PUSHER_CLUSTER || 'not set',
-          clusterTrimmed: process.env.PUSHER_CLUSTER?.trim().toLowerCase() || 'not set',
-          appIdPreview: process.env.PUSHER_APP_ID ? `${process.env.PUSHER_APP_ID.substring(0, 4)}...` : 'missing',
-          keyPreview: process.env.PUSHER_KEY ? `${process.env.PUSHER_KEY.substring(0, 8)}...` : 'missing'
-        }
+        configured: false
       });
     }
 
@@ -202,8 +202,7 @@ app.get("/api/pusher/test", async (req, res) => {
     } catch (err) {
       publishError = {
         message: err.message,
-        status: err.status,
-        body: err.body
+        status: err.status
       };
     }
 
@@ -212,15 +211,8 @@ app.get("/api/pusher/test", async (req, res) => {
       message: published ? "Pusher is configured and working" : "Pusher initialized but publish failed",
       pusher: {
         initialized: !!pusher,
-        cluster: process.env.PUSHER_CLUSTER?.trim().toLowerCase() || 'not set',
-        clusterRaw: process.env.PUSHER_CLUSTER || 'not set',
         testPublish: published ? 'success' : 'failed',
         error: publishError
-      },
-      credentials: {
-        appIdPreview: process.env.PUSHER_APP_ID ? `${process.env.PUSHER_APP_ID.substring(0, 4)}...` : 'missing',
-        keyPreview: process.env.PUSHER_KEY ? `${process.env.PUSHER_KEY.substring(0, 8)}...` : 'missing',
-        hasSecret: !!process.env.PUSHER_SECRET
       }
     });
   } catch (error) {
@@ -228,7 +220,7 @@ app.get("/api/pusher/test", async (req, res) => {
       success: false,
       message: "Pusher test failed",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: error.stack
     });
   }
 })

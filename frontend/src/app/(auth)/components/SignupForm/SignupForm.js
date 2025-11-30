@@ -10,7 +10,6 @@ import { formatDateForAPI } from "@/utils/shared/dateUtils"
 
 export default function SignupForm({ onRegistrationSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)
-  const [registrationData, setRegistrationData] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
   
   const router = useRouter()
@@ -352,6 +351,14 @@ export default function SignupForm({ onRegistrationSuccess }) {
     setShowError(false)
     
     try {
+      // Validate birth date fields before formatting
+      if (!formData.birthMonth || !formData.birthDay || !formData.birthYear) {
+        setErrorMessage("Please complete all birth date fields")
+        setShowError(true)
+        setIsLoading(false)
+        return
+      }
+      
       // Format birth date for backend using centralized utility (ISO format: YYYY-MM-DD)
       const formattedMonth = formData.birthMonth.padStart(2, '0')
       const formattedDay = formData.birthDay.padStart(2, '0')
@@ -373,11 +380,23 @@ export default function SignupForm({ onRegistrationSuccess }) {
       
       // Parse JSON with error handling
       let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        setErrorMessage("Invalid response from server. Please try again.");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          const text = await response.text();
+          data = text ? JSON.parse(text) : {};
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          setErrorMessage("Invalid response from server. Please try again.");
+          setShowError(true);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Non-JSON response
+        setErrorMessage("Unexpected response format from server. Please try again.");
         setShowError(true);
+        setIsLoading(false);
         return;
       }
       
@@ -394,7 +413,7 @@ export default function SignupForm({ onRegistrationSuccess }) {
           router.push("/")
         }
       } else {
-        setErrorMessage(data.error || "Registration failed")
+        setErrorMessage(data?.error || data?.message || "Registration failed. Please try again.")
         setShowError(true)
       }
     } catch (error) {
@@ -607,16 +626,10 @@ export default function SignupForm({ onRegistrationSuccess }) {
               />
             </div>
 
-            {/* General error message for step 1 */}
-            {fieldErrors.general && (
-              <p className={styles.errorMessage} style={{ alignSelf: 'flex-start', marginBottom: '1rem' }}>
-                {fieldErrors.general}
-              </p>
-            )}
-
-            {showError && (
+            {/* Error messages for step 1 */}
+            {(fieldErrors.general || showError) && (
               <p className={styles.errorMessage}>
-                {errorMessage || "Registration failed. Please try again."}
+                {fieldErrors.general || errorMessage || "Registration failed. Please try again."}
               </p>
             )}
 
@@ -637,16 +650,10 @@ export default function SignupForm({ onRegistrationSuccess }) {
          <>
            <p className={styles.stepSubheading}>Set up a secure password for your account.</p>
 
-           {/* General error message for step 2 */}
-           {fieldErrors.general && (
+           {/* Error messages for step 2 */}
+           {(fieldErrors.general || showError) && (
              <p className={styles.errorMessage}>
-               {fieldErrors.general}
-             </p>
-           )}
-
-           {showError && (
-             <p className={styles.errorMessage}>
-               {errorMessage || "Registration failed. Please try again."}
+               {fieldErrors.general || errorMessage || "Registration failed. Please try again."}
              </p>
            )}
 

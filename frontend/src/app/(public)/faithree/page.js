@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import Image from 'next/image';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import { LuMousePointerClick } from "react-icons/lu";
 import styles from './faithree.module.css';
-// import Highlights from './Highlights/highlights';
-import { TreeModel, LoadingOverlay, PageLoadingOverlay } from './components';
+import { TreeModel, LoadingOverlay, PageLoadingOverlay, WelcomeSection, Filters } from './components';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -17,17 +15,15 @@ const prefersReducedMotion = typeof window !== 'undefined'
 import { API_BASE_URL } from '@/config/api';
 
 function FAITHreePage() {
-  const [isContentVisible, setIsContentVisible] = useState(false);
-  const [selectedOrgId, setSelectedOrgId] = useState(null);
-  const [isOrgContentVisible, setIsOrgContentVisible] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true); // Show welcome section initially
   const [theme, setTheme] = useState('morning'); // 'morning' or 'rainy'
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextTheme, setNextTheme] = useState(null);
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
-  const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [isInstructionOpen, setIsInstructionOpen] = useState(false); // Mobile instruction toggle
   const [isModelLoading, setIsModelLoading] = useState(true); // Track 3D model loading
+  const [selectedOrganization, setSelectedOrganization] = useState(null); // Filter: organization
+  const [selectedYear, setSelectedYear] = useState(null); // Filter: year
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -42,28 +38,6 @@ function FAITHreePage() {
     }));
   }, []);
 
-  const toggleContent = useCallback(() => {
-    setIsContentVisible(prev => !prev);
-    // Close org content when opening highlights
-    if (!isContentVisible) {
-      setIsOrgContentVisible(false);
-      setSelectedOrgId(null);
-    }
-  }, [isContentVisible]);
-
-  const toggleOrgContent = useCallback((orgId) => {
-    if (selectedOrgId === orgId && isOrgContentVisible) {
-      // Close if clicking the same org
-      setIsOrgContentVisible(false);
-      setSelectedOrgId(null);
-    } else {
-      // Open new org
-      setSelectedOrgId(orgId);
-      setIsOrgContentVisible(true);
-      // Close highlights when opening org
-      setIsContentVisible(false);
-    }
-  }, [selectedOrgId, isOrgContentVisible]);
 
   const toggleTheme = useCallback(() => {
     if (isTransitioning) return;
@@ -111,11 +85,7 @@ function FAITHreePage() {
           return;
         }
         
-        // Dynamically import API_BASE_URL to ensure it's available
-        const { API_BASE_URL: dynamicApiUrl } = await import('@/config/api');
-        const baseUrl = dynamicApiUrl || '';
-        
-        const response = await fetch(`${baseUrl}/api/highlights/public/featured`, {
+        const response = await fetch(`${API_BASE_URL || ''}/api/highlights/public/featured`, {
           credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
@@ -177,84 +147,61 @@ function FAITHreePage() {
     }
   }, []);
 
-  // Fetch organizations from highlights to get unique orgs
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        setIsLoadingOrgs(true);
-        
-        // Note: Empty string is valid in development (uses Next.js rewrites)
-        // Only check for undefined/null, not falsy values
-        if (typeof window === 'undefined' || (API_BASE_URL === undefined || API_BASE_URL === null)) {
-          setOrganizations([]);
-          setIsLoadingOrgs(false);
-          return;
+
+  // Extract unique organizations from featured highlights
+  const uniqueOrganizations = useMemo(() => {
+    const orgMap = new Map();
+    featuredHighlights.forEach(highlight => {
+      if (highlight.organization_id && highlight.organization_name && highlight.organization_acronym) {
+        const orgId = highlight.organization_id;
+        if (!orgMap.has(orgId)) {
+          orgMap.set(orgId, {
+            id: orgId,
+            name: highlight.organization_name,
+            acronym: highlight.organization_acronym,
+            logo: highlight.organization_logo || null
+          });
         }
-        
-        // Fetch approved highlights to extract unique organizations
-        const response = await fetch(`${API_BASE_URL || ''}/api/highlights/public/approved`, {
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch highlights: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const highlights = data.highlights || [];
-        
-        // Extract unique organizations
-        const orgMap = new Map();
-        highlights.forEach(highlight => {
-          // Check if we have organization info (need at least name and acronym)
-          if (highlight.organization_name && highlight.organization_acronym) {
-            // Use organization_id as key if available, otherwise use name+acronym composite
-            const orgId = highlight.organization_id;
-            const orgKey = orgId || `${highlight.organization_name}_${highlight.organization_acronym}`;
-            
-            if (!orgMap.has(orgKey)) {
-              orgMap.set(orgKey, {
-                id: orgId || orgKey, // Use organization_id if available, otherwise use composite key
-                name: highlight.organization_name,
-                acronym: highlight.organization_acronym,
-                logo: highlight.organization_logo || null
-              });
-            }
-          }
-        });
-        
-        const uniqueOrgs = Array.from(orgMap.values()).sort((a, b) => 
-          a.acronym.localeCompare(b.acronym)
-        );
-        
-        setOrganizations(uniqueOrgs);
-      } catch (error) {
-        console.error('Error fetching organizations:', error);
-        setOrganizations([]);
-      } finally {
-        setIsLoadingOrgs(false);
       }
-    };
+    });
+    return Array.from(orgMap.values()).sort((a, b) => 
+      a.acronym.localeCompare(b.acronym)
+    );
+  }, [featuredHighlights]);
 
-    fetchOrganizations();
-  }, []);
+  // Extract unique years from featured highlights
+  const uniqueYears = useMemo(() => {
+    const yearSet = new Set();
+    featuredHighlights.forEach(highlight => {
+      if (highlight.year) {
+        yearSet.add(highlight.year);
+      }
+    });
+    return Array.from(yearSet);
+  }, [featuredHighlights]);
 
-  // Split featured highlights into chunks of 12 for multiple trees
+  // Filter featured highlights based on selected organization and year
+  const filteredHighlights = useMemo(() => {
+    return featuredHighlights.filter(highlight => {
+      const orgMatch = selectedOrganization === null || highlight.organization_id === selectedOrganization;
+      const yearMatch = selectedYear === null || highlight.year === selectedYear;
+      return orgMatch && yearMatch;
+    });
+  }, [featuredHighlights, selectedOrganization, selectedYear]);
+
+  // Split filtered highlights into chunks of 12 for multiple trees
   const highlightChunks = useMemo(() => {
     const chunks = [];
     const chunkSize = 12;
-    for (let i = 0; i < featuredHighlights.length; i += chunkSize) {
-      chunks.push(featuredHighlights.slice(i, i + chunkSize));
+    for (let i = 0; i < filteredHighlights.length; i += chunkSize) {
+      chunks.push(filteredHighlights.slice(i, i + chunkSize));
     }
     // If no highlights, still create one empty chunk to show at least one tree
     if (chunks.length === 0) {
       chunks.push([]);
     }
     return chunks;
-  }, [featuredHighlights]);
+  }, [filteredHighlights]);
 
   // Track loaded trees
   const [loadedTrees, setLoadedTrees] = useState(new Set());
@@ -283,16 +230,40 @@ function FAITHreePage() {
     }
   }, [highlightChunks]);
 
+  // Handle continue from welcome section
+  const handleContinue = useCallback(() => {
+    setShowWelcome(false);
+  }, []);
+
+  // Handle organization filter change
+  const handleOrganizationChange = useCallback((orgId) => {
+    setSelectedOrganization(orgId);
+  }, []);
+
+  // Handle year filter change
+  const handleYearChange = useCallback((year) => {
+    setSelectedYear(year);
+  }, []);
+
   return (
     <>
+      {/* Welcome Section */}
+      {showWelcome && (
+        <WelcomeSection 
+          onContinue={handleContinue}
+          theme={theme}
+        />
+      )}
+
       {/* Page Loading Overlay - Shows while 3D models are loading */}
-      <PageLoadingOverlay isLoading={isModelLoading} />
+      {!showWelcome && <PageLoadingOverlay isLoading={isModelLoading} />}
       
       {/* Full-screen FAITHree Environment */}
-      <div 
-        className={`${styles.faithreeContainer} ${isTransitioning ? styles.transitioning : ''}`}
-        aria-label="FAITHree interactive environment"
-      >
+      {!showWelcome && (
+        <div 
+          className={`${styles.faithreeContainer} ${isTransitioning ? styles.transitioning : ''}`}
+          aria-label="FAITHree interactive environment"
+        >
         {/* Theme Transition Loading Overlay */}
         {isTransitioning && <LoadingOverlay nextTheme={nextTheme} />}
         
@@ -393,7 +364,7 @@ function FAITHreePage() {
                     treePosition={[treeXOffset, -1.8, 0]} 
                     chunkHighlights={chunk}
                     chunkOffset={chunkOffset}
-                    allFeaturedHighlights={featuredHighlights}
+                    allFeaturedHighlights={filteredHighlights}
                     onLoad={() => handleTreeLoad(index)}
                   />
                 </div>
@@ -463,101 +434,19 @@ function FAITHreePage() {
             </p>
           </div>
         </div>
-      </div>
-      
-      {/* Toggle Buttons Container */}
-      <div className={`${styles.toggleButtonsContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-        {/* Highlights Toggle Button */}
-        {/* <div className={styles.toggleButtonContainer}>
-          <button 
-            className={styles.toggleButton}
-            onClick={toggleContent}
-            aria-label={isContentVisible ? 'Close FAITHree Stories Highlights' : 'Open FAITHree Stories Highlights'}
-            aria-expanded={isContentVisible}
-          >
-            <div className={styles.buttonIcon}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
-              </svg>
-            </div>
-            <span>FAITHree Stories Highlights</span>
-            <div className={`${styles.chevron} ${isContentVisible ? styles.chevronUp : styles.chevronDown}`}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </button>
-        </div> */}
 
-        {/* Organization Toggle Buttons */}
-        {/* {!isLoadingOrgs && organizations.length > 0 && (
-          <div className={styles.orgTogglesContainer}>
-            {organizations.map((org, index) => (
-              <div key={org.id || `org-${index}`} className={styles.orgToggleWrapper}>
-                <button
-                  className={`${styles.orgToggleButton} ${selectedOrgId === org.id && isOrgContentVisible ? styles.orgToggleActive : ''}`}
-                  onClick={() => toggleOrgContent(org.id)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.setAttribute('data-hover', 'true');
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.setAttribute('data-hover', 'false');
-                  }}
-                  aria-label={`View highlights from ${org.name}`}
-                  aria-expanded={selectedOrgId === org.id && isOrgContentVisible}
-                >
-                  {org.logo && (
-                    <div className={styles.orgToggleLogo}>
-                      <Image
-                        src={org.logo}
-                        alt={org.acronym}
-                        width={24}
-                        height={24}
-                        className={styles.orgLogoImage}
-                      />
-                    </div>
-                  )}
-                  <span className={styles.orgToggleAcronym}>{org.acronym}</span>
-                  <span className={styles.orgToggleName}>{org.name}</span>
-                  <div className={`${styles.chevron} ${selectedOrgId === org.id && isOrgContentVisible ? styles.chevronUp : styles.chevronDown}`}>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                </button>
-              </div>
-            ))}
-          </div>
-        )} */}
-      </div>
-      
-      {/* Sliding Modal Container for Highlights */}
-      {/* <div 
-        className={`${styles.modalContainer} ${isContentVisible ? styles.modalOpen : styles.modalClosed}`}
-        aria-hidden={!isContentVisible}
-        aria-modal={isContentVisible}
-      >
-        <div className={styles.modalContent}>
-          <Highlights onClose={toggleContent} />
+        {/* Filters */}
+        <Filters
+          organizations={uniqueOrganizations}
+          years={uniqueYears}
+          selectedOrganization={selectedOrganization}
+          selectedYear={selectedYear}
+          onOrganizationChange={handleOrganizationChange}
+          onYearChange={handleYearChange}
+          theme={theme}
+        />
         </div>
-      </div> */}
-
-      {/* Sliding Modal Container for Organization Highlights */}
-      {/* <div 
-        className={`${styles.modalContainer} ${isOrgContentVisible ? styles.modalOpen : styles.modalClosed}`}
-        aria-hidden={!isOrgContentVisible}
-        aria-modal={isOrgContentVisible}
-      >
-        <div className={styles.modalContent}>
-          <Highlights 
-            onClose={() => {
-              setIsOrgContentVisible(false);
-              setSelectedOrgId(null);
-            }}
-            organizationId={selectedOrgId}
-          />
-        </div>
-      </div> */}
+      )}
     </>
   );
 }

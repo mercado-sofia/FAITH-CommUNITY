@@ -3,12 +3,13 @@
 import { FaLock } from "react-icons/fa"
 import styles from "./OtpInput.module.css"
 
-export default function OtpInput({ value, onChange, disabled }) {
+export default function OtpInput({ value, onChange, disabled, name = "otp" }) {
 	return (
 		<div className={styles.inputGroup}>
 			<FaLock className={styles.icon} />
 			<input
 				id="otp"
+				name={name}
 				type="text"
 				inputMode="numeric"
 				pattern="[0-9]*"

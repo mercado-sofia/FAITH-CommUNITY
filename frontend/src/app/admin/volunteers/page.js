@@ -141,6 +141,7 @@ export default function VolunteersPage() {
     const volunteer = volunteersData.find(v => v.id === id);
     const volunteerName = volunteer?.name || 'volunteer';
 
+    setIsUpdatingStatus(true);
     try {
       const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${id}/status`, {
         method: 'PUT',
@@ -176,6 +177,8 @@ export default function VolunteersPage() {
       setSuccessMessage(error.message || 'Failed to update status. Please try again.');
       setSuccessModalType('error');
       setShowSuccessModal(true);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   }, [refreshVolunteers, currentAdmin?.id, showToast, volunteersData])
 
@@ -189,6 +192,7 @@ export default function VolunteersPage() {
       return;
     }
 
+    setIsBulkUpdatingStatus(true);
     try {
       // Process all status updates
       const updatePromises = volunteerIds.map(async (volunteerId) => {
@@ -240,6 +244,8 @@ export default function VolunteersPage() {
       setSuccessMessage(error.message || 'Failed to update volunteer statuses. Please try again.');
       setSuccessModalType('error');
       setShowSuccessModal(true);
+    } finally {
+      setIsBulkUpdatingStatus(false);
     }
   }, [refreshVolunteers, showToast])
 
@@ -420,6 +426,8 @@ export default function VolunteersPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [successModalType, setSuccessModalType] = useState('success')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isBulkUpdatingStatus, setIsBulkUpdatingStatus] = useState(false)
   
   // Use ref to store volunteer to delete to avoid dependency issues
   const volunteerToDeleteRef = useRef(null)
@@ -590,6 +598,8 @@ export default function VolunteersPage() {
         onSoftDelete={handleSoftDelete}
         onBulkDelete={handleBulkDeleteConfirm}
         itemsPerPage={showCount}
+        isUpdatingStatus={isUpdatingStatus}
+        isBulkUpdatingStatus={isBulkUpdatingStatus}
       />
 
       {/* Delete Confirmation Modal */}

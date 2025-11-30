@@ -492,6 +492,15 @@
   color: #39404d;
 }
 
+.modalCloseBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalCloseBtn:disabled:hover {
+  color: #6b7280;
+}
+
 /* Modal Content */
 .modalContent {
   padding: 3rem 2rem 2rem 2rem;
@@ -547,6 +556,19 @@
   border-color: #9ca3af;
 }
 
+.modalCancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
+}
+
+.modalCancelBtn:disabled:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
 .modalApproveBtn {
   flex: 1;
   background-color: #10b981;
@@ -568,6 +590,18 @@
   border-color: #0d9f6e;
 }
 
+.modalApproveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.modalApproveBtn:disabled:hover {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
 .modalDeclineBtn {
   flex: 1;
   background-color: #d50808;
@@ -587,6 +621,18 @@
 .modalDeclineBtn:hover {
   background-color: #b30707;
   border-color: #b30707;
+}
+
+.modalDeclineBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #d50808;
+  border-color: #d50808;
+}
+
+.modalDeclineBtn:disabled:hover {
+  background-color: #d50808;
+  border-color: #d50808;
 }
 
 /* Animations */

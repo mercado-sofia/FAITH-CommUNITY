@@ -85,7 +85,7 @@ export default function ForgotPasswordModal({
         ) : (
           <div className={styles.successMessage}>
             <p>{message}</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className={styles.buttonContainer}>
               <button type="button" onClick={onClose} className={styles.actionBtn}>
                 Close
               </button>

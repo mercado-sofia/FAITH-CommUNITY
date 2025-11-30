@@ -52,14 +52,32 @@ export default function VerifyEmail({ token }) {
         }
       })
       
-      const data = await response.json()
+      // Parse JSON with error handling
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          const text = await response.text();
+          data = text ? JSON.parse(text) : {};
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          setVerificationStatus('error')
+          setMessage('Invalid response from server. Please try again.')
+          return
+        }
+      } else {
+        // Non-JSON response
+        setVerificationStatus('error')
+        setMessage('Unexpected response format from server. Please try again.')
+        return
+      }
       
       if (response.ok) {
         setVerificationStatus('success')
-        setMessage(data.message)
+        setMessage(data.message || 'Email verified successfully')
       } else {
         setVerificationStatus('error')
-        setMessage(data.error || 'Verification failed')
+        setMessage(data?.error || data?.message || 'Verification failed')
       }
     } catch (error) {
       console.error('Verification error:', error)
@@ -84,15 +102,34 @@ export default function VerifyEmail({ token }) {
         body: JSON.stringify({ email }),
       })
 
-      const data = await response.json()
+      // Parse JSON with error handling
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          const text = await response.text();
+          data = text ? JSON.parse(text) : {};
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          setResendMessage('Invalid response from server. Please try again.')
+          setResendLoading(false)
+          return
+        }
+      } else {
+        // Non-JSON response
+        setResendMessage('Unexpected response format from server. Please try again.')
+        setResendLoading(false)
+        return
+      }
 
       if (response.ok) {
-        setResendMessage(data.message)
+        setResendMessage(data.message || 'Verification email sent successfully')
         setShowResendForm(false)
       } else {
-        setResendMessage(data.error || 'Failed to resend verification email')
+        setResendMessage(data?.error || data?.message || 'Failed to resend verification email')
       }
     } catch (error) {
+      console.error('Resend verification error:', error)
       setResendMessage('Network error. Please try again.')
     }
 

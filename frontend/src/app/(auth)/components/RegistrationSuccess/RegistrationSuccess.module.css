@@ -1,13 +1,5 @@
 /* RegistrationSuccess Component Styles */
 
-.title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1.5rem;
-  text-align: left;
-}
-
 .form {
   width: 100%;
   max-width: 420px;
@@ -17,73 +9,140 @@
 
 .contentContainer {
   text-align: center;
-  padding: 2rem 0;
+  padding: 1rem 0;
+  font-family: var(--font-poppins);
+}
+
+.iconContainer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background: #F0FFFD;
+  margin-bottom: 20px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.iconContainer::before {
+  content: '';
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #CFECE7;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .welcomeIcon {
-  color: #169c86;
-  margin-bottom: 20px;
+  color: #169C86;
+  z-index: 1;
+  position: relative;
 }
 
 .welcomeText {
   color: #169c86;
   margin-bottom: 20px;
-  font-size: 16px;
+  font-size: 24px;
   font-weight: 600;
 }
 
 .descriptionText {
-  color: #666;
-  margin-bottom: 20px;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.emailContainer {
-  background-color: #f8f9fa;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  text-align: left;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  border-left: 4px solid #1A685B;
-}
-
-.emailHeader {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.emailIcon {
-  color: #1A685B;
-  margin-right: 10px;
-  font-size: 18px;
-}
-
-.emailTitle {
-  font-weight: 700;
-  color: #1A685B;
-  font-size: 15px;
-}
-
-.emailText {
-  color: #6c757d;
-  font-size: 14px;
-  margin: 0;
-  line-height: 1.5;
+  color: #2f4543;
+  margin-bottom: 4px;
+  font-size: 13.5px;
 }
 
 .emailAddress {
-  color: #495057;
+  color: #17211e;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 25px;
+  word-break: break-all;
 }
 
 .instructionText {
-  color: #666;
+  color: #2f4543;
+  margin-bottom: 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.instructionText strong {
+  color: #17211e;
+}
+
+.footerText {
+  color: #2f4543;
   margin-bottom: 20px;
-  font-size: 13px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.resendButton {
+  background: #169c86;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  margin-top: 10px;
+  font-family: var(--font-inter);
+}
+
+.resendButton:hover:not(:disabled) {
+  background: #0ECCAC;
+}
+
+.resendButton:disabled {
+  background: #a0a0a0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.resendMessage {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
   line-height: 1.5;
+  text-align: center;
+}
+
+.resendMessage.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.resendMessage.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
 .loginLink {
@@ -115,15 +174,5 @@
 @media (max-width: 768px) {
   .form {
     max-width: 100%;
-  }
-  
-  .title {
-    font-size: 1.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .title {
-    font-size: 1.125rem;
   }
 }

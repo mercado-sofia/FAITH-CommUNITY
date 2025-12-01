@@ -7,8 +7,25 @@ const safeParseJSON = (value, defaultValue = null) => {
   if (typeof value === 'object') return value;
   if (typeof value === 'string') {
     try {
+      // For very large strings, check size first to avoid memory issues
+      const stringSize = Buffer.byteLength(value, 'utf8');
+      if (stringSize > 50 * 1024 * 1024) { // 50MB
+        logWarn('[safeParseJSON] Attempting to parse very large JSON string', {
+          sizeMB: (stringSize / (1024 * 1024)).toFixed(2),
+          warning: 'This may cause memory issues or slow processing'
+        });
+      }
       return JSON.parse(value);
     } catch (e) {
+      // Log parsing errors for large strings to help diagnose issues
+      if (value.length > 10000) {
+        logWarn('[safeParseJSON] Failed to parse large JSON string', {
+          error: e.message,
+          errorType: e.name,
+          stringLength: value.length,
+          stringSizeMB: (Buffer.byteLength(value, 'utf8') / (1024 * 1024)).toFixed(2)
+        });
+      }
       return defaultValue;
     }
   }
@@ -524,9 +541,22 @@ export const getSubmissionsByOrg = async (req, res) => {
     const BATCH_SIZE = 20; // Process 20 submissions at a time
     const parsedRows = [];
     let parseErrorCount = 0;
+    
+    // Track processing time for performance monitoring
+    const startTime = Date.now();
+    const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+    const PROCESSING_TIMEOUT_WARNING_MS = 50000; // 50 seconds - warn if processing takes longer
+
+    logWarn(`[getSubmissionsByOrg] Starting to process ${rows.length} submissions in ${totalBatches} batch(es) for org: ${orgAcronym}`, {
+      organizationId: organization.id,
+      submissionCount: rows.length,
+      batchCount: totalBatches
+    });
 
     // Process submissions in chunks to prevent memory issues and blocking
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      const batchStartTime = Date.now();
       const batch = rows.slice(i, i + BATCH_SIZE);
       
       // Process each batch with individual error handling
@@ -540,6 +570,26 @@ export const getSubmissionsByOrg = async (req, res) => {
             // Parse JSON data for proposed_data only
             // Wrap in try-catch to handle individual submission errors
             try {
+              // Detect size of proposed_data before parsing to warn about large submissions
+              let proposedDataSize = 0;
+              if (row.proposed_data) {
+                if (typeof row.proposed_data === 'string') {
+                  proposedDataSize = Buffer.byteLength(row.proposed_data, 'utf8');
+                } else if (typeof row.proposed_data === 'object') {
+                  proposedDataSize = Buffer.byteLength(JSON.stringify(row.proposed_data), 'utf8');
+                }
+                
+                // Warn if submission data is very large (may cause processing delays)
+                if (proposedDataSize > 5 * 1024 * 1024) { // 5MB
+                  logWarn(`[getSubmissionsByOrg] Large submission data detected for submission ${row.id}`, {
+                    submissionId: row.id,
+                    section: row.section,
+                    dataSizeMB: (proposedDataSize / (1024 * 1024)).toFixed(2),
+                    organizationId: organization.id
+                  });
+                }
+              }
+              
               proposed_data_parsed = safeParseJSON(row.proposed_data, {});
               
               // Check if parsing failed (only if it was a string and couldn't be parsed)
@@ -566,10 +616,31 @@ export const getSubmissionsByOrg = async (req, res) => {
             } catch (parseErr) {
               // Individual submission parsing error - don't block others
               parseErrorCount++;
+              
+              // Calculate data size for error reporting
+              let dataSize = 0;
+              if (row.proposed_data) {
+                if (typeof row.proposed_data === 'string') {
+                  dataSize = Buffer.byteLength(row.proposed_data, 'utf8');
+                } else if (typeof row.proposed_data === 'object') {
+                  try {
+                    dataSize = Buffer.byteLength(JSON.stringify(row.proposed_data), 'utf8');
+                  } catch (e) {
+                    dataSize = 0;
+                  }
+                }
+              }
+              
               logWarn(`[getSubmissionsByOrg] Failed to parse submission ${row.id}`, { 
-                submissionId: row.id, 
-                error: parseErr.message 
+                submissionId: row.id,
+                section: row.section,
+                error: parseErr.message,
+                errorType: parseErr.name || 'ParseError',
+                dataSizeBytes: dataSize,
+                dataSizeMB: dataSize > 0 ? (dataSize / (1024 * 1024)).toFixed(2) : 0,
+                organizationId: organization.id
               });
+              
               return {
                 ...row,
                 proposed_data: { error: "Failed to parse submission data" },
@@ -583,10 +654,32 @@ export const getSubmissionsByOrg = async (req, res) => {
           } catch (rowError) {
             // Catch any other errors for this row
             parseErrorCount++;
+            
+            // Calculate data size for error reporting
+            let dataSize = 0;
+            if (row.proposed_data) {
+              if (typeof row.proposed_data === 'string') {
+                dataSize = Buffer.byteLength(row.proposed_data, 'utf8');
+              } else if (typeof row.proposed_data === 'object') {
+                try {
+                  dataSize = Buffer.byteLength(JSON.stringify(row.proposed_data), 'utf8');
+                } catch (e) {
+                  dataSize = 0;
+                }
+              }
+            }
+            
             logWarn(`[getSubmissionsByOrg] Error processing submission ${row.id}`, { 
-              submissionId: row.id, 
-              error: rowError.message 
+              submissionId: row.id,
+              section: row.section,
+              error: rowError.message,
+              errorType: rowError.name || 'UnknownError',
+              dataSizeBytes: dataSize,
+              dataSizeMB: dataSize > 0 ? (dataSize / (1024 * 1024)).toFixed(2) : 0,
+              organizationId: organization.id,
+              stack: rowError.stack
             });
+            
             return {
               ...row,
               proposed_data: { error: "Error processing submission" },
@@ -601,7 +694,43 @@ export const getSubmissionsByOrg = async (req, res) => {
       );
 
       parsedRows.push(...batchResults);
+      
+      const batchProcessingTime = Date.now() - batchStartTime;
+      const elapsedTime = Date.now() - startTime;
+      
+      // Log batch progress
+      logWarn(`[getSubmissionsByOrg] Processed batch ${batchNumber}/${totalBatches} (${batch.length} submissions) in ${batchProcessingTime}ms`, {
+        batchNumber,
+        totalBatches,
+        batchSize: batch.length,
+        batchProcessingTimeMs: batchProcessingTime,
+        elapsedTimeMs: elapsedTime,
+        organizationId: organization.id
+      });
+      
+      // Warn if processing is taking longer than expected (approaching timeout)
+      if (elapsedTime > PROCESSING_TIMEOUT_WARNING_MS) {
+        logWarn(`[getSubmissionsByOrg] WARNING: Processing is taking longer than expected (${elapsedTime}ms). This may cause frontend timeout.`, {
+          elapsedTimeMs: elapsedTime,
+          processedCount: parsedRows.length,
+          remainingCount: rows.length - parsedRows.length,
+          organizationId: organization.id,
+          orgAcronym
+        });
+      }
     }
+
+    const totalProcessingTime = Date.now() - startTime;
+    
+    // Log completion summary
+    logWarn(`[getSubmissionsByOrg] Completed processing ${parsedRows.length} submissions in ${totalProcessingTime}ms`, {
+      organizationId: organization.id,
+      orgAcronym,
+      totalSubmissions: parsedRows.length,
+      parseErrorCount,
+      totalProcessingTimeMs: totalProcessingTime,
+      averageTimePerSubmission: parsedRows.length > 0 ? (totalProcessingTime / parsedRows.length).toFixed(2) : 0
+    });
 
     // Return success even if some rows have parsing errors, as the query itself was successful
     // Include warning if some submissions had parsing errors

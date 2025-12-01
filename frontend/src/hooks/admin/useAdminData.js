@@ -11,8 +11,10 @@ import { API_CONFIG } from '@/utils/admin/constants';
 // Fetcher function for SWR with admin authentication and SSR safety
 const adminFetcher = async (url) => {
   // Create abort signal with timeout to prevent indefinite hangs
-  // Use API_CONFIG.TIMEOUT (30 seconds) for large data requests
-  const timeoutMs = API_CONFIG?.TIMEOUT || 30000;
+  // Use longer timeout (60 seconds) for submissions requests that may contain large data (post-act reports)
+  // Use standard timeout (30 seconds) for other admin API requests
+  const isSubmissionsRequest = url && url.includes('/api/submissions/');
+  const timeoutMs = isSubmissionsRequest ? 60000 : (API_CONFIG?.TIMEOUT || 30000);
   const abortController = new AbortController();
   let timeoutId = null;
 

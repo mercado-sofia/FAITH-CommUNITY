@@ -632,7 +632,7 @@ export const getSubmissionsByOrg = async (req, res) => {
               }
               
               logWarn(`[getSubmissionsByOrg] Failed to parse submission ${row.id}`, { 
-                submissionId: row.id,
+                submissionId: row.id, 
                 section: row.section,
                 error: parseErr.message,
                 errorType: parseErr.name || 'ParseError',
@@ -670,7 +670,7 @@ export const getSubmissionsByOrg = async (req, res) => {
             }
             
             logWarn(`[getSubmissionsByOrg] Error processing submission ${row.id}`, { 
-              submissionId: row.id,
+              submissionId: row.id, 
               section: row.section,
               error: rowError.message,
               errorType: rowError.name || 'UnknownError',

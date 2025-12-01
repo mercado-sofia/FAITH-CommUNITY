@@ -11,12 +11,76 @@ const safeParseJSON = (value, defaultValue = null) => {
   if (typeof value === 'object') return value; // Already parsed by typeCast
   if (typeof value === 'string') {
     try {
+      // For very large strings, check size first to avoid memory issues
+      const stringSize = Buffer.byteLength(value, 'utf8');
+      if (stringSize > 50 * 1024 * 1024) { // 50MB
+        logWarn('[safeParseJSON] Attempting to parse very large JSON string', {
+          sizeMB: (stringSize / (1024 * 1024)).toFixed(2),
+          warning: 'This may cause memory issues or slow processing'
+        });
+      }
       return JSON.parse(value); // Still a string, parse it
     } catch (e) {
+      // Log parsing errors for large strings to help diagnose issues
+      if (value.length > 10000) {
+        logWarn('[safeParseJSON] Failed to parse large JSON string', {
+          error: e.message,
+          errorType: e.name,
+          stringLength: value.length,
+          stringSizeMB: (Buffer.byteLength(value, 'utf8') / (1024 * 1024)).toFixed(2)
+        });
+      }
       return defaultValue;
     }
   }
   return value;
+};
+
+// Helper function to extract minimal data for list view to prevent large payloads
+const extractMinimalSubmissionData = (data, section) => {
+  if (!data || typeof data !== 'object') {
+    return { _hasData: !!data };
+  }
+
+  const minimal = {};
+
+  if (section === 'programs') {
+    if (data.title) minimal.title = data.title;
+    if (data.category) minimal.category = data.category;
+    if (data.event_start_date) minimal.event_start_date = data.event_start_date;
+    if (data.event_end_date) minimal.event_end_date = data.event_end_date;
+    if (data.multiple_dates) minimal.multiple_dates = data.multiple_dates;
+    if (Array.isArray(data.collaborators)) {
+      minimal.collaborators_count = data.collaborators.length;
+    }
+    if (data.postActReport) {
+      minimal.has_post_act_report = true;
+    }
+    if (data.image) minimal.has_image = true;
+    if (Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+      minimal.additional_images_count = data.additionalImages.length;
+    }
+  }
+  else if (section === 'highlights') {
+    if (data.title) minimal.title = data.title;
+    if (data.program_id) minimal.program_id = data.program_id;
+    if (data.program_title) minimal.program_title = data.program_title;
+    if (Array.isArray(data.media_files)) {
+      minimal.media_files_count = data.media_files.length;
+    } else if (Array.isArray(data.media)) {
+      minimal.media_files_count = data.media.length;
+    }
+  }
+  else if (section === 'Post Act Report') {
+    if (data.program_id) minimal.program_id = data.program_id;
+    if (data.report_id) minimal.report_id = data.report_id;
+    if (data.file_url) minimal.has_file = true;
+  }
+  else {
+    minimal._hasData = true;
+  }
+
+  return minimal;
 };
 
 // Helper function to clean up unapproved program and related records
@@ -243,39 +307,92 @@ export const getPendingSubmissions = async (req, res) => {
 
 export const getAllSubmissions = async (req, res) => {
   try {
-    // Optimized query: get IDs first to reduce sort memory, then fetch full data
-    const [idRows] = await db.execute(`
-      SELECT s.id
-      FROM submissions s 
-      WHERE (
-        -- Include non-pending submissions (already approved/rejected) - these are always shown
-        s.status != 'pending'
-        OR
+    // Optimized query: Use UNION to separate pending and non-pending queries
+    // This reduces sort memory by processing smaller result sets separately
+    // Each part can use indexes more efficiently
+    const queryStartTime = Date.now();
+    
+    let idRows;
+    try {
+      [idRows] = await db.execute(`
         (
-          -- For pending submissions, apply filtering
-          s.status = 'pending'
-          AND (
-            -- Include non-program submissions
-            s.section != 'programs'
-            OR
-            -- Include program submissions that don't have collaborators
-            -- Check collaboration records first (faster than JSON operations)
-            NOT EXISTS (
-              SELECT 1 FROM program_collaborations pc 
-              WHERE pc.submission_id = s.id
-            )
-            OR
-            -- Include collaborative programs
-            EXISTS (
-              SELECT 1 FROM program_collaborations pc 
-              WHERE pc.submission_id = s.id
-            )
-          )
+          -- Get non-pending submissions (already approved/rejected) - simpler query, uses index
+          SELECT s.id, s.submitted_at
+          FROM submissions s 
+          WHERE s.status != 'pending'
+          ORDER BY s.submitted_at DESC
+          LIMIT 5000
         )
-      )
-      ORDER BY s.submitted_at DESC
-      LIMIT 10000
-    `);
+        UNION
+        (
+          -- Get pending submissions with filtering
+          SELECT s.id, s.submitted_at
+          FROM submissions s 
+          WHERE s.status = 'pending'
+            -- Include all pending submissions (both program and non-program)
+            -- The original EXISTS/NOT EXISTS logic was redundant (always true)
+          ORDER BY s.submitted_at DESC
+          LIMIT 5000
+        )
+        ORDER BY submitted_at DESC
+        LIMIT 5000
+      `);
+      
+      const queryTime = Date.now() - queryStartTime;
+      logWarn(`[getAllSubmissions] Query executed in ${queryTime}ms, returned ${idRows.length} submission IDs`, {
+        queryTimeMs: queryTime,
+        resultCount: idRows.length
+      });
+    } catch (queryError) {
+      // If UNION query fails (e.g., still sort memory error), use fallback simpler query
+      logWarn(`[getAllSubmissions] UNION query failed, using fallback query`, {
+        error: queryError.message,
+        errorCode: queryError.code
+      });
+      
+      try {
+        // Fallback: Get most recent submissions first, then filter in application
+        // This is less efficient but more reliable
+        const fallbackStartTime = Date.now();
+        [idRows] = await db.execute(`
+          SELECT s.id, s.submitted_at, s.status, s.section
+          FROM submissions s
+          ORDER BY s.submitted_at DESC
+          LIMIT 5000
+        `);
+        
+        // Filter in application code for pending submissions
+        const filteredIds = idRows
+          .filter(row => {
+            // Include all non-pending
+            if (row.status !== 'pending') return true;
+            
+            // For pending, apply same filtering logic
+            if (row.section !== 'programs') return true;
+            
+            // For program submissions, we need to check collaborations
+            // But we can't do EXISTS in application, so include all for now
+            // This is a trade-off for reliability
+            return true;
+          })
+          .map(row => ({ id: row.id, submitted_at: row.submitted_at }));
+        
+        idRows = filteredIds;
+        
+        const fallbackTime = Date.now() - fallbackStartTime;
+        logWarn(`[getAllSubmissions] Fallback query executed in ${fallbackTime}ms`, {
+          fallbackTimeMs: fallbackTime,
+          resultCount: idRows.length
+        });
+      } catch (fallbackError) {
+        logError('Both main and fallback queries failed', fallbackError, {
+          context: 'getAllSubmissions',
+          mainError: queryError.message,
+          fallbackError: fallbackError.message
+        });
+        throw fallbackError;
+      }
+    }
     
     const submissionIds = idRows.map(row => row.id);
     
@@ -301,59 +418,225 @@ export const getAllSubmissions = async (req, res) => {
       ORDER BY s.submitted_at DESC
     `, submissionIds);
 
-    // Parse JSON data for each submission and enrich collaborator data
-    const submissions = await Promise.all(rows.map(async (submission) => {
-      try {
-        // Note: advocacy and competency are no longer part of the approval workflow
-        // Parse JSON data for proposed_data only
-        let proposedData;
-        
-        proposedData = safeParseJSON(submission.proposed_data, {});
-        
-        // For program submissions, enrich collaborator data with organization information
-        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
-          try {
-            const collaborators = proposedData.collaborators;
-            if (collaborators.length > 0) {
-              // Check if collaborators are stored as IDs (numbers) or objects
-              const firstCollaborator = collaborators[0];
-              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
-                // Collaborators are stored as IDs, fetch full details
-                const placeholders = collaborators.map(() => '?').join(',');
-                const [collaboratorRows] = await db.execute(`
-                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM users a
-                  LEFT JOIN organizations o ON a.organization_id = o.id
-                  WHERE a.id IN (${placeholders})
-                `, collaborators);
-                
-                // Replace collaborator IDs with full collaborator objects
-                proposedData.collaborators = collaboratorRows;
-              }
-              // If collaborators are already objects, keep them as is
-            }
-          } catch (collabError) {
-            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
-            // Keep original collaborator data if fetch fails
-          }
-        }
-        
-        return {
-          ...submission,
-          proposed_data: proposedData
-        };
-      } catch (parseError) {
-        return {
-          ...submission,
-          proposed_data: {}
-        };
-      }
-    }));
+    // Parse JSON data and add metadata
+    // For list view, extract minimal data to prevent large payloads
+    // Process in chunks to prevent blocking when there's large data (post-act reports, images)
+    const BATCH_SIZE = 20; // Process 20 submissions at a time
+    const submissions = [];
+    let parseErrorCount = 0;
+    
+    // Track processing time for performance monitoring
+    const startTime = Date.now();
+    const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+    const PROCESSING_TIMEOUT_WARNING_MS = 50000; // 50 seconds - warn if processing takes longer
 
-    res.json({
+    logWarn(`[getAllSubmissions] Starting to process ${rows.length} submissions in ${totalBatches} batch(es)`, {
+      submissionCount: rows.length,
+      batchCount: totalBatches
+    });
+
+    // Process submissions in chunks to prevent memory issues and blocking
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      const batchStartTime = Date.now();
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      
+      // Process each batch with individual error handling
+      const batchResults = await Promise.all(
+        batch.map(async (submission) => {
+          try {
+            // Note: advocacy and competency are no longer part of the approval workflow
+            // Parse JSON data for proposed_data only
+            let proposedData = {};
+            let parse_error = false;
+
+            // Detect size of proposed_data before parsing to warn about large submissions
+            let proposedDataSize = 0;
+            if (submission.proposed_data) {
+              if (typeof submission.proposed_data === 'string') {
+                proposedDataSize = Buffer.byteLength(submission.proposed_data, 'utf8');
+              } else if (typeof submission.proposed_data === 'object') {
+                proposedDataSize = Buffer.byteLength(JSON.stringify(submission.proposed_data), 'utf8');
+              }
+              
+              // Warn if submission data is very large (may cause processing delays)
+              if (proposedDataSize > 5 * 1024 * 1024) { // 5MB
+                logWarn(`[getAllSubmissions] Large submission data detected for submission ${submission.id}`, {
+                  submissionId: submission.id,
+                  section: submission.section,
+                  dataSizeMB: (proposedDataSize / (1024 * 1024)).toFixed(2)
+                });
+              }
+            }
+
+            try {
+              proposedData = safeParseJSON(submission.proposed_data, {});
+              
+              // Check if parsing failed (only if it was a string and couldn't be parsed)
+              if (typeof submission.proposed_data === 'string' && !proposedData) {
+                proposedData = { error: "Invalid JSON data" };
+                parse_error = true;
+                parseErrorCount++;
+              }
+
+              // For program submissions, enrich collaborator data with organization information
+              if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+                try {
+                  const collaborators = proposedData.collaborators;
+                  if (collaborators.length > 0) {
+                    // Check if collaborators are stored as IDs (numbers) or objects
+                    const firstCollaborator = collaborators[0];
+                    if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                      // Collaborators are stored as IDs, fetch full details
+                      const placeholders = collaborators.map(() => '?').join(',');
+                      const [collaboratorRows] = await db.execute(`
+                        SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                        FROM users a
+                        LEFT JOIN organizations o ON a.organization_id = o.id
+                        WHERE a.id IN (${placeholders})
+                      `, collaborators);
+                      
+                      // Replace collaborator IDs with full collaborator objects
+                      proposedData.collaborators = collaboratorRows;
+                    }
+                    // If collaborators are already objects, keep them as is
+                  }
+                } catch (collabError) {
+                  logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+                  // Keep original collaborator data if fetch fails
+                }
+              }
+
+              // Extract minimal data for list view to prevent large payloads
+              // Full data will be available via individual submission endpoints when needed
+              const minimal_proposed_data = extractMinimalSubmissionData(proposedData, submission.section);
+
+              return {
+                ...submission,
+                proposed_data: minimal_proposed_data,
+                parse_error: parse_error,
+                // Add flag to indicate this is minimal data
+                _isMinimalData: true,
+              };
+            } catch (parseErr) {
+              // Individual submission parsing error - don't block others
+              parseErrorCount++;
+              
+              // Calculate data size for error reporting
+              let dataSize = 0;
+              if (submission.proposed_data) {
+                if (typeof submission.proposed_data === 'string') {
+                  dataSize = Buffer.byteLength(submission.proposed_data, 'utf8');
+                } else if (typeof submission.proposed_data === 'object') {
+                  try {
+                    dataSize = Buffer.byteLength(JSON.stringify(submission.proposed_data), 'utf8');
+                  } catch (e) {
+                    dataSize = 0;
+                  }
+                }
+              }
+              
+              logWarn(`[getAllSubmissions] Failed to parse submission ${submission.id}`, {
+                submissionId: submission.id,
+                section: submission.section,
+                error: parseErr.message,
+                errorType: parseErr.name || 'ParseError',
+                dataSizeBytes: dataSize,
+                dataSizeMB: dataSize > 0 ? (dataSize / (1024 * 1024)).toFixed(2) : 0
+              });
+              
+              return {
+                ...submission,
+                proposed_data: { error: "Failed to parse submission data" },
+                parse_error: true,
+                _isMinimalData: true,
+              };
+            }
+          } catch (rowError) {
+            // Catch any other errors for this row
+            parseErrorCount++;
+            
+            // Calculate data size for error reporting
+            let dataSize = 0;
+            if (submission.proposed_data) {
+              if (typeof submission.proposed_data === 'string') {
+                dataSize = Buffer.byteLength(submission.proposed_data, 'utf8');
+              } else if (typeof submission.proposed_data === 'object') {
+                try {
+                  dataSize = Buffer.byteLength(JSON.stringify(submission.proposed_data), 'utf8');
+                } catch (e) {
+                  dataSize = 0;
+                }
+              }
+            }
+            
+            logWarn(`[getAllSubmissions] Error processing submission ${submission.id}`, {
+              submissionId: submission.id,
+              section: submission.section,
+              error: rowError.message,
+              errorType: rowError.name || 'UnknownError',
+              dataSizeBytes: dataSize,
+              dataSizeMB: dataSize > 0 ? (dataSize / (1024 * 1024)).toFixed(2) : 0,
+              stack: rowError.stack
+            });
+            
+            return {
+              ...submission,
+              proposed_data: { error: "Error processing submission" },
+              parse_error: true,
+              _isMinimalData: true,
+            };
+          }
+        })
+      );
+
+      submissions.push(...batchResults);
+      
+      const batchProcessingTime = Date.now() - batchStartTime;
+      const elapsedTime = Date.now() - startTime;
+      
+      // Log batch progress
+      logWarn(`[getAllSubmissions] Processed batch ${batchNumber}/${totalBatches} (${batch.length} submissions) in ${batchProcessingTime}ms`, {
+        batchNumber,
+        totalBatches,
+        batchSize: batch.length,
+        batchProcessingTimeMs: batchProcessingTime,
+        elapsedTimeMs: elapsedTime,
+        processedCount: submissions.length,
+        remainingCount: rows.length - submissions.length
+      });
+      
+      // Warn if processing is taking longer than expected (approaching timeout)
+      if (elapsedTime > PROCESSING_TIMEOUT_WARNING_MS) {
+        logWarn(`[getAllSubmissions] WARNING: Processing is taking longer than expected (${elapsedTime}ms). This may cause frontend timeout.`, {
+          elapsedTimeMs: elapsedTime,
+          processedCount: submissions.length,
+          remainingCount: rows.length - submissions.length
+        });
+      }
+    }
+
+    const totalProcessingTime = Date.now() - startTime;
+    
+    // Log completion summary
+    logWarn(`[getAllSubmissions] Completed processing ${submissions.length} submissions in ${totalProcessingTime}ms`, {
+      totalSubmissions: submissions.length,
+      parseErrorCount,
+      totalProcessingTimeMs: totalProcessingTime,
+      averageTimePerSubmission: submissions.length > 0 ? (totalProcessingTime / submissions.length).toFixed(2) : 0
+    });
+
+    const response = {
       success: true,
       data: submissions
-    });
+    };
+
+    // Add warning if some submissions had parsing errors (for debugging)
+    if (parseErrorCount > 0) {
+      response.warning = `${parseErrorCount} submission(s) had parsing errors but were included in results`;
+    }
+
+    res.json(response);
   } catch (error) {
     // Log the full error for debugging
     logError('Failed to fetch submissions', error, { 

@@ -980,6 +980,80 @@ const runIncrementalMigrations = async (connection) => {
     // Legacy superadmin initialization code removed - migration to unified users table is complete
     // Superadmin initialization is now handled in the main initializeDatabase function
 
+    // ============================================
+    // PERFORMANCE INDEXES (for query optimization)
+    // ============================================
+
+    // Add composite index on submissions(status, submitted_at) for efficient sorting
+    // This is critical for getAllSubmissions query to prevent sort memory errors
+    try {
+      const [existingIndexes] = await connection.query(`
+        SELECT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'submissions' 
+        AND INDEX_NAME = 'idx_status_submitted_at'
+      `);
+      
+      if (existingIndexes.length === 0) {
+        // Note: DESC in index is supported in MySQL 8.0+, but removed for compatibility
+        // The index works efficiently for both ASC and DESC queries
+        await connection.query(`
+          ALTER TABLE submissions 
+          ADD INDEX idx_status_submitted_at (status, submitted_at)
+        `);
+        logInfo('Added composite index idx_status_submitted_at on submissions table', { context: 'database' });
+      }
+    } catch (indexError) {
+      logWarn('Failed to add idx_status_submitted_at index on submissions table', { 
+        context: 'database', 
+        error: indexError.message 
+      });
+    }
+
+    // Add index on program_collaborations(submission_id) if it doesn't exist as standalone index
+    // This speeds up EXISTS checks in getAllSubmissions query
+    try {
+      const [existingIndexes] = await connection.query(`
+        SELECT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'program_collaborations' 
+        AND COLUMN_NAME = 'submission_id'
+        AND INDEX_NAME != 'PRIMARY'
+        LIMIT 1
+      `);
+      
+      // Check if there's already an index that includes submission_id
+      if (existingIndexes.length === 0) {
+        // Check if idx_submission_status exists (which includes submission_id)
+        const [compositeIndex] = await connection.query(`
+          SELECT INDEX_NAME 
+          FROM INFORMATION_SCHEMA.STATISTICS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'program_collaborations' 
+          AND INDEX_NAME = 'idx_submission_status'
+        `);
+        
+        if (compositeIndex.length === 0) {
+          await connection.query(`
+            ALTER TABLE program_collaborations 
+            ADD INDEX idx_submission_id (submission_id)
+          `);
+          logInfo('Added index idx_submission_id on program_collaborations table', { context: 'database' });
+        } else {
+          logInfo('Index on submission_id already exists via idx_submission_status', { context: 'database' });
+        }
+      } else {
+        logInfo('Index on submission_id already exists', { context: 'database' });
+      }
+    } catch (indexError) {
+      logWarn('Failed to add index on program_collaborations.submission_id', { 
+        context: 'database', 
+        error: indexError.message 
+      });
+    }
+
   } catch (error) {
     logError('Incremental migrations failed', error, { context: 'database' });
     throw error;

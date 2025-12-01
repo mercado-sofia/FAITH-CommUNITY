@@ -24,16 +24,31 @@ const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
     throw new Error('Cannot make authenticated request on server side');
   }
 
-  // No need to check token - cookies handle authentication
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include', // CRITICAL: Include httpOnly cookies
-    headers: {
-      'Content-Type': 'application/json',
-      // No Authorization header needed - httpOnly cookies handle authentication
-      ...options.headers
-    }
-  });
+  // Create abort signal with timeout to prevent indefinite hangs
+  // Use longer timeout (60 seconds) for approvals requests that may contain large data (post-act reports)
+  // Use standard timeout (30 seconds) for other API requests
+  const isApprovalsRequest = url && url.includes('/api/approvals');
+  const timeoutMs = isApprovalsRequest ? 60000 : 30000;
+  const abortController = new AbortController();
+  let timeoutId = null;
+
+  try {
+    // Set timeout
+    timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
+    // No need to check token - cookies handle authentication
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
+        ...options.headers
+      },
+      signal: abortController.signal,
+    });
+
+    clearTimeout(timeoutId);
   
   // Handle 401/403 - redirect to login if unauthorized
   if (response.status === 401 || response.status === 403) {
@@ -123,6 +138,21 @@ const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
   }
 
   return response;
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+    
+    // Handle timeout/abort errors
+    if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
+      const timeoutError = new Error('Request timed out. The server is taking too long to respond. This may happen when loading approvals with large data (post-act reports, images). Please try again.');
+      timeoutError.status = 408; // Request Timeout
+      timeoutError.isTimeout = true;
+      logError(timeoutError, { context: 'makeAuthenticatedRequest-timeout', url, timeoutMs });
+      throw timeoutError;
+    }
+    
+    // Re-throw other errors
+    throw fetchError;
+  }
 };
 
 // Helper function to normalize organization acronym for comparison (case-insensitive, trim spaces)

@@ -19,6 +19,10 @@ export const useAdminNotifications = (adminId) => {
   const refetchUnreadCountRef = useRef(null);
   // Local state for immediate UI updates when Pusher notifications arrive
   const [localUnreadCount, setLocalUnreadCount] = useState(0);
+  const [localNotifications, setLocalNotifications] = useState([]);
+  // Flag to track if Pusher notifications have been received (prevents RTK Query from overwriting)
+  const hasPusherNotificationsRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
 
   // Determine Pusher user type based on Redux state
   const pusherUserType = userType === 'superadmin' ? 'superadmin' : 'admin';
@@ -60,6 +64,8 @@ export const useAdminNotifications = (adminId) => {
   // Handle new notification from Pusher
   const handleNewNotification = useCallback((notificationData) => {
     setNewNotificationReceived(true);
+    // Mark that we've received Pusher notifications
+    hasPusherNotificationsRef.current = true;
     
     // Immediately update local state for instant UI feedback
     setLocalUnreadCount(prev => prev + 1);
@@ -75,6 +81,17 @@ export const useAdminNotifications = (adminId) => {
     if ('submissionId' in normalizedNotification && 'submission_id' in normalizedNotification) {
       delete normalizedNotification.submissionId;
     }
+    
+    // Immediately update local notifications for instant UI feedback
+    setLocalNotifications(prev => {
+      // Check if notification already exists (prevent duplicates)
+      const exists = prev.some(n => n.id === normalizedNotification.id);
+      if (!exists) {
+        // Add new notification at the beginning
+        return [normalizedNotification, ...prev];
+      }
+      return prev;
+    });
     
     // Check if cache entries exist before updating
     const notificationsCache = notificationsApi.util.getQueryData(
@@ -145,9 +162,21 @@ export const useAdminNotifications = (adminId) => {
       refetchUnreadCountRef.current();
     }
     
-    // Show popup notification
-    if (typeof window !== 'undefined' && window.showToast) {
-      window.showToast(notificationData.title || 'New notification', 'info', 5000);
+    // Show popup notification with proper message
+    if (typeof window !== 'undefined') {
+      // Wait a bit for toast system to be ready if needed
+      const showToast = () => {
+        if (window.showToast) {
+          const message = notificationData.message 
+            ? `${notificationData.title || 'New notification'}: ${notificationData.message}`
+            : (notificationData.title || 'New notification');
+          window.showToast(message, 'info', 5000);
+        } else {
+          // Retry after a short delay if toast system isn't ready
+          setTimeout(showToast, 100);
+        }
+      };
+      showToast();
     }
   }, [dispatch, adminId]);
 
@@ -166,23 +195,57 @@ export const useAdminNotifications = (adminId) => {
     }
   }, [newNotificationReceived]);
 
-  // Sync local state with RTK Query data when it loads
+  // Sync local state with RTK Query data when it loads (only on initial load)
   useEffect(() => {
-    if (unreadCountData?.count !== undefined) {
+    if (unreadCountData?.count !== undefined && isInitialLoadRef.current) {
       setLocalUnreadCount(unreadCountData.count);
     }
   }, [unreadCountData?.count]);
+
+  // Sync local notifications with RTK Query data when it loads
+  // Only sync on initial load or when local state is empty and we haven't received Pusher notifications
+  useEffect(() => {
+    const apiNotifications = notificationsData?.notifications || [];
+    if (Array.isArray(apiNotifications)) {
+      // Only update on initial load or if local state is empty and no Pusher notifications received
+      const shouldSync = isInitialLoadRef.current || 
+        (localNotifications.length === 0 && !hasPusherNotificationsRef.current);
+      
+      if (shouldSync && (apiNotifications.length > 0 || !notificationsLoading)) {
+        setLocalNotifications(apiNotifications);
+        isInitialLoadRef.current = false;
+      } else if (isInitialLoadRef.current && !notificationsLoading) {
+        // Mark initial load as complete even if we don't sync
+        isInitialLoadRef.current = false;
+      }
+    }
+  }, [notificationsData, notificationsLoading, localNotifications.length]);
   
   const [markAsRead] = useMarkAsReadMutation();
   
-  const hasUnreadNotifications = (unreadCountData?.count > 0) || localUnreadCount > 0;
-  const notifications = notificationsData?.notifications || [];
+  // Use local unread count as source of truth when Pusher notifications are active
+  // Otherwise use RTK Query data
+  const effectiveUnreadCount = hasPusherNotificationsRef.current 
+    ? localUnreadCount 
+    : (unreadCountData?.count || localUnreadCount || 0);
+  
+  const hasUnreadNotifications = effectiveUnreadCount > 0;
+  
+  // Use local notifications as source of truth when Pusher notifications are active
+  // Fall back to RTK Query data if local state is empty (e.g., on initial load)
+  const notifications = (hasPusherNotificationsRef.current && localNotifications.length > 0)
+    ? localNotifications 
+    : (notificationsData?.notifications || localNotifications || []);
 
   // Handle notification click
   const handleNotificationClick = useCallback(async (notification) => {
     if (!notification.is_read) {
       try {
         await markAsRead({ notificationId: notification.id, adminId });
+        // Update local notifications immediately - mark as read
+        setLocalNotifications(prev => 
+          prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
+        );
         // Decrement local unread count immediately for instant UI feedback
         setLocalUnreadCount(prev => Math.max(0, prev - 1));
         // Refetch data to update UI
@@ -203,7 +266,7 @@ export const useAdminNotifications = (adminId) => {
     notifications,
     notificationsLoading,
     hasUnreadNotifications,
-    unreadCount: unreadCountData?.count || 0,
+    unreadCount: effectiveUnreadCount,
     handleNotificationClick,
     formatNotificationTime,
     refetchNotifications,

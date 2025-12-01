@@ -964,9 +964,15 @@ export const getSubmissionById = async (req, res) => {
     const [rows] = await db.execute(
       `SELECT s.id, s.organization_id, s.section, s.proposed_data, s.submitted_by, 
               s.status, s.rejection_reason, s.submitted_at, s.updated_at,
-              o.orgName, o.org 
+              o.orgName, o.org, o.logo as organization_logo,
+              submitted_admin.email as submitted_by_email,
+              submitted_org.orgName as submitted_by_org_name,
+              submitted_org.id as submitted_by_org_id,
+              submitted_org.org as submitted_by_org_acronym
        FROM submissions s
        LEFT JOIN organizations o ON o.id = s.organization_id
+       LEFT JOIN users submitted_admin ON s.submitted_by = submitted_admin.id AND submitted_admin.role = 'admin'
+       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
        WHERE s.id = ?`,
       [id]
     )

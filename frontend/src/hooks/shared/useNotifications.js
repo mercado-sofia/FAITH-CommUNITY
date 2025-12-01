@@ -20,6 +20,9 @@ export const useNotifications = (isAuthenticated) => {
   // Local state for immediate UI updates when Pusher notifications arrive
   const [localUnreadCount, setLocalUnreadCount] = useState(0);
   const [localNotifications, setLocalNotifications] = useState([]);
+  // Flag to track if Pusher notifications have been received (prevents RTK Query from overwriting)
+  const hasPusherNotificationsRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
 
   // Fetch notifications data with reduced polling as fallback
   const { 
@@ -61,6 +64,8 @@ export const useNotifications = (isAuthenticated) => {
   // Handle new notification from Pusher
   const handleNewNotification = useCallback((notificationData) => {
     setNewNotificationReceived(true);
+    // Mark that we've received Pusher notifications
+    hasPusherNotificationsRef.current = true;
     
     // Immediately update local state for instant UI feedback
     setLocalUnreadCount(prev => prev + 1);
@@ -140,9 +145,21 @@ export const useNotifications = (isAuthenticated) => {
       refetchUnreadCountRef.current();
     }
     
-    // Show popup notification (will be handled by NotificationsDropdown)
-    if (typeof window !== 'undefined' && window.showToast) {
-      window.showToast(notificationData.title || 'New notification', 'info', 5000);
+    // Show popup notification with proper message
+    if (typeof window !== 'undefined') {
+      // Wait a bit for toast system to be ready if needed
+      const showToast = () => {
+        if (window.showToast) {
+          const message = notificationData.message 
+            ? `${notificationData.title || 'New notification'}: ${notificationData.message}`
+            : (notificationData.title || 'New notification');
+          window.showToast(message, 'info', 5000);
+        } else {
+          // Retry after a short delay if toast system isn't ready
+          setTimeout(showToast, 100);
+        }
+      };
+      showToast();
     }
   }, [dispatch]);
 
@@ -161,31 +178,46 @@ export const useNotifications = (isAuthenticated) => {
     }
   }, [newNotificationReceived]);
 
-  // Sync local state with RTK Query data when it loads
+  // Sync local state with RTK Query data when it loads (only on initial load)
   useEffect(() => {
-    if (unreadCountData?.count !== undefined) {
+    if (unreadCountData?.count !== undefined && isInitialLoadRef.current) {
       setLocalUnreadCount(unreadCountData.count);
     }
   }, [unreadCountData?.count]);
 
   // Sync local notifications with RTK Query data when it loads
+  // Only sync on initial load or when local state is empty and we haven't received Pusher notifications
   useEffect(() => {
     if (notificationsData && Array.isArray(notificationsData)) {
-      // Only update if we have data or if loading is complete and data is empty
-      if (notificationsData.length > 0 || !notificationsLoading) {
+      // Only update on initial load or if local state is empty and no Pusher notifications received
+      const shouldSync = isInitialLoadRef.current || 
+        (localNotifications.length === 0 && !hasPusherNotificationsRef.current);
+      
+      if (shouldSync && (notificationsData.length > 0 || !notificationsLoading)) {
         setLocalNotifications(notificationsData);
+        isInitialLoadRef.current = false;
+      } else if (isInitialLoadRef.current && !notificationsLoading) {
+        // Mark initial load as complete even if we don't sync
+        isInitialLoadRef.current = false;
       }
     }
-  }, [notificationsData, notificationsLoading]);
+  }, [notificationsData, notificationsLoading, localNotifications.length]);
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   
-  const hasUnreadNotifications = (unreadCountData?.count > 0) || localUnreadCount > 0;
-  // Use local notifications for immediate UI updates when Pusher notifications arrive
+  // Use local unread count as source of truth when Pusher notifications are active
+  // Otherwise use RTK Query data
+  const effectiveUnreadCount = hasPusherNotificationsRef.current 
+    ? localUnreadCount 
+    : (unreadCountData?.count || localUnreadCount || 0);
+  
+  const hasUnreadNotifications = effectiveUnreadCount > 0;
+  
+  // Use local notifications as source of truth when Pusher notifications are active
   // Fall back to RTK Query data if local state is empty (e.g., on initial load)
-  const notifications = localNotifications.length > 0 
+  const notifications = (hasPusherNotificationsRef.current && localNotifications.length > 0)
     ? localNotifications 
-    : (Array.isArray(notificationsData) ? notificationsData : []);
+    : (Array.isArray(notificationsData) ? notificationsData : localNotifications);
 
   // Handle notification click
   const handleNotificationClick = useCallback(async (notification) => {
@@ -219,7 +251,7 @@ export const useNotifications = (isAuthenticated) => {
     notifications,
     notificationsLoading,
     hasUnreadNotifications,
-    unreadCount: unreadCountData?.count || 0,
+    unreadCount: effectiveUnreadCount,
     handleNotificationClick,
     formatNotificationTime,
     refetchNotifications,

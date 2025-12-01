@@ -216,13 +216,19 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
   // Handle additional images changes
   const handleAdditionalImagesChangeWrapper = useCallback(async (event) => {
     const results = await handleAdditionalImagesChange(event);
-    // Store the base64 preview data instead of File objects
-    const validPreviews = results.filter(result => result.preview).map(result => result.preview);
-    if (validPreviews.length > 0) {
-      // Extract just the base64 URLs from preview objects for form data
-      const base64Images = validPreviews.map(preview => preview.url);
+    // Store File objects for upload, not base64 data URLs
+    // Base64 previews are only for UI display
+    const validFiles = results.filter(result => result.file && result.preview).map(result => ({
+      file: result.file,
+      preview: result.preview.url, // Keep preview URL for display
+      name: result.preview.name
+    }));
+    if (validFiles.length > 0) {
+      // Store File objects with preview info, not base64 URLs
       const currentAdditionalImages = Array.isArray(formData.additionalImages) ? formData.additionalImages : [];
-      const newAdditionalImages = [...currentAdditionalImages, ...base64Images];
+      // Filter out any existing base64 URLs (from old data) and add new File objects
+      const existingUrls = currentAdditionalImages.filter(item => typeof item === 'string' && !item.startsWith('data:'));
+      const newAdditionalImages = [...existingUrls, ...validFiles];
       updateFormData({ additionalImages: newAdditionalImages });
     }
   }, [handleAdditionalImagesChange, updateFormData, formData.additionalImages]);

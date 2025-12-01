@@ -3,93 +3,128 @@ import { useMemo } from 'react';
 import logger from '@/utils/shared/logger';
 import { formatDateForAPI } from '@/utils/shared/dateUtils';
 import { API_BASE_URL } from '@/config/api';
+import { API_CONFIG } from '@/utils/admin/constants';
 
 // Note: Authentication is handled by the fetcher function via httpOnly cookies
 // We don't need to check authentication in guard clauses - the fetcher will handle 401/403 errors
 
 // Fetcher function for SWR with admin authentication and SSR safety
 const adminFetcher = async (url) => {
+  // Create abort signal with timeout to prevent indefinite hangs
+  // Use API_CONFIG.TIMEOUT (30 seconds) for large data requests
+  const timeoutMs = API_CONFIG?.TIMEOUT || 30000;
+  const abortController = new AbortController();
+  let timeoutId = null;
+
   try {
     // Check if we're on the client side
     if (typeof window === 'undefined') {
       throw new Error('Cannot fetch on server side');
     }
 
-    // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - cookies handle this
-      },
-    });
+    // Set timeout after window check
+    timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
-      // Handle specific error cases
-      if (response.status === 401) {
-        errorMessage = 'Your session has expired. Please log in again.';
-        // Try to refresh token
-        try {
-          const { getValidAccessToken } = await import('@/utils/shared/tokenRefresh');
-          const refreshed = await getValidAccessToken(true);
-          if (!refreshed && typeof window !== 'undefined') {
+    try {
+      // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed - cookies handle this
+        },
+        signal: abortController.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Handle specific error cases
+        if (response.status === 401) {
+          errorMessage = 'Your session has expired. Please log in again.';
+          // Try to refresh token
+          try {
+            const { getValidAccessToken } = await import('@/utils/shared/tokenRefresh');
+            const refreshed = await getValidAccessToken(true);
+            if (!refreshed && typeof window !== 'undefined') {
+              // Refresh failed - redirect to login
+              const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
+              clearAuthImmediate(USER_TYPES.ADMIN);
+              window.location.href = '/login';
+            }
+          } catch (e) {
             // Refresh failed - redirect to login
-            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
-            clearAuthImmediate(USER_TYPES.ADMIN);
-            window.location.href = '/login';
+            if (typeof window !== 'undefined') {
+              const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
+              clearAuthImmediate(USER_TYPES.ADMIN);
+              window.location.href = '/login';
+            }
           }
-        } catch (e) {
-          // Refresh failed - redirect to login
-          if (typeof window !== 'undefined') {
-            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
-            clearAuthImmediate(USER_TYPES.ADMIN);
-            window.location.href = '/login';
-          }
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. You do not have permission to access this resource.';
+        } else if (response.status === 404) {
+          errorMessage = 'Resource not found.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
         }
-      } else if (response.status === 403) {
-        errorMessage = 'Access denied. You do not have permission to access this resource.';
-      } else if (response.status === 404) {
-        errorMessage = 'Resource not found.';
-      } else if (response.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
+        
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.statusText = response.statusText;
+        error._alreadyLogged = true; // Mark as already logged to prevent duplicate logs
+        logger.apiError(url, error, { 
+          status: response.status, 
+          statusText: response.statusText,
+          type: response.status === 401 ? 'auth_error' : response.status >= 500 ? 'server_error' : 'api_error'
+        });
+        throw error;
+      }
+
+      // Parse JSON with error handling
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        const error = new Error('Invalid JSON response from server');
+        error._alreadyLogged = true; // Mark as already logged
+        logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
+        throw error;
       }
       
-      const error = new Error(errorMessage);
-      error.status = response.status;
-      error.statusText = response.statusText;
-      error._alreadyLogged = true; // Mark as already logged to prevent duplicate logs
-      logger.apiError(url, error, { 
-        status: response.status, 
-        statusText: response.statusText,
-        type: response.status === 401 ? 'auth_error' : response.status >= 500 ? 'server_error' : 'api_error'
-      });
-      throw error;
-    }
+      // Validate response structure
+      if (!data || typeof data !== 'object') {
+        const error = new Error('Invalid response format from server');
+        error._alreadyLogged = true; // Mark as already logged
+        logger.apiError(url, error, { type: 'response_format_error', data });
+        throw error;
+      }
 
-    // Parse JSON with error handling
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      const error = new Error('Invalid JSON response from server');
-      error._alreadyLogged = true; // Mark as already logged
-      logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
-      throw error;
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout/abort errors
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
+        const timeoutError = new Error('Request timed out. The server is taking too long to respond. This may happen when loading large data. Please try again.');
+        timeoutError.status = 408; // Request Timeout
+        timeoutError.isTimeout = true;
+        timeoutError._alreadyLogged = true;
+        logger.apiError(url, timeoutError, { type: 'timeout_error', timeoutMs });
+        throw timeoutError;
+      }
+      
+      // Re-throw other errors
+      throw fetchError;
+    }
+  } catch (error) {
+    // Clean up timeout if it wasn't already cleared
+    if (timeoutId) {
+      clearTimeout(timeoutId);
     }
     
-    // Validate response structure
-    if (!data || typeof data !== 'object') {
-      const error = new Error('Invalid response format from server');
-      error._alreadyLogged = true; // Mark as already logged
-      logger.apiError(url, error, { type: 'response_format_error', data });
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
     // Only log if it's not already logged (to avoid duplicate logs)
     if (!error._alreadyLogged && !error.logged && !error.message.includes('No admin token found')) {
       error._alreadyLogged = true;
@@ -116,9 +151,14 @@ export const useAdminSubmissions = (orgAcronym) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 30000, // Cache for 30 seconds
+      keepPreviousData: true, // Keep previous data while loading new data to prevent UI flicker
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
+        // Don't retry on timeout errors immediately - let user retry manually
+        if (error?.isTimeout || error?.status === 408) {
+          return false;
+        }
         // Don't retry on 401 (auth errors), 404 (not found), 429 (rate limit), or 500+ (server errors)
         const status = error?.status || error?.response?.status;
         // If status is undefined, allow retry (might be network error)
@@ -129,7 +169,10 @@ export const useAdminSubmissions = (orgAcronym) => {
       onError: (error) => {
         // Only log if error hasn't been logged already by the fetcher
         if (!error._alreadyLogged && orgAcronym) {
-          logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { orgAcronym });
+          logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { 
+            orgAcronym,
+            isTimeout: error?.isTimeout || false
+          });
         }
       }
     }

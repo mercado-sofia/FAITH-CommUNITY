@@ -67,7 +67,7 @@ export const getPusher = () => {
  * @param {string} channelName - Channel name (e.g., 'private-user-123')
  * @param {string} eventName - Event name (e.g., 'new-notification')
  * @param {object} data - Notification data
- * @returns {Promise<boolean>} - Success status
+ * @returns {Promise<{success: boolean, error?: object}>} - Success status and optional error details
  */
 export const publishNotification = async (channelName, eventName, data) => {
   const pusher = getPusher();
@@ -77,23 +77,33 @@ export const publishNotification = async (channelName, eventName, data) => {
       channelName,
       eventName
     });
-    return false;
+    return {
+      success: false,
+      error: {
+        message: 'Pusher not configured',
+        code: 'PUSHER_NOT_CONFIGURED'
+      }
+    };
   }
 
   try {
     // Pusher trigger returns a promise that resolves when the event is sent
     await pusher.trigger(channelName, eventName, data);
-    return true;
+    return { success: true };
   } catch (error) {
     // Enhanced error logging
+    const errorDetails = {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      status: error.status,
+      response: error.response
+    };
+    
     console.error('❌ [Pusher] Failed to publish notification:', {
       channelName,
       eventName,
-      error: error.message,
-      errorName: error.name,
-      errorCode: error.code,
-      errorStatus: error.status,
-      errorResponse: error.response,
+      ...errorDetails,
       fullError: error
     });
     
@@ -102,7 +112,10 @@ export const publishNotification = async (channelName, eventName, data) => {
       console.error('❌ [Pusher] Error stack:', error.stack);
     }
     
-    return false;
+    return {
+      success: false,
+      error: errorDetails
+    };
   }
 };
 

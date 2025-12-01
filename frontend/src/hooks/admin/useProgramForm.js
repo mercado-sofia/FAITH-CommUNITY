@@ -284,10 +284,34 @@ export const useProgramForm = (mode = 'create', program = null) => {
     if (formData.additionalImages && formData.additionalImages.length > VALIDATION_RULES.additionalImages.maxCount) {
       newErrors.additionalImages = ERROR_MESSAGES.additionalImages.maxCount;
     } else if (formData.additionalImages && formData.additionalImages.length > 0) {
-      formData.additionalImages.forEach((file, index) => {
-        const imageError = validateImage(file, VALIDATION_RULES.additionalImages);
-        if (imageError) {
-          newErrors[`additionalImage_${index}`] = imageError;
+      formData.additionalImages.forEach((item, index) => {
+        let fileToValidate = null;
+        
+        // Handle different data structures
+        if (item && typeof item === 'object' && item.file && item.file instanceof File) {
+          // New structure: { file, preview, name }
+          fileToValidate = item.file;
+        } else if (item instanceof File) {
+          // Direct File object
+          fileToValidate = item;
+        } else if (typeof item === 'string' && item.startsWith('data:image/')) {
+          // Base64 string - validate directly
+          const imageError = validateImage(item, VALIDATION_RULES.additionalImages);
+          if (imageError) {
+            newErrors[`additionalImage_${index}`] = imageError;
+          }
+          return; // Skip File validation for base64
+        } else if (typeof item === 'string' && (item.startsWith('http://') || item.startsWith('https://'))) {
+          // Already uploaded URL - skip validation
+          return;
+        }
+        
+        // Validate File object if we have one
+        if (fileToValidate) {
+          const imageError = validateImage(fileToValidate, VALIDATION_RULES.additionalImages);
+          if (imageError) {
+            newErrors[`additionalImage_${index}`] = imageError;
+          }
         }
       });
     }

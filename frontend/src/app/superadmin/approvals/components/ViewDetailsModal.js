@@ -503,8 +503,8 @@ const ViewDetailsModal = ({
                       <Image 
                         src={getProgramImageUrl(programData.image) || '/defaults/default-profile.png'} 
                         alt="Program Main Image" 
-                        width={300}
-                        height={180}
+                        width={400}
+                        height={280}
                         style={{objectFit: 'cover', borderRadius: '12px'}} 
                         className={styles.mainImage}
                       />

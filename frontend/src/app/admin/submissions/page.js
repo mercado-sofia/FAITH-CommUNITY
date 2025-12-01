@@ -68,6 +68,17 @@ export default function SubmissionsPage() {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   }
 
+  // Check if error is a timeout
+  const isTimeoutError = useMemo(() => {
+    if (!error) return false;
+    return error?.isTimeout || error?.status === 408 || error?.message?.toLowerCase().includes('timeout');
+  }, [error]);
+
+  // Handle retry for timeout errors
+  const handleRetry = useCallback(() => {
+    refreshSubmissions();
+  }, [refreshSubmissions]);
+
   // Handle error display
   useEffect(() => {
     if (error) {
@@ -80,17 +91,17 @@ export default function SubmissionsPage() {
       // Only show toast for user-facing errors (not 500s that are being retried)
       // Check error status safely
       const errorStatus = error?.status || error?.response?.status;
-      if (errorStatus && typeof errorStatus === 'number' && errorStatus >= 500) {
+      if (errorStatus && typeof errorStatus === 'number' && errorStatus >= 500 && !isTimeoutError) {
         // Don't show toast for server errors during retries - SWR will handle retries
         // The error will be visible in the UI state (empty submissions list, etc.)
         return;
       }
-      // Show toast for client errors (4xx) and other errors
+      // Show toast for client errors (4xx), timeout errors, and other errors
       if (errorInfo.message) {
         showToast(errorInfo.message, 'error');
       }
     }
-  }, [error, showToast]);
+  }, [error, showToast, isTimeoutError]);
 
   // Handle authentication check
   useEffect(() => {
@@ -241,7 +252,7 @@ export default function SubmissionsPage() {
     );
   }
 
-  // Show error state
+  // Show error state for auth errors
   if (error && !admin?.org) {
     return (
       <div className={styles.container}>
@@ -250,6 +261,50 @@ export default function SubmissionsPage() {
         </div>
         <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
           <p>Please log in to view submissions.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show timeout error state with retry button
+  if (isTimeoutError && !loading && submissions.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Submissions</h1>
+        </div>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem 2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{ color: '#d32f2f', fontSize: '1.1rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+            Request Timed Out
+          </div>
+          <p style={{ color: '#666', maxWidth: '500px', marginBottom: '1rem' }}>
+            The server is taking too long to respond. This may happen when loading submissions with large data (post-act reports, images). Please try again.
+          </p>
+          <button
+            onClick={handleRetry}
+            disabled={loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#1976d2',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+              fontWeight: '500',
+              opacity: loading ? 0.6 : 1,
+              transition: 'opacity 0.2s'
+            }}
+          >
+            {loading ? 'Retrying...' : 'Retry'}
+          </button>
         </div>
       </div>
     );
@@ -287,6 +342,49 @@ export default function SubmissionsPage() {
             setShowBulkActions(false);
           }}
         />
+      )}
+
+      {/* Show timeout warning banner if there's an error but we have previous data */}
+      {isTimeoutError && submissions.length > 0 && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '4px',
+          padding: '1rem',
+          marginBottom: '1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: '#856404', display: 'block', marginBottom: '0.25rem' }}>
+              Request Timed Out
+            </strong>
+            <span style={{ color: '#856404', fontSize: '0.9rem' }}>
+              Showing previous data. The latest submissions may not be visible. Click &quot;Retry&quot; to refresh.
+            </span>
+          </div>
+          <button
+            onClick={handleRetry}
+            disabled={loading}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#ffc107',
+              color: '#856404',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              opacity: loading ? 0.6 : 1,
+              transition: 'opacity 0.2s'
+            }}
+          >
+            {loading ? 'Retrying...' : 'Retry'}
+          </button>
+        </div>
       )}
 
       <div className={styles.tableContainer}>

@@ -176,6 +176,60 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         }
       }
       
+      // Upload additional images if provided (to avoid sending base64 data in JSON payload)
+      let additionalImageUrls = [];
+      if (programData.additionalImages && Array.isArray(programData.additionalImages) && programData.additionalImages.length > 0) {
+        try {
+          // Filter out already uploaded URLs (strings that are not base64 data URLs)
+          const existingUrls = programData.additionalImages.filter(item => 
+            typeof item === 'string' && !item.startsWith('data:') && !(item instanceof File)
+          );
+          
+          // Find File objects that need to be uploaded
+          const filesToUpload = programData.additionalImages.filter(item => 
+            item && item.file && item.file instanceof File
+          );
+          
+          // Upload each file
+          const uploadPromises = filesToUpload.map(async (item) => {
+            const imageFormData = new FormData();
+            imageFormData.append('file', item.file);
+            
+            const imageResponse = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload?type=program_additional`, {
+              method: 'POST',
+              credentials: 'include',
+              body: imageFormData,
+            });
+            
+            if (!imageResponse.ok) {
+              throw new Error(`Failed to upload additional image: ${imageResponse.statusText}`);
+            }
+            
+            const imageResult = await imageResponse.json();
+            return imageResult.url || imageResult.public_id;
+          });
+          
+          const uploadedUrls = await Promise.all(uploadPromises);
+          additionalImageUrls = [...existingUrls, ...uploadedUrls];
+        } catch (additionalImageError) {
+          // Additional images upload failed - show error and stop submission
+          setSuccessModal({ 
+            isVisible: true, 
+            message: additionalImageError.message || 'Failed to upload additional images. Please try again.', 
+            type: 'error' 
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        // If no new files, keep existing URLs (filter out base64 and File objects)
+        additionalImageUrls = Array.isArray(programData.additionalImages) 
+          ? programData.additionalImages.filter(item => 
+              typeof item === 'string' && !item.startsWith('data:') && !(item instanceof File)
+            )
+          : [];
+      }
+      
       // Submit through the submissions system
       const submissionData = {
         submissions: [{
@@ -192,7 +246,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
             status: programData.status || 'pending',
             collaborators: programData.collaborators || [],
             image: imageUrl, // Use uploaded image URL
-            additionalImages: programData.additionalImages || [],
+            additionalImages: additionalImageUrls, // Use uploaded URLs, not base64 data
             submitted_by_name: programData.submitted_by_name?.trim() || '',
             submitted_by_role: programData.submitted_by_role?.trim() || '',
             // Include post-act report data if provided

@@ -1,5 +1,6 @@
 import db from "../../database.js"
 import SuperAdminNotificationController from "../../superadmin/controllers/superadminNotificationController.js"
+import { logWarn, logError } from "../../utils/logger.js"
 
 const safeParseJSON = (value, defaultValue = null) => {
   if (!value) return defaultValue;
@@ -95,11 +96,32 @@ const validateSubmissionItem = (item) => {
 export const submitChanges = async (req, res) => {
   const { submissions } = req.body
 
+  // Calculate payload size for logging and validation
+  const payloadSize = req.headers['content-length'] ? parseInt(req.headers['content-length']) : 0;
+  const payloadSizeMB = (payloadSize / (1024 * 1024)).toFixed(2);
+
   if (!submissions || !Array.isArray(submissions) || submissions.length === 0) {
     return res.status(400).json({
       success: false,
       message: "Submissions array is required and cannot be empty",
     })
+  }
+
+  // Validate payload size (warn if very large, but allow up to 50MB)
+  const MAX_PAYLOAD_SIZE = 50 * 1024 * 1024; // 50MB
+  if (payloadSize > MAX_PAYLOAD_SIZE) {
+    logWarn('Large payload detected in submitChanges', {
+      payloadSizeMB,
+      submissionCount: submissions.length,
+      maxAllowedMB: '50'
+    });
+    return res.status(413).json({
+      success: false,
+      message: `Payload too large. Maximum size is 50MB. Your payload is ${payloadSizeMB}MB.`,
+      errorType: 'PAYLOAD_TOO_LARGE',
+      payloadSizeMB,
+      maxSizeMB: 50
+    });
   }
 
   const validationErrors = []
@@ -170,9 +192,40 @@ export const submitChanges = async (req, res) => {
       try {
         // Validate proposed_data is valid JSON
         if (item.proposed_data !== undefined && item.proposed_data !== null) {
-          proposedDataStr = JSON.stringify(item.proposed_data);
-          // Verify it can be parsed back
-          JSON.parse(proposedDataStr);
+          // Check if proposed_data is already a string (shouldn't happen, but handle it)
+          if (typeof item.proposed_data === 'string') {
+            // Try to parse it first to validate
+            try {
+              JSON.parse(item.proposed_data);
+              proposedDataStr = item.proposed_data;
+            } catch (parseError) {
+              throw new Error(`Invalid JSON string in proposed_data: ${parseError.message}`);
+            }
+          } else {
+            // Stringify the object - handle large data carefully
+            try {
+              proposedDataStr = JSON.stringify(item.proposed_data);
+              
+              // Check stringified size (warn if very large)
+              const stringifiedSize = Buffer.byteLength(proposedDataStr, 'utf8');
+              if (stringifiedSize > 10 * 1024 * 1024) { // 10MB
+                logWarn('Large proposed_data detected', {
+                  section: item.section,
+                  sizeMB: (stringifiedSize / (1024 * 1024)).toFixed(2),
+                  organizationId: numericOrgId
+                });
+              }
+              
+              // Verify it can be parsed back
+              JSON.parse(proposedDataStr);
+            } catch (stringifyError) {
+              // Check for specific memory errors
+              if (stringifyError.message && stringifyError.message.includes('Invalid string length')) {
+                throw new Error(`Data too large to process. Please reduce the size of images or post-act report data.`);
+              }
+              throw new Error(`Failed to stringify proposed_data: ${stringifyError.message}`);
+            }
+          }
         } else {
           proposedDataStr = JSON.stringify({});
         }
@@ -180,16 +233,67 @@ export const submitChanges = async (req, res) => {
         throw new Error(`Invalid proposed_data JSON for submission: ${jsonError.message}`);
       }
       
-      const [result] = await db.execute(
-        `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
-         VALUES (?, ?, ?, ?, 'pending', NOW())`,
-        [
-          numericOrgId,
-          item.section,
-          proposedDataStr,
-          item.submitted_by,
-        ]
-      )
+      // Validate JSON string length before database insert (MySQL JSON has practical limits)
+      const jsonStringLength = Buffer.byteLength(proposedDataStr, 'utf8');
+      const MAX_JSON_SIZE = 16 * 1024 * 1024; // 16MB practical limit for MySQL JSON
+      if (jsonStringLength > MAX_JSON_SIZE) {
+        throw new Error(`proposed_data is too large (${(jsonStringLength / (1024 * 1024)).toFixed(2)}MB). Maximum size is 16MB. Please reduce the size of images or post-act report data.`);
+      }
+      
+      // Validate JSON string is valid before passing to MySQL
+      try {
+        JSON.parse(proposedDataStr);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON string before database insert: ${parseError.message}`);
+      }
+      
+      // Execute database insert with error handling
+      let result;
+      try {
+        [result] = await db.execute(
+          `INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+           VALUES (?, ?, ?, ?, 'pending', NOW())`,
+          [
+            numericOrgId,
+            item.section,
+            proposedDataStr,
+            item.submitted_by,
+          ]
+        );
+      } catch (dbError) {
+        // Check for MySQL JSON-specific errors
+        if (dbError.code === 'ER_INVALID_JSON_TEXT' || dbError.code === 'ER_INVALID_JSON_TEXT_IN_PARAM') {
+          logError('MySQL JSON validation error', dbError, {
+            context: 'submitChanges_db_insert',
+            section: item.section,
+            organizationId: numericOrgId,
+            jsonStringLength,
+            sqlMessage: dbError.sqlMessage
+          });
+          throw new Error(`Invalid JSON data format. Please check your submission data. Error: ${dbError.sqlMessage || dbError.message}`);
+        } else if (dbError.code === 'ER_DATA_TOO_LONG') {
+          logError('MySQL data too long error', dbError, {
+            context: 'submitChanges_db_insert',
+            section: item.section,
+            organizationId: numericOrgId,
+            jsonStringLength,
+            sqlMessage: dbError.sqlMessage
+          });
+          throw new Error(`Submission data is too large for database storage. Please reduce the size of images or post-act report data.`);
+        } else {
+          // Log other database errors
+          logError('Database insert error', dbError, {
+            context: 'submitChanges_db_insert',
+            section: item.section,
+            organizationId: numericOrgId,
+            jsonStringLength,
+            errorCode: dbError.code,
+            sqlState: dbError.sqlState,
+            sqlMessage: dbError.sqlMessage
+          });
+          throw dbError; // Re-throw to be caught by outer catch
+        }
+      }
       
       return {
         submissionId: result.insertId,
@@ -301,12 +405,38 @@ export const submitChanges = async (req, res) => {
   } catch (error) {
     await db.query("ROLLBACK")
     
+    // Log comprehensive error details for debugging
+    logError('Failed to save submissions', error, {
+      context: 'submitChanges',
+      payloadSizeMB,
+      submissionCount: submissions?.length || 0,
+      errorName: error.name,
+      errorCode: error.code,
+      errorMessage: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack
+    });
+    
     // Determine error type and provide specific error messages
     let errorType = 'UNKNOWN_ERROR';
     let errorMessage = 'Failed to save submissions';
     let statusCode = 500;
     
-    if (error.message && error.message.includes('JSON')) {
+    // Check for MySQL JSON-specific errors
+    if (error.code === 'ER_INVALID_JSON_TEXT' || error.code === 'ER_INVALID_JSON_TEXT_IN_PARAM') {
+      errorType = 'MYSQL_JSON_ERROR';
+      errorMessage = 'Invalid JSON data format. The submission data contains invalid JSON that cannot be stored in the database.';
+      statusCode = 400;
+    } else if (error.code === 'ER_DATA_TOO_LONG') {
+      errorType = 'DATA_TOO_LONG';
+      errorMessage = 'Submission data is too large for database storage. Please reduce the size of images or post-act report data.';
+      statusCode = 413;
+    } else if (error.message && (error.message.includes('Invalid string length') || error.message.includes('too large'))) {
+      errorType = 'PAYLOAD_TOO_LARGE';
+      errorMessage = 'The submission data is too large to process. Please reduce the size of images or post-act report data.';
+      statusCode = 413;
+    } else if (error.message && error.message.includes('JSON')) {
       errorType = 'JSON_VALIDATION_ERROR';
       errorMessage = error.message;
       statusCode = 400;
@@ -326,6 +456,10 @@ export const submitChanges = async (req, res) => {
       errorType = 'DATABASE_LOCK_ERROR';
       errorMessage = 'Database is temporarily busy. Please try again in a moment.';
       statusCode = 503;
+    } else if (error.name === 'RangeError' || error.message?.includes('Maximum call stack')) {
+      errorType = 'MEMORY_ERROR';
+      errorMessage = 'The submission data is too large to process. Please reduce the size of images or post-act report data.';
+      statusCode = 413;
     }
     
     res.status(statusCode).json({
@@ -333,12 +467,14 @@ export const submitChanges = async (req, res) => {
       message: errorMessage,
       error: error.message,
       errorType: errorType,
-      // Only include detailed error in development
+      // Include payload size in response for debugging
       ...(process.env.NODE_ENV === 'development' && {
+        payloadSizeMB,
         details: {
           code: error.code,
           sqlState: error.sqlState,
-          sqlMessage: error.sqlMessage
+          sqlMessage: error.sqlMessage,
+          errorName: error.name
         }
       })
     })
@@ -384,38 +520,92 @@ export const getSubmissionsByOrg = async (req, res) => {
 
     // Parse JSON data and add metadata
     // For list view, extract minimal data to prevent large payloads
-    const parsedRows = await Promise.all(rows.map(async (row) => {
-      let proposed_data_parsed = {}
-      let parse_error = false
+    // Process in chunks to prevent blocking when there's large data (post-act reports, images)
+    const BATCH_SIZE = 20; // Process 20 submissions at a time
+    const parsedRows = [];
+    let parseErrorCount = 0;
 
-      // Note: advocacy and competency are no longer part of the submission workflow
-      // Parse JSON data for proposed_data only
-      proposed_data_parsed = safeParseJSON(row.proposed_data, {});
+    // Process submissions in chunks to prevent memory issues and blocking
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
       
-      // Check if parsing failed (only if it was a string and couldn't be parsed)
-      if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
-        proposed_data_parsed = { error: "Invalid JSON data" };
-        parse_error = true;
-      }
+      // Process each batch with individual error handling
+      const batchResults = await Promise.all(
+        batch.map(async (row) => {
+          try {
+            let proposed_data_parsed = {};
+            let parse_error = false;
 
-      // Extract minimal data for list view to prevent large payloads
-      // Full data will be available via getSubmissionById when viewing individual submission
-      const minimal_proposed_data = extractMinimalSubmissionData(proposed_data_parsed, row.section);
+            // Note: advocacy and competency are no longer part of the submission workflow
+            // Parse JSON data for proposed_data only
+            // Wrap in try-catch to handle individual submission errors
+            try {
+              proposed_data_parsed = safeParseJSON(row.proposed_data, {});
+              
+              // Check if parsing failed (only if it was a string and couldn't be parsed)
+              if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
+                proposed_data_parsed = { error: "Invalid JSON data" };
+                parse_error = true;
+                parseErrorCount++;
+              }
 
-      return {
-        ...row,
-        proposed_data: minimal_proposed_data,
-        organization_name: organization.orgName,
-        can_edit: row.status === "pending",
-        can_cancel: row.status === "pending",
-        parse_error: parse_error, // Indicate if any parsing error occurred for this row
-        // Add flag to indicate this is minimal data
-        _isMinimalData: true,
-      }
-    }))
+              // Extract minimal data for list view to prevent large payloads
+              // Full data will be available via getSubmissionById when viewing individual submission
+              const minimal_proposed_data = extractMinimalSubmissionData(proposed_data_parsed, row.section);
+
+              return {
+                ...row,
+                proposed_data: minimal_proposed_data,
+                organization_name: organization.orgName,
+                can_edit: row.status === "pending",
+                can_cancel: row.status === "pending",
+                parse_error: parse_error, // Indicate if any parsing error occurred for this row
+                // Add flag to indicate this is minimal data
+                _isMinimalData: true,
+              };
+            } catch (parseErr) {
+              // Individual submission parsing error - don't block others
+              parseErrorCount++;
+              logWarn(`[getSubmissionsByOrg] Failed to parse submission ${row.id}`, { 
+                submissionId: row.id, 
+                error: parseErr.message 
+              });
+              return {
+                ...row,
+                proposed_data: { error: "Failed to parse submission data" },
+                organization_name: organization.orgName,
+                can_edit: row.status === "pending",
+                can_cancel: row.status === "pending",
+                parse_error: true,
+                _isMinimalData: true,
+              };
+            }
+          } catch (rowError) {
+            // Catch any other errors for this row
+            parseErrorCount++;
+            logWarn(`[getSubmissionsByOrg] Error processing submission ${row.id}`, { 
+              submissionId: row.id, 
+              error: rowError.message 
+            });
+            return {
+              ...row,
+              proposed_data: { error: "Error processing submission" },
+              organization_name: organization.orgName,
+              can_edit: row.status === "pending",
+              can_cancel: row.status === "pending",
+              parse_error: true,
+              _isMinimalData: true,
+            };
+          }
+        })
+      );
+
+      parsedRows.push(...batchResults);
+    }
 
     // Return success even if some rows have parsing errors, as the query itself was successful
-    res.json({
+    // Include warning if some submissions had parsing errors
+    const response = {
       success: true,
       data: parsedRows,
       organization: {
@@ -424,7 +614,14 @@ export const getSubmissionsByOrg = async (req, res) => {
         acronym: orgAcronym,
       },
       count: parsedRows.length,
-    })
+    };
+
+    // Add warning if some submissions had parsing errors (for debugging)
+    if (parseErrorCount > 0) {
+      response.warning = `${parseErrorCount} submission(s) had parsing errors but were included in results`;
+    }
+
+    res.json(response)
   } catch (error) {
     res.status(500).json({
       success: false,

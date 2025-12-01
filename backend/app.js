@@ -135,8 +135,34 @@ app.use(
 
 // Parsers
 app.use(cookieParser())
+
+// Global body parser (applies to all routes except submissions which has its own)
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true }))
+
+// Body parser error handler - catches errors from express.json() middleware
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    // JSON parsing error
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON in request body',
+      error: 'Malformed JSON',
+      errorType: 'JSON_PARSE_ERROR'
+    });
+  }
+  if (err.type === 'entity.too.large') {
+    // Payload too large error
+    return res.status(413).json({
+      success: false,
+      message: 'Request payload too large',
+      error: 'Payload exceeds the maximum allowed size',
+      errorType: 'PAYLOAD_TOO_LARGE',
+      maxSizeMB: err.limit ? (parseInt(err.limit) / (1024 * 1024)).toFixed(0) : '10'
+    });
+  }
+  next(err);
+});
 // Static file serving for uploads removed - using Cloudinary now
 
 // Global rate limiting and burst control
@@ -194,17 +220,9 @@ app.get("/api/pusher/test", async (req, res) => {
     const testChannel = 'test-channel';
     const testData = { message: 'Test notification', timestamp: new Date().toISOString() };
     
-    let published = false;
-    let publishError = null;
-    
-    try {
-      published = await publishNotification(testChannel, 'test-event', testData);
-    } catch (err) {
-      publishError = {
-        message: err.message,
-        status: err.status
-      };
-    }
+    const publishResult = await publishNotification(testChannel, 'test-event', testData);
+    const published = publishResult.success;
+    const publishError = publishResult.error || null;
 
     res.json({
       success: published,
@@ -216,11 +234,17 @@ app.get("/api/pusher/test", async (req, res) => {
       }
     });
   } catch (error) {
+    // Log full error details server-side for debugging
+    console.error('Pusher test endpoint error:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Return sanitized error response without stack trace
     res.status(500).json({
       success: false,
       message: "Pusher test failed",
-      error: error.message,
-      stack: error.stack
+      error: error.message
     });
   }
 })
@@ -609,7 +633,7 @@ httpServer.listen(PORT, async () => {
         
         // Also cleanup expired/revoked refresh tokens
         const db = await import("./src/database.js");
-        await db.default.execute(
+        await db.default.query(
           'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
         );
         
@@ -625,14 +649,12 @@ httpServer.listen(PORT, async () => {
         const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
         await SessionSecurity.cleanExpiredSessions();
         const db = await import("./src/database.js");
-        await db.default.execute(
+        await db.default.query(
           'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
         );
         console.log('✅ Initial session cleanup completed');
       } catch (error) {
         console.error('Initial session cleanup failed:', error);
-      } finally {
-        initialSessionCleanupTimeout = null;
       }
     }, 30000); // 30 seconds after startup
   } else {

@@ -13,6 +13,34 @@ import { verifyAdminOrSuperadmin } from "../../superadmin/middleware/verifyAdmin
 
 const router = express.Router()
 
+// Apply route-specific body parser with higher limit for large payloads (post-act reports, images)
+// This must be applied BEFORE authentication middleware to handle body parsing errors properly
+router.use(express.json({ limit: "50mb" }))
+
+// Body parser error handler for this router
+router.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    // JSON parsing error from body parser
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON in request body',
+      error: 'Malformed JSON',
+      errorType: 'JSON_PARSE_ERROR'
+    });
+  }
+  if (err.type === 'entity.too.large') {
+    // Payload too large error
+    return res.status(413).json({
+      success: false,
+      message: 'Request payload too large. Maximum size is 50MB.',
+      error: 'Payload exceeds the maximum allowed size',
+      errorType: 'PAYLOAD_TOO_LARGE',
+      maxSizeMB: 50
+    });
+  }
+  next(err);
+});
+
 // Apply authentication middleware to all submission routes
 router.use(verifyAdminOrSuperadmin)
 

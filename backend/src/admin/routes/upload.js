@@ -54,6 +54,8 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
     // Note: This multer middleware only parses the file into memory (memoryStorage),
     // it does NOT upload to S3. The actual upload happens later via uploadSingleToS3()
     uploadMiddleware = s3UploadConfigs.postActReport.single('file');
+  } else if (uploadType === 'program_additional') {
+    uploadMiddleware = cloudinaryUploadConfigs.programAdditional.single('file');
   } else {
     uploadMiddleware = cloudinaryUploadConfigs.programMain.single('file');
   }
@@ -136,6 +138,10 @@ router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
       case 'highlight':
         folder = CLOUDINARY_FOLDERS.HIGHLIGHTS;
         prefix = 'highlight_';
+        break;
+      case 'program_additional':
+        folder = CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL;
+        prefix = 'prog_addl_';
         break;
       default:
         folder = 'faith-community/programs/main';

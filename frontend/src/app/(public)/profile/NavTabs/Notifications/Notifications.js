@@ -7,6 +7,7 @@ import { makeAuthenticatedRequest } from '@/utils/(public)/profileApi';
 import { useNotifications } from '@/hooks/shared/useNotifications';
 import { useAuthState } from '@/hooks/shared/useAuthState';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import SkeletonLoader from '../../../components/SkeletonLoader/SkeletonLoader';
 import styles from './Notifications.module.css';
 
 export default function Notifications() {
@@ -79,9 +80,9 @@ export default function Notifications() {
         <div className={styles.sectionHeader}>
           <h2>Notifications</h2>
         </div>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading notifications...</p>
+        <div className={styles.notificationsList}>
+          <h3>Recent Notifications</h3>
+          <SkeletonLoader type="notifications" count={4} />
         </div>
       </div>
     );

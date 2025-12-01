@@ -1,0 +1,296 @@
+/* Skeleton Loader Styles for Public Profile */
+.skeletonContainer {
+  width: 100%;
+}
+
+/* Common skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeletonBase {
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+  will-change: background-position;
+}
+
+/* Notifications Skeleton */
+.notificationsSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notificationItemSkeleton {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.notificationIconSkeleton {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.notificationContentSkeleton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notificationTitleSkeleton {
+  width: 60%;
+  height: 16px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.notificationMessageSkeleton {
+  width: 85%;
+  height: 14px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.notificationDateSkeleton {
+  width: 40%;
+  height: 12px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.notificationActionsSkeleton {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.actionButtonSkeleton {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Applications Skeleton */
+.applicationsSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.applicationCardSkeleton {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.applicationImageSkeleton {
+  width: 120px;
+  height: 120px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.applicationContentSkeleton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.applicationTitleSkeleton {
+  width: 70%;
+  height: 20px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.applicationOrgSkeleton {
+  width: 50%;
+  height: 16px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.applicationDetailsSkeleton {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.applicationDetailItemSkeleton {
+  width: 100px;
+  height: 14px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.applicationStatusSkeleton {
+  width: 80px;
+  height: 24px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  margin-top: 0.25rem;
+}
+
+.applicationActionsSkeleton {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.applicationActionButtonSkeleton {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Form Skeleton */
+.formSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroupSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formLabelSkeleton {
+  width: 120px;
+  height: 14px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.formInputSkeleton {
+  width: 100%;
+  height: 44px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Section Skeleton */
+.sectionSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-height: 200px;
+}
+
+.headerSkeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.titleSkeleton {
+  width: 200px;
+  height: 24px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.contentSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.textSkeleton {
+  width: 100%;
+  height: 16px;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 50%, #f8fafc 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.textSkeleton:nth-child(2) {
+  width: 80%;
+}
+
+.textSkeleton:nth-child(3) {
+  width: 60%;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notificationItemSkeleton {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .notificationActionsSkeleton {
+    align-self: flex-end;
+  }
+
+  .applicationCardSkeleton {
+    flex-direction: column;
+  }
+
+  .applicationImageSkeleton {
+    width: 100%;
+    height: 180px;
+  }
+}
+

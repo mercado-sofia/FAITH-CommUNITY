@@ -118,33 +118,49 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
   }
 
   try {
+    // Set logout flag in sessionStorage to prevent race condition
+    // This flag will be checked by useAuthState to prevent re-authentication
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('logoutInProgress', 'true');
+    }
+    
     // Show loader if requested
     if (showLoader && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('showLogoutLoader'));
     }
     
+    // Clear authentication data from localStorage immediately (synchronous)
+    // This prevents any components from reading stale data
+    clearAuthData(userType);
+    
+    // Dispatch logout event immediately to clear state in components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('user:logout', {
+        detail: { userType, timestamp: Date.now() }
+      }));
+    }
+    
     // Call logout API to clear httpOnly cookies (works for all roles now!)
+    // Do this after clearing local state to ensure UI updates immediately
     try {
       // Use unified logout endpoint - works for all roles
-      await fetch(`${API_BASE_URL}/api/users/logout`, {
+      const logoutUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/logout` : '/api/users/logout';
+      const response = await fetch(logoutUrl, {
         method: 'POST',
         credentials: 'include', // Include cookies to clear them
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      
+      // Wait for the response to ensure logout is processed on backend
+      if (!response.ok) {
+        console.warn('[logout] Logout API returned non-OK status:', response.status);
+      }
     } catch (error) {
-      // Continue with cleanup even if logout endpoint fails
-    }
-    
-    // Clear authentication data from localStorage (user data only, tokens are in cookies)
-    clearAuthData(userType);
-    
-    // Dispatch logout event for other components to listen
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('user:logout', {
-        detail: { userType, timestamp: Date.now() }
-      }));
+      // Continue with redirect even if logout endpoint fails
+      // Local state is already cleared
+      console.error('[logout] Error calling logout API:', error);
     }
     
     // Call success callback
@@ -152,8 +168,11 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
       onSuccess();
     }
     
-    // Handle redirect
+    // Handle redirect - ensure logout API completes first
     if (redirect) {
+      // Small delay to ensure all cleanup is complete
+      const redirectDelay = showLoader ? 1000 : 100;
+      
       setTimeout(() => {
         if (showLoader && typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
@@ -165,15 +184,31 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
           : '/login';
           
         if (typeof window !== 'undefined') {
+          // Clear logout flag just before redirect
+          // It will be cleared on the new page load if it still exists
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('logoutInProgress');
+          }
           window.location.href = finalRedirectPath;
         }
-      }, showLoader ? 1000 : 0);
+      }, redirectDelay);
+    } else {
+      // If not redirecting, clear the logout flag
+      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('logoutInProgress');
+      }
     }
     
   } catch (error) {
+    console.error('[logout] Error during logout:', error);
     
     // Still clear data and redirect on error
     clearAuthData(userType);
+    
+    // Clear logout flag on error
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('logoutInProgress');
+    }
     
     if (onError) {
       onError(error);

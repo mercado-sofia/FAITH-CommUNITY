@@ -15,9 +15,26 @@ export const useAuthState = () => {
         return;
       }
       
+      // Check if logout is in progress - prevent race condition
+      const logoutInProgress = sessionStorage.getItem('logoutInProgress');
+      if (logoutInProgress === 'true') {
+        // Logout is in progress, don't re-authenticate
+        // Clear the flag since we're handling it now
+        sessionStorage.removeItem('logoutInProgress');
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
       // Check authentication status from backend (reads from httpOnly cookie)
       const { getCurrentUser } = await import('@/utils/shared/authService');
       const userData = await getCurrentUser();
+      
+      // Clear logout flag after auth check completes (whether successful or not)
+      // This ensures the flag doesn't persist across page loads
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('logoutInProgress');
+      }
       
       if (userData) {
         // Only set user if they are a regular user (not admin/superadmin)
@@ -42,6 +59,11 @@ export const useAuthState = () => {
         setUser(null);
       }
     } catch (error) {
+      // Clear logout flag on error as well
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('logoutInProgress');
+      }
+      
       // Clear corrupted data using centralized cleanup
       const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
       clearAuthImmediate(USER_TYPES.PUBLIC);
@@ -78,6 +100,27 @@ export const useAuthState = () => {
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  // Listen for logout event to immediately clear user state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleLogout = async () => {
+      // Immediately clear user state when logout event is received
+      setUser(null);
+      // Clear any stale localStorage data
+      const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
+      clearAuthImmediate(USER_TYPES.PUBLIC);
+    };
+
+    window.addEventListener('user:logout', handleLogout);
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('user:logout', handleLogout);
+      }
+    };
+  }, []);
 
   return {
     user,

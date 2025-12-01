@@ -1141,6 +1141,15 @@
   z-index: 2;
 }
 
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-size: 14px;
+}
+
 .loadingSpinner {
   width: 40px;
   height: 40px;

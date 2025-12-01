@@ -260,6 +260,8 @@ const ViewDetailsModal = ({
   const [allImages, setAllImages] = useState([]);
   const [programTitle, setProgramTitle] = useState(null);
   const [loadingProgram, setLoadingProgram] = useState(false);
+  const [fullSubmissionData, setFullSubmissionData] = useState(null);
+  const [loadingFullData, setLoadingFullData] = useState(false);
 
   const getSectionDisplayName = (section) => {
     // Note: advocacy and competency are no longer part of the approval workflow
@@ -279,12 +281,80 @@ const ViewDetailsModal = ({
     );
   };
 
+  // Fetch full submission data when modal opens with minimal data
+  useEffect(() => {
+    if (!isOpen || !submissionData) {
+      setFullSubmissionData(null);
+      return;
+    }
+
+    // Check if we have minimal data or if we need to fetch full details
+    const isMinimalData = submissionData._isMinimalData || 
+                         (submissionData.proposed_data && typeof submissionData.proposed_data === 'object' && 
+                          (submissionData.proposed_data._hasData === true || 
+                           submissionData.proposed_data.has_post_act_report === true ||
+                           submissionData.proposed_data.has_file === true ||
+                           !submissionData.proposed_data.description)); // If description is missing, likely minimal data
+
+    // Always fetch full data to ensure we have complete information
+    // This is especially important for post-act reports and large data
+    if (submissionData.id) {
+      setLoadingFullData(true);
+      const fetchFullData = async () => {
+        try {
+          const { API_BASE_URL } = await import('@/config/api');
+          const response = await fetch(`${API_BASE_URL || ''}/api/submissions/details/${submissionData.id}`, {
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
+            headers: {
+              'Content-Type': 'application/json',
+              // No Authorization header needed - httpOnly cookies handle authentication
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setFullSubmissionData(result.data);
+            } else {
+              // Fall back to provided data if response is not successful
+              setFullSubmissionData(submissionData);
+            }
+          } else {
+            logger.warn(`Failed to fetch full submission data: ${response.status}`, { 
+              context: 'ViewDetailsModal',
+              submissionId: submissionData.id 
+            });
+            // Fall back to provided data if fetch fails
+            setFullSubmissionData(submissionData);
+          }
+        } catch (error) {
+          logger.error('Error fetching full submission data', error, { 
+            context: 'ViewDetailsModal',
+            submissionId: submissionData.id 
+          });
+          // Fall back to provided data if fetch fails
+          setFullSubmissionData(submissionData);
+        } finally {
+          setLoadingFullData(false);
+        }
+      };
+
+      fetchFullData();
+    } else {
+      // No ID available, use provided data
+      setFullSubmissionData(submissionData);
+    }
+  }, [isOpen, submissionData]);
+
+  // Use full data if available, otherwise use provided data
+  const displayData = fullSubmissionData || submissionData;
+
   // Parse program data for display
   const getProgramData = () => {
-    if (!submissionData || submissionData.section !== 'programs') return null;
+    if (!displayData || displayData.section !== 'programs') return null;
     try {
       // Try different possible field names for the data
-      const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
+      const dataField = displayData.proposed_data || displayData.data || displayData.new_data;
       return typeof dataField === 'string' 
         ? JSON.parse(dataField) 
         : dataField;
@@ -295,10 +365,10 @@ const ViewDetailsModal = ({
 
   // Parse highlights data for display
   const getHighlightsData = () => {
-    if (!submissionData || submissionData.section !== 'highlights') return null;
+    if (!displayData || displayData.section !== 'highlights') return null;
     try {
       // Try different possible field names for the data
-      const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
+      const dataField = displayData.proposed_data || displayData.data || displayData.new_data;
       const parsedData = typeof dataField === 'string' 
         ? JSON.parse(dataField) 
         : dataField;
@@ -365,6 +435,9 @@ const ViewDetailsModal = ({
   // Early return after all hooks to maintain hook order
   if (!isOpen || !submissionData) return null;
 
+  // Use displayData (full data if available) for rendering
+  const dataToDisplay = displayData || submissionData;
+
   // Handle image viewing
   const openImageViewer = (images, startIndex = 0) => {
     setAllImages(images);
@@ -418,7 +491,7 @@ const ViewDetailsModal = ({
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>Submission Details</h3>
           <div className={styles.modalHeaderRight}>
-            {getStatusBadge(submissionData.status || 'pending')}
+            {getStatusBadge(dataToDisplay.status || 'pending')}
             <button 
               onClick={onClose}
               className={styles.modalCloseBtn}
@@ -429,23 +502,30 @@ const ViewDetailsModal = ({
         </div>
         
         <div className={styles.modalBody}>
+          {/* Show loading indicator while fetching full data */}
+          {loadingFullData && (
+            <div className={styles.loadingContainer}>
+              <p>Loading submission details...</p>
+            </div>
+          )}
+
           {/* Basic submission info */}
           <div className={styles.submissionInfo}>
             <div className={styles.infoItem}>
               <span className={styles.infoLabel}>Section</span>
-              <span className={styles.infoValue}>{getSectionDisplayName(submissionData.section)}</span>
+              <span className={styles.infoValue}>{getSectionDisplayName(dataToDisplay.section)}</span>
             </div>
             <div className={styles.infoItem}>
               <span className={styles.infoLabel}>Submitted By</span>
               <div className={styles.orgValueContainer}>
-                {submissionData.organization_logo ? (() => {
-                  const logoUrl = getOrganizationImageUrl(submissionData.organization_logo, 'logo');
+                {dataToDisplay.organization_logo ? (() => {
+                  const logoUrl = getOrganizationImageUrl(dataToDisplay.organization_logo, 'logo');
                   if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
                     return (
                       <div className={styles.orgLogoWrapper}>
                         <Image
                           src={logoUrl}
-                          alt={`${submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Organization'} logo`}
+                          alt={`${dataToDisplay.orgName || dataToDisplay.organization_acronym || dataToDisplay.org || 'Organization'} logo`}
                           width={24}
                           height={24}
                           className={styles.orgLogo}
@@ -460,22 +540,22 @@ const ViewDetailsModal = ({
                           className={styles.orgLogoPlaceholder}
                           style={{ display: 'none' }}
                         >
-                          {(submissionData.organization_acronym || submissionData.org || '?').charAt(0).toUpperCase()}
+                          {(dataToDisplay.organization_acronym || dataToDisplay.org || '?').charAt(0).toUpperCase()}
                         </div>
                       </div>
                     );
                   }
                   return null;
                 })() : null}
-                {!submissionData.organization_logo && (
+                {!dataToDisplay.organization_logo && (
                   <div className={styles.orgLogoWrapper}>
                     <div className={styles.orgLogoPlaceholder}>
-                      {(submissionData.organization_acronym || submissionData.org || '?').charAt(0).toUpperCase()}
+                      {(dataToDisplay.organization_acronym || dataToDisplay.org || '?').charAt(0).toUpperCase()}
                     </div>
                   </div>
                 )}
                 <span className={styles.infoValue}>
-                  {submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Unknown Organization'}
+                  {dataToDisplay.orgName || dataToDisplay.organization_acronym || dataToDisplay.org || 'Unknown Organization'}
                 </span>
               </div>
             </div>
@@ -483,16 +563,16 @@ const ViewDetailsModal = ({
               <span className={styles.infoLabel}>Date</span>
               <span className={styles.infoValue}>
                 {formatDateShort(
-                  submissionData.submitted_at instanceof Date 
-                    ? submissionData.submitted_at.toISOString() 
-                    : submissionData.submitted_at
+                  dataToDisplay.submitted_at instanceof Date 
+                    ? dataToDisplay.submitted_at.toISOString() 
+                    : dataToDisplay.submitted_at
                 )}
               </span>
             </div>
           </div>
 
           {/* Content sections based on submission type */}
-          {submissionData.section === 'programs' && programData ? (
+          {dataToDisplay.section === 'programs' && programData ? (
             <div className={styles.contentSections}>
               {/* Enhanced Main Image Section */}
               {programData.image && (
@@ -763,7 +843,7 @@ const ViewDetailsModal = ({
               )}
 
             </div>
-          ) : submissionData.section === 'highlights' && highlightsData ? (
+          ) : dataToDisplay.section === 'highlights' && highlightsData ? (
             // For highlights approvals, show formatted highlight data
             <div className={styles.contentSections}>
               {/* Title Section */}
@@ -875,7 +955,7 @@ const ViewDetailsModal = ({
                 )}
               </div>
             </div>
-          ) : submissionData.section === 'Post Act Report' ? (
+          ) : dataToDisplay.section === 'Post Act Report' ? (
             // For Post Act Report, show only the uploaded file
             <div className={styles.contentSections}>
               <div className={styles.contentSection}>
@@ -883,9 +963,9 @@ const ViewDetailsModal = ({
                 <div className={styles.descriptionBox}>
                   {(() => {
                     try {
-                      const proposedData = typeof submissionData.proposed_data === 'string' 
-                        ? JSON.parse(submissionData.proposed_data) 
-                        : submissionData.proposed_data;
+                      const proposedData = typeof dataToDisplay.proposed_data === 'string' 
+                        ? JSON.parse(dataToDisplay.proposed_data) 
+                        : dataToDisplay.proposed_data;
                       const fileUrl = proposedData?.file_url;
                       
                       if (!fileUrl) {
@@ -1001,7 +1081,7 @@ const ViewDetailsModal = ({
                     <div className={styles.dataBlock}>
                       <h5>Submission Data:</h5>
                       <pre className={styles.jsonData}>
-                        {JSON.stringify(submissionData.proposed_data || submissionData.data || submissionData.new_data, null, 2)}
+                        {JSON.stringify(dataToDisplay.proposed_data || dataToDisplay.data || dataToDisplay.new_data, null, 2)}
                       </pre>
                     </div>
                   </div>
@@ -1012,13 +1092,13 @@ const ViewDetailsModal = ({
         
         <div className={styles.modalFooter}>
           <div className={styles.modalFooterActions}>
-            {(submissionData.status === 'pending' || submissionData.status === 'pending_superadmin_approval') && (
+            {(dataToDisplay.status === 'pending' || dataToDisplay.status === 'pending_superadmin_approval') && (
               <>
                 <button 
                   onClick={() => {
                     if (onReject) {
                       // Call the handler first to set state and open confirmation modal
-                      onReject(submissionData);
+                      onReject(dataToDisplay);
                       // Close the details modal after a small delay to allow state to be set
                       setTimeout(() => {
                         onClose();
@@ -1033,7 +1113,7 @@ const ViewDetailsModal = ({
                   onClick={() => {
                     if (onApprove) {
                       // Call the handler first to set state and open confirmation modal
-                      onApprove(submissionData);
+                      onApprove(dataToDisplay);
                       // Close the details modal after a small delay to allow state to be set
                       setTimeout(() => {
                         onClose();

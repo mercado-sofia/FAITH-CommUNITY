@@ -12,6 +12,7 @@ import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from 
 import { UnavailableImagePlaceholder } from '@/components';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import SkeletonLoader from '../../../components/SkeletonLoader/SkeletonLoader';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {
@@ -360,10 +361,7 @@ export default function MyApplications() {
         <div className={styles.sectionHeader}>
           <h2>My Applications</h2>
         </div>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading applications...</p>
-        </div>
+        <SkeletonLoader type="applications" count={3} />
       </div>
     );
   }

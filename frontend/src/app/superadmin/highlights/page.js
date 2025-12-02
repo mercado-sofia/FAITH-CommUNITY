@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown, FiArchive } from 'react-icons/fi'
 import { useGetAllHighlightsQuery, useGetHighlightsStatisticsQuery } from '@/rtk/superadmin/highlightsApi'
@@ -395,58 +395,58 @@ const SuperadminHighlightsPage = () => {
     }
   }, [])
 
-  // Get featured highlights (from API)
-  const getFeaturedHighlights = (highlights) => {
-    const featuredIds = new Set(featuredHighlightsFromApi.map(fh => fh.highlight_id || fh.id))
-    // Filter by featured and ensure status is approved (safety check)
-    return highlights.filter(h => h.status === 'approved' && featuredIds.has(h.id))
-  }
-
   // Process highlights based on active tab
+  // Memoized to prevent unnecessary recalculations when unrelated state changes
   // Safety filter: Explicitly ensure only approved highlights are displayed
   // This is a defensive measure in case the API returns unexpected data
-  let processedHighlights = highlights.filter(h => h.status === 'approved')
+  const processedHighlights = useMemo(() => {
+    let processed = highlights.filter(h => h.status === 'approved')
 
-  // Create a map of featured highlights with their impact_level (BEFORE search so search can use it)
-  const featuredHighlightsMap = new Map()
-  featuredHighlightsFromApi.forEach(fh => {
-    featuredHighlightsMap.set(fh.highlight_id || fh.id, {
-      isFeatured: true,
-      impact_level: fh.impact_level || 'average'
+    // Create a map of featured highlights with their impact_level (BEFORE search so search can use it)
+    const featuredHighlightsMap = new Map()
+    featuredHighlightsFromApi.forEach(fh => {
+      featuredHighlightsMap.set(fh.highlight_id || fh.id, {
+        isFeatured: true,
+        impact_level: fh.impact_level || 'average'
+      })
     })
-  })
 
-  // Merge impact_level from featured highlights into processed highlights (BEFORE search)
-  processedHighlights = processedHighlights.map(highlight => {
-    const featuredData = featuredHighlightsMap.get(highlight.id)
-    if (featuredData) {
-      return {
-        ...highlight,
-        impact_level: featuredData.impact_level,
-        isFeatured: true
+    // Merge impact_level from featured highlights into processed highlights (BEFORE search)
+    processed = processed.map(highlight => {
+      const featuredData = featuredHighlightsMap.get(highlight.id)
+      if (featuredData) {
+        return {
+          ...highlight,
+          impact_level: featuredData.impact_level,
+          isFeatured: true
+        }
       }
+      return highlight
+    })
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      processed = searchHighlights(processed, searchQuery)
     }
-    return highlight
-  })
 
-  // Apply search filter
-  if (searchQuery.trim()) {
-    processedHighlights = searchHighlights(processedHighlights, searchQuery)
-  }
+    // Apply organization filter
+    if (selectedOrganization !== 'all') {
+      processed = filterByOrganization(processed, selectedOrganization)
+    }
 
-  // Apply organization filter
-  if (selectedOrganization !== 'all') {
-    processedHighlights = filterByOrganization(processedHighlights, selectedOrganization)
-  }
+    // Apply tab-specific filtering
+    if (activeTab === 'featured') {
+      // Featured tab: only show starred/featured highlights
+      // Use the featuredHighlightsMap we already created above
+      const featuredIds = new Set(featuredHighlightsFromApi.map(fh => fh.highlight_id || fh.id))
+      processed = processed.filter(h => h.status === 'approved' && featuredIds.has(h.id))
+    } else if (activeTab === 'all') {
+      // All tab: show all approved highlights (both featured and non-featured combined)
+      // No additional filtering needed - already filtered to approved above
+    }
 
-  // Apply tab-specific filtering
-  if (activeTab === 'featured') {
-    // Featured tab: only show starred/featured highlights
-    processedHighlights = getFeaturedHighlights(processedHighlights)
-  } else if (activeTab === 'all') {
-    // All tab: show all approved highlights (both featured and non-featured combined)
-    // No additional filtering needed - already filtered to approved above
-  }
+    return processed
+  }, [highlights, featuredHighlightsFromApi, searchQuery, selectedOrganization, activeTab])
 
   // Use organizations from API for filter dropdown
   // Include all organizations, including "Collab Admin" as it's a real organization in the database

@@ -15,6 +15,15 @@ const SearchBar = ({
     setLocalQuery(searchQuery || '');
   }, [searchQuery]);
 
+  // Debounced search effect - delays calling onSearchChange by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localQuery);
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timer);
+  }, [localQuery, onSearchChange]);
+
   return (
     <div className={styles.searchContainer}>
       <div className={styles.searchInputContainer}>
@@ -24,7 +33,6 @@ const SearchBar = ({
           value={localQuery}
           onChange={(e) => {
             setLocalQuery(e.target.value);
-            onSearchChange(e.target.value);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

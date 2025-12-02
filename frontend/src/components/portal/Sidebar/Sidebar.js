@@ -29,13 +29,15 @@ export default function Sidebar({
 
   // Fetch pending approvals count for superadmin
   const { data: approvalsCountData = { total: 0 } } = useGetPendingApprovalsCountQuery(undefined, {
-    skip: userType !== USER_TYPES.SUPERADMIN
+    skip: userType !== USER_TYPES.SUPERADMIN,
+    pollingInterval: 30000
   });
   const approvalsCount = approvalsCountData?.total || 0;
 
   // Fetch volunteers count for admin
   const { data: volunteersData = [] } = useGetVolunteersByAdminOrgQuery(currentAdmin?.id, {
-    skip: userType !== USER_TYPES.ADMIN || !currentAdmin?.id
+    skip: userType !== USER_TYPES.ADMIN || !currentAdmin?.id,
+    pollingInterval: 30000
   });
   const volunteersCount = Array.isArray(volunteersData) 
     ? volunteersData.filter(volunteer => volunteer.status?.toLowerCase() === 'pending').length 

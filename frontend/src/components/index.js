@@ -9,7 +9,7 @@ export { default as DynamicFavicon } from './layout/DynamicFavicon';
 export { EmailChange, useEmailChange, PasswordChange, StepUpModal } from './auth';
 
 // UI components
-export { Loader, LoaderWrapper, ErrorBoundary, OptimizedImage, SuccessModal, ConfirmationModal, UnavailableImagePlaceholder } from './ui';
+export { Loader, LoaderWrapper, ErrorBoundary, OptimizedImage, SuccessModal, ConfirmationModal, UnavailableImagePlaceholder, ApprovalConfirmationModal } from './ui';
 
 // Portal components
 export { Sidebar, LogoutModalTrigger, superadminNavLinks, adminNavLinks } from './portal';

@@ -21,8 +21,8 @@ router.use(express.json({ limit: "50mb" }))
 router.use((err, req, res, next) => {
   // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
   // that are not instances of SyntaxError, so we check both conditions
-  // Note: We don't check for 'body' property as body-parser errors may not always have it
-  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400) {
+  // Note: body-parser errors use statusCode, not status, so we check both
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && (err.statusCode === 400 || err.status === 400)) {
     // JSON parsing error from body parser
     return res.status(400).json({
       success: false,

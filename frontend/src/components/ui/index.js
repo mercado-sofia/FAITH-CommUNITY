@@ -8,3 +8,4 @@ export { default as ConfirmationModal } from './ConfirmationModal/ConfirmationMo
 export { default as ContactFormModal } from './ContactFormModal/ContactFormModal';
 export { default as UnavailableImagePlaceholder } from './UnavailableImagePlaceholder/UnavailableImagePlaceholder';
 export { default as SummaryModal } from './SummaryModal/SummaryModal';
+export { default as ApprovalConfirmationModal } from './ApprovalConfirmationModal/ApprovalConfirmationModal';

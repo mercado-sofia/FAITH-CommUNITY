@@ -249,6 +249,129 @@ const ProgramDetailsModal = ({
     }
   }
 
+  // Reusable OrgCard rendering function
+  const renderOrgCard = (collaborator, index) => {
+    const logoUrl = collaborator.organization_logo 
+      ? getOrganizationImageUrl(collaborator.organization_logo, 'logo')
+      : null
+    
+    return (
+      <div key={collaborator.id || `collab-${index}`} className={styles.orgCard}>
+        <div className={styles.orgDetails}>
+          <div className={styles.orgLogoContainer}>
+            {logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE' && collaborator.organization_logo ? (
+              <Image
+                src={logoUrl}
+                alt={`${collaborator.organization_name || 'Organization'} logo`}
+                width={48}
+                height={48}
+                className={styles.orgLogo}
+              />
+            ) : (
+              <div className={styles.orgLogoPlaceholder}>
+                <FaBuilding />
+              </div>
+            )}
+          </div>
+          <div className={styles.orgTextContainer}>
+            <div className={styles.orgName}>
+              {collaborator.organization_name || 'Unknown Organization'} {collaborator.organization_acronym && collaborator.organization_acronym.trim() !== '' && `(${collaborator.organization_acronym})`}
+            </div>
+            {collaborator.email && (
+              <div className={styles.adminEmail}>
+                {collaborator.email}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Normalize collaborator data from different sources
+  const normalizeCollaborators = (data, mode, portal) => {
+    const normalized = []
+    
+    if (mode === 'collaboration') {
+      // Collaboration mode: extract from inviter/invitee fields
+      const orgName = data.request_type === 'received' ? data.inviter_org_name : data.invitee_org_name
+      const orgAcronym = data.request_type === 'received' ? data.inviter_org_acronym : data.invitee_org_acronym
+      const orgLogo = data.request_type === 'received' ? data.inviter_org_logo : data.invitee_org_logo
+      const adminEmail = data.request_type === 'received' ? data.inviter_email : data.invitee_email
+      
+      if (orgName || adminEmail) {
+        normalized.push({
+          organization_name: orgName || null,
+          organization_acronym: orgAcronym || null,
+          organization_logo: orgLogo || null,
+          email: adminEmail || null
+        })
+      }
+    } else if (portal === 'superadmin' && data.is_collaborative && data.collaborators) {
+      // Superadmin: filter out primary and normalize
+      const actualCollaborators = data.collaborators.filter(collab => collab.role !== 'primary')
+      actualCollaborators.forEach(collab => {
+        normalized.push({
+          organization_name: collab.organization_name || null,
+          organization_acronym: collab.organization_acronym || null,
+          organization_logo: collab.organization_logo || null,
+          email: collab.admin_email || collab.email || null
+        })
+      })
+    } else if (portal === 'admin' && mode === 'view' && data.collaborators) {
+      // Admin view: use validCollaborators
+      const hasActiveCollaborations = checkHasActiveCollaborations(data)
+      if (hasActiveCollaborations) {
+        const validCollaborators = getActiveCollaborators(data.collaborators).filter(collab => 
+          collab && 
+          typeof collab === 'object' && 
+          collab.email && 
+          collab.email.trim() !== ''
+        )
+        validCollaborators.forEach(collaborator => {
+          normalized.push({
+            organization_name: collaborator.organization_name || null,
+            organization_acronym: collaborator.organization_acronym || null,
+            organization_logo: collaborator.organization_logo || null,
+            email: collaborator.email || null
+          })
+        })
+      }
+    }
+    
+    return normalized
+  }
+
+  // Unified collaborator section rendering function
+  const renderCollaboratorSection = (normalizedCollaborators, options = {}) => {
+    const {
+      sectionStyle = 'collaborationSection',
+      title = null,
+      showIcon = false
+    } = options
+
+    if (!normalizedCollaborators || normalizedCollaborators.length === 0) {
+      return null
+    }
+
+    // Auto-pluralize title if not provided
+    const sectionTitle = title || (normalizedCollaborators.length === 1 ? 'Collaborator' : 'Collaborators')
+
+    return (
+      <div className={styles[sectionStyle]}>
+        <h4 className={styles.sectionTitle}>
+          {showIcon && <FaUsers className={styles.sectionIcon} />}
+          {sectionTitle}
+        </h4>
+        <div className={styles.organizationInfo}>
+          {normalizedCollaborators.map((collaborator, index) => 
+            renderOrgCard(collaborator, index)
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // Get image source
   const imageSource = mode === 'collaboration' 
     ? data.program_image 
@@ -452,107 +575,20 @@ const ProgramDetailsModal = ({
               </div>
 
               {/* Collaborator Section - Superadmin view mode */}
-              {portal === 'superadmin' && mode === 'view' && data.is_collaborative && data.collaborators && data.collaborators.length > 0 && (() => {
-                const actualCollaborators = data.collaborators.filter(collab => collab.role !== 'primary')
-                
-                if (actualCollaborators.length === 0) {
-                  return null
-                }
-                
-                return (
-                  <div className={styles.collaboratorSection}>
-                    <h4 className={styles.sectionTitle}>Collaborator</h4>
-                    <div className={styles.organizationInfo}>
-                      {actualCollaborators.map((collab, index) => {
-                        const logoUrl = collab.organization_logo 
-                          ? getOrganizationImageUrl(collab.organization_logo, 'logo')
-                          : null
-                        
-                        return (
-                          <div key={index} className={styles.orgCard}>
-                            <div className={styles.orgDetails}>
-                              <div className={styles.orgLogoContainer}>
-                                {logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE' ? (
-                                  <Image
-                                    src={logoUrl}
-                                    alt={`${collab.organization_name} logo`}
-                                    width={48}
-                                    height={48}
-                                    className={styles.orgLogo}
-                                  />
-                                ) : (
-                                  <div className={styles.orgLogoPlaceholder}>
-                                    <FaBuilding />
-                                  </div>
-                                )}
-                              </div>
-                              <div className={styles.orgTextContainer}>
-                                <div className={styles.orgName}>
-                                  {collab.organization_name} {collab.organization_acronym && `(${collab.organization_acronym})`}
-                                </div>
-                                {collab.admin_email && (
-                                  <div className={styles.adminEmail}>
-                                    {collab.admin_email}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+              {portal === 'superadmin' && mode === 'view' && data.is_collaborative && data.collaborators && data.collaborators.length > 0 && 
+                renderCollaboratorSection(
+                  normalizeCollaborators(data, mode, portal),
+                  { sectionStyle: 'collaboratorSection', title: 'Collaborator' }
                 )
-              })()}
+              }
 
               {/* Collaboration Section - Admin view and collaboration modes */}
               {portal === 'admin' && (mode === 'view' || mode === 'collaboration') && (() => {
                 // For collaboration mode, show the collaborator organization
                 if (mode === 'collaboration') {
-                  const orgName = data.request_type === 'received' ? data.inviter_org_name : data.invitee_org_name
-                  const orgAcronym = data.request_type === 'received' ? data.inviter_org_acronym : data.invitee_org_acronym
-                  const orgLogo = data.request_type === 'received' ? data.inviter_org_logo : data.invitee_org_logo
-                  const adminEmail = data.request_type === 'received' ? data.inviter_email : data.invitee_email
-                  const logoUrl = orgLogo ? getOrganizationImageUrl(orgLogo, 'logo') : null
-                  
-                  return (
-                    <div className={styles.collaborationSection}>
-                      <h4 className={styles.sectionTitle}>
-                        <FaUsers className={styles.sectionIcon} />
-                        Collaborator
-                      </h4>
-                      <div className={styles.organizationInfo}>
-                        <div className={styles.orgCard}>
-                          <div className={styles.orgDetails}>
-                            <div className={styles.orgLogoContainer}>
-                              {logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE' && orgLogo ? (
-                                <Image
-                                  src={logoUrl}
-                                  alt={`${orgName} logo`}
-                                  width={48}
-                                  height={48}
-                                  className={styles.orgLogo}
-                                />
-                              ) : (
-                                <div className={styles.orgLogoPlaceholder}>
-                                  <FaBuilding />
-                                </div>
-                              )}
-                            </div>
-                            <div className={styles.orgTextContainer}>
-                              <div className={styles.orgName}>
-                                {orgName} {orgAcronym && `(${orgAcronym})`}
-                              </div>
-                              {adminEmail && (
-                                <div className={styles.adminEmail}>
-                                  {adminEmail}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  return renderCollaboratorSection(
+                    normalizeCollaborators(data, mode, portal),
+                    { sectionStyle: 'collaborationSection', title: 'Collaborator', showIcon: true }
                   )
                 }
                 
@@ -571,39 +607,9 @@ const ProgramDetailsModal = ({
                   return null
                 }
 
-                const validCollaborators = getActiveCollaborators(data.collaborators).filter(collab => 
-                  collab && 
-                  typeof collab === 'object' && 
-                  collab.email && 
-                  collab.email.trim() !== ''
-                )
-
-                if (validCollaborators.length === 0) {
-                  return null
-                }
-
-                return (
-                  <div className={styles.collaborationSection}>
-                    <h4 className={styles.sectionTitle}>
-                      <FaUsers className={styles.sectionIcon} />
-                      Collaborators
-                    </h4>
-                    <div className={styles.collaboratorsList}>
-                      {validCollaborators.map((collaborator, index) => (
-                        <div key={collaborator.id || `collab-${index}`} className={styles.collaboratorItem}>
-                          <div className={styles.collaboratorInfo}>
-                            <span className={styles.collaboratorEmail}>{collaborator.email}</span>
-                            {collaborator.organization_acronym && 
-                             collaborator.organization_acronym.trim() !== '' && (
-                              <span className={styles.collaboratorOrg}>
-                                ({collaborator.organization_acronym})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                return renderCollaboratorSection(
+                  normalizeCollaborators(data, mode, portal),
+                  { sectionStyle: 'collaborationSection', title: 'Collaborators', showIcon: true }
                 )
               })()}
 

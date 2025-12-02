@@ -153,6 +153,7 @@ export const useAdminSubmissions = (orgAcronym) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 30000, // Cache for 30 seconds
+      refreshInterval: 30000, // Automatically refetch every 30 seconds for real-time updates
       keepPreviousData: true, // Keep previous data while loading new data to prevent UI flicker
       errorRetryCount: 3,
       errorRetryInterval: 3000,

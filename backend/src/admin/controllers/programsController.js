@@ -122,6 +122,7 @@ export const getAdminPrograms = async (req, res) => {
           a.email,
           o.orgName as organization_name,
           o.org as organization_acronym,
+          o.logo as organization_logo,
           pc.status as collaboration_status
         FROM program_collaborations pc
         LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'

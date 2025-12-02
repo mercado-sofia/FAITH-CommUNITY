@@ -14,7 +14,8 @@ const ProgramCard = ({
   onViewDetails, 
   showOrganizationBadge = false, 
   organizationData = null,
-  onRestore = null
+  onRestore = null,
+  showOrganizationName = true
 }) => {
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
@@ -81,7 +82,9 @@ const ProgramCard = ({
         <div className={styles.cardHeader}>
           <h3 className={styles.cardTitle}>{program.title}</h3>
         </div>
-        <p className={styles.cardOrganization}>{orgData.name}</p>
+        {showOrganizationName && (
+          <p className={styles.cardOrganization}>{orgData.name}</p>
+        )}
         
         {/* Display collaborating organizations (excluding primary organization) */}
         {(() => {

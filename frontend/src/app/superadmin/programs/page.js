@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown, FiArchive } from 'react-icons/fi'
@@ -190,60 +190,63 @@ const SuperadminProgramsPage = () => {
   }
 
   // Filter and prioritize organizations based on selected filters and search
-  const filteredOrganizations = allOrganizationsWithPrograms
-    .filter(org => selectedOrganization === 'all' || org.organizationId === parseInt(selectedOrganization))
-    .map(org => {
-      const filteredPrograms = {
-        upcoming: searchPrograms(org.programs.upcoming, searchQuery),
-        active: searchPrograms(org.programs.active, searchQuery),
-        completed: searchPrograms(org.programs.completed, searchQuery)
-      }
+  // Memoized to prevent unnecessary recalculations when unrelated state changes
+  const filteredOrganizations = useMemo(() => {
+    return allOrganizationsWithPrograms
+      .filter(org => selectedOrganization === 'all' || org.organizationId === parseInt(selectedOrganization))
+      .map(org => {
+        const filteredPrograms = {
+          upcoming: searchPrograms(org.programs.upcoming, searchQuery),
+          active: searchPrograms(org.programs.active, searchQuery),
+          completed: searchPrograms(org.programs.completed, searchQuery)
+        }
 
-      let orgPriorityScore = 0
-      
-      if (searchQuery.trim()) {
-        const searchTerm = searchQuery.toLowerCase().trim()
-        const orgNameMatch = org.organizationName?.toLowerCase().includes(searchTerm)
-        const orgAcronymMatch = org.organizationAcronym?.toLowerCase().includes(searchTerm)
+        let orgPriorityScore = 0
         
-        if (orgNameMatch || orgAcronymMatch) {
-          orgPriorityScore += 1000
+        if (searchQuery.trim()) {
+          const searchTerm = searchQuery.toLowerCase().trim()
+          const orgNameMatch = org.organizationName?.toLowerCase().includes(searchTerm)
+          const orgAcronymMatch = org.organizationAcronym?.toLowerCase().includes(searchTerm)
+          
+          if (orgNameMatch || orgAcronymMatch) {
+            orgPriorityScore += 1000
+          }
+          
+          const allFilteredPrograms = [
+            ...filteredPrograms.upcoming,
+            ...filteredPrograms.active,
+            ...filteredPrograms.completed
+          ]
+          
+          const totalMatchingPrograms = allFilteredPrograms.length
+          
+          // Filter out if no matches
+          if (!orgNameMatch && !orgAcronymMatch && totalMatchingPrograms === 0) {
+            return null
+          }
+          
+          // Priority scoring for programs
+          if (allFilteredPrograms.some(p => p.title?.toLowerCase().includes(searchTerm))) {
+            orgPriorityScore += 500
+          }
+          if (allFilteredPrograms.some(p => p.description?.toLowerCase().includes(searchTerm))) {
+            orgPriorityScore += 200
+          }
+          if (totalMatchingPrograms > 0) {
+            orgPriorityScore += 100
+          }
         }
-        
-        const allFilteredPrograms = [
-          ...filteredPrograms.upcoming,
-          ...filteredPrograms.active,
-          ...filteredPrograms.completed
-        ]
-        
-        const totalMatchingPrograms = allFilteredPrograms.length
-        
-        // Filter out if no matches
-        if (!orgNameMatch && !orgAcronymMatch && totalMatchingPrograms === 0) {
-          return null
-        }
-        
-        // Priority scoring for programs
-        if (allFilteredPrograms.some(p => p.title?.toLowerCase().includes(searchTerm))) {
-          orgPriorityScore += 500
-        }
-        if (allFilteredPrograms.some(p => p.description?.toLowerCase().includes(searchTerm))) {
-          orgPriorityScore += 200
-        }
-        if (totalMatchingPrograms > 0) {
-          orgPriorityScore += 100
-        }
-      }
 
-      return {
-        ...org,
-        programs: filteredPrograms,
-        _priorityScore: orgPriorityScore
-      }
-    })
-    .filter(Boolean)
-    .sort((a, b) => searchQuery.trim() ? b._priorityScore - a._priorityScore : 0)
-    .map(({ _priorityScore, ...org }) => org)
+        return {
+          ...org,
+          programs: filteredPrograms,
+          _priorityScore: orgPriorityScore
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => searchQuery.trim() ? b._priorityScore - a._priorityScore : 0)
+      .map(({ _priorityScore, ...org }) => org)
+  }, [allOrganizationsWithPrograms, selectedOrganization, searchQuery])
 
   // Get organizations for filter dropdown (API already filters valid organizations)
   const organizationOptions = allOrganizations.map(org => ({
@@ -304,6 +307,7 @@ const SuperadminProgramsPage = () => {
         onViewDetails={handleViewDetails}
         showOrganizationBadge={false}
         organizationData={organizationData}
+        showOrganizationName={false}
       />
     )
   }

@@ -79,25 +79,10 @@ export const useApiCall = () => {
     }
   }, []);
 
-  const cancelRequest = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  }, []);
-
-  // Cleanup on unmount
-  const cleanup = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  }, []);
-
   return {
     isLoading,
     error,
-    makeApiCall,
-    cancelRequest,
-    cleanup
+    makeApiCall
   };
 };
 

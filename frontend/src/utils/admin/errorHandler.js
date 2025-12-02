@@ -314,20 +314,3 @@ export const getErrorMessage = (error) => {
   }
 };
 
-/**
- * Create a standardized error handler for async operations
- * @param {Function} operation - The async operation to execute
- * @param {string} context - Context for error logging
- * @param {object} options - Error handling options
- * @returns {Promise} Promise that resolves with result or rejects with error info
- */
-export const withErrorHandling = async (operation, context, options = {}) => {
-  try {
-    const result = await operation();
-    return { success: true, data: result };
-  } catch (error) {
-    const errorInfo = handleApiError(error, context, options);
-    return { success: false, error: errorInfo };
-  }
-};
-

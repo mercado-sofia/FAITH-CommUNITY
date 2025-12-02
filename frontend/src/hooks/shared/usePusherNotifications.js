@@ -239,17 +239,11 @@ export const usePusherNotifications = (userId, userType, onNewNotification, isAu
     };
   }, [userId, userType, isAuthenticated, subscribeToChannel, cleanup, initialDelay]);
 
-  // Get connection status
-  const getConnectionStatus = useCallback(() => {
-    if (!pusherRef.current) {
-      return 'unavailable';
-    }
-    return pusherRef.current.connection.state;
-  }, []);
-
+  // Note: This hook manages Pusher subscriptions internally
+  // Return values are not used by consumers, but kept for potential future use
   return {
     isConnected: isSubscribedRef.current,
-    connectionStatus: getConnectionStatus(),
-    cleanup,
+    connectionStatus: pusherRef.current?.connection?.state || 'unavailable',
+    cleanup
   };
 };

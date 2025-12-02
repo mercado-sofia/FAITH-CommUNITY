@@ -339,13 +339,3 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     return null;
   }
 };
-
-/**
- * Get current token
- * Note: Tokens are now in httpOnly cookies and not accessible to JavaScript
- * This function is kept for backward compatibility but returns null
- */
-export const getCurrentToken = (userType = USER_TYPES.PUBLIC) => {
-  // Tokens are in httpOnly cookies - not accessible to JavaScript (by design for security)
-  return null;
-};

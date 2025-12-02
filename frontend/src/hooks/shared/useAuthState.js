@@ -79,23 +79,6 @@ export const useAuthState = () => {
     return !!user; // User data is set from backend auth check
   }, [user]);
 
-  // Get current token - tokens are in httpOnly cookies, not accessible to JS
-  const getToken = useCallback(() => {
-    // Tokens are in httpOnly cookies - return null as they're not accessible to JavaScript
-    // This is intentional for security (XSS protection)
-    return null;
-  }, []);
-
-  // Logout function - now uses centralized auth service
-  const logout = useCallback(async (options = {}) => {
-    await authServiceLogout(USER_TYPES.PUBLIC, {
-      showLoader: true,
-      redirect: true,
-      redirectPath: '/',
-      ...options
-    });
-  }, []);
-
   // Initialize auth on mount
   useEffect(() => {
     initializeAuth();
@@ -125,8 +108,6 @@ export const useAuthState = () => {
   return {
     user,
     isLoading,
-    isAuthenticated: isAuthenticated(),
-    logout,
-    getToken
+    isAuthenticated: isAuthenticated()
   };
 };

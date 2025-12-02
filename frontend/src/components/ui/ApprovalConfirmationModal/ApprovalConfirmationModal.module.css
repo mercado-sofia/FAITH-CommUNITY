@@ -95,15 +95,15 @@
   border: none;
   color: #6b7280;
   cursor: pointer;
-  padding: 8px;
+  padding: 7px;
   border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
 }

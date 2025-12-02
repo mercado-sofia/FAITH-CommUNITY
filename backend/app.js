@@ -407,8 +407,8 @@ app.post('/api/users/refresh', doubleCsrfProtection)
 app.use((err, req, res, next) => {
   // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
   // that are not instances of SyntaxError, so we check both conditions
-  // Note: body-parser errors use statusCode, not status, so we check both
-  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && (err.statusCode === 400 || err.status === 400)) {
+  // Note: body-parser errors use status property, not statusCode, so we check status first
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && (err.status === 400 || err.statusCode === 400)) {
     // JSON parsing error
     return res.status(400).json({
       success: false,

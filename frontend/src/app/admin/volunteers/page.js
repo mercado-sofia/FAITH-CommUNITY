@@ -8,7 +8,7 @@ import { SuccessModal, ConfirmationModal, ErrorBoundary } from '@/components'
 import { useAdminVolunteers, useAdminPrograms } from '@/hooks/admin/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
-import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { checkAdminAuthOrRedirect } from '@/utils/admin/tokenManager';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { RATE_LIMITS, API_CONFIG, STATUS } from '@/utils/admin/constants';
 import { sanitizeInput } from '@/utils/admin/formValidation';
@@ -280,9 +280,8 @@ export default function VolunteersPage() {
     }
 
     try {
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
+      if (!checkAdminAuthOrRedirect()) {
+        return; // Redirect handled by checkAdminAuthOrRedirect
       }
 
       const apiUrl = `${API_CONFIG.BASE_URL || ''}/api/volunteers/${volunteer.id}/soft-delete`;
@@ -354,9 +353,8 @@ export default function VolunteersPage() {
     setIsDeleting(true);
     
     try {
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
+      if (!checkAdminAuthOrRedirect()) {
+        return; // Redirect handled by checkAdminAuthOrRedirect
       }
 
       // Delete each volunteer

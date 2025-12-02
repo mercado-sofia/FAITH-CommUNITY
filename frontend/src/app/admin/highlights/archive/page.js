@@ -9,6 +9,7 @@ import { SkeletonLoader } from '../../components';
 import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 import styles from '../highlights.module.css';
 import { FiArrowLeft } from 'react-icons/fi';
 
@@ -140,17 +141,21 @@ export default function ArchiveHighlightsPage() {
     try {
       setIsUnarchiving(true);
       
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${unarchivingHighlight.id}/unarchive`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${unarchivingHighlight.id}/unarchive`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        router
+      );
 
-      if (!response.ok) {
-        const shouldRedirect = response.status === 401;
-        const errorInfo = handleApiError({ status: response.status }, 'highlights_unarchive', {
+      if (!response || !response.ok) {
+        const shouldRedirect = response?.status === 401;
+        const errorInfo = handleApiError({ status: response?.status || 500 }, 'highlights_unarchive', {
           redirectOnAuth: shouldRedirect,
           logError: true
         });
@@ -175,7 +180,7 @@ export default function ArchiveHighlightsPage() {
       setIsUnarchiving(false);
       setUnarchivingHighlight(null);
     }
-  }, [unarchivingHighlight, refreshArchivedHighlights]);
+  }, [unarchivingHighlight, refreshArchivedHighlights, router]);
 
   // Show skeleton immediately on first load or when loading
   if (!hasInitiallyLoaded || loading) {

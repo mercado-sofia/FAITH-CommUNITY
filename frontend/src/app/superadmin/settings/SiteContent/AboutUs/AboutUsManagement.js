@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { ConfirmationModal } from '@/components';
 import { getImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './AboutUsManagement.module.css';
@@ -388,17 +389,19 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
       const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
-      // No need to check token - cookies handle authentication
+      
+      // Use centralized API client with automatic token refresh
+      const response = await makeSuperadminRequest(
+        `${baseUrl}/api/superadmin/about-us/upload-image`,
+        {
+          method: 'POST',
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          body: formData,
+        },
+        null // No router available
+      );
 
-      const response = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        // Don't set Content-Type - browser will set it with boundary for FormData
-        body: formData,
-      });
-
-
-      if (response.ok) {
+      if (response && response.ok) {
         try {
           const data = await response.json();
           if (data.success && data.imageUrl) {
@@ -411,29 +414,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
           throw new Error('Received invalid response from server. Please try again.');
         }
       } else {
-        // Handle 401/403 responses - try token refresh
-        if (response.status === 401 || response.status === 403) {
-          try {
-            const { getValidAccessToken } = await import('@/utils/shared/tokenRefresh');
-            const refreshed = await getValidAccessToken(true);
-            if (refreshed) {
-              // Retry upload with refreshed token
-              const retryResponse = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
-                method: 'POST',
-                credentials: 'include',
-                body: formData,
-              });
-              
-              if (retryResponse.ok) {
-                const retryData = await retryResponse.json();
-                if (retryData.success && retryData.imageUrl) {
-                  return retryData.imageUrl;
-                }
-              }
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed during image upload:', refreshError);
-          }
+        // If response is null, token refresh failed and redirect occurred
+        if (!response) {
           throw new Error('Authentication expired. Please log in again.');
         }
         

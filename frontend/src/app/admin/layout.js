@@ -9,6 +9,7 @@ import { clearAuthImmediate, USER_TYPES } from "@/utils/shared/authService";
 import { Sidebar, adminNavLinks, TopBar } from "@/components";
 import { ErrorBoundary, Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
+import { useTokenRefresh } from "@/hooks/shared/useTokenRefresh";
 import styles from "./dashboard/dashboard.module.css";
 import logger from '@/utils/shared/logger';
 
@@ -73,6 +74,9 @@ function AdminLayoutContent({ children }) {
   const [isInitialLoading, setIsInitialLoading] = useState(!adminInitialized);
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  // Enable proactive token refresh to keep session alive
+  useTokenRefresh({ enabled: !isInitialLoading });
 
   // Check for mobile device
   useEffect(() => {

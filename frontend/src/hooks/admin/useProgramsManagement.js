@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG } from '@/utils/admin/constants';
 

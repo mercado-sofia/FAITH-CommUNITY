@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { ConfirmationModal } from '@/components';
 import { getImageUrl } from '@/utils/shared/uploadPaths';
 
@@ -344,12 +345,16 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         ? `${baseUrl}/api/superadmin/hero-section/upload-image`
         : `${baseUrl}/api/superadmin/hero-section/upload-${type}`;
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        // Don't set Content-Type - browser will set it with boundary for FormData
-        body: formData,
-      });
+      // Use centralized API client with automatic token refresh
+      const response = await makeSuperadminRequest(
+        endpoint,
+        {
+          method: 'POST',
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          body: formData,
+        },
+        null // No router available
+      );
 
 
       if (response.ok) {
@@ -380,7 +385,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           return data.data[`${type}_url`];
         }
       } else {
-        // Handle 401 responses
+        // If response is null, token refresh failed and redirect occurred
+        if (!response) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return null;
+        }
+        
+        // Handle 401 responses (should not happen if token refresh worked)
         if (response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
           return null;

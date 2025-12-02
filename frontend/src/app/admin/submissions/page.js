@@ -10,6 +10,7 @@ import { PaginationControls, SkeletonLoader } from '../components';
 import { SuccessModal, ErrorBoundary } from '@/components';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, PAGINATION, TIMEOUTS } from '@/utils/admin/constants';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 import styles from './submissions.module.css';
 
 export default function SubmissionsPage() {
@@ -217,18 +218,21 @@ export default function SubmissionsPage() {
 
   const handleBulkDelete = useCallback(async () => {
     try {
-      // No need to check token - cookies handle authentication
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/bulk-delete`, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL}/api/submissions/bulk-delete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids: Array.from(selectedItems) })
         },
-        body: JSON.stringify({ ids: Array.from(selectedItems) })
-      });
+        router
+      );
       
-      if (!response.ok) {
-        throw new Error(`Failed to delete submissions: ${response.status}`);
+      if (!response || !response.ok) {
+        throw new Error(response ? `Failed to delete submissions: ${response.status}` : 'Failed to delete submissions');
       }
       
       refreshSubmissions();
@@ -238,7 +242,7 @@ export default function SubmissionsPage() {
     } catch (err) {
       showToast(`Failed to delete some submissions: ${err.message}`, 'error');
     }
-  }, [selectedItems, refreshSubmissions, showToast]);
+  }, [selectedItems, refreshSubmissions, showToast, router]);
 
   // Show skeleton immediately on first load or when loading
   if (!hasInitiallyLoaded || (loading && !pageReady)) {

@@ -11,9 +11,10 @@ import { SummaryModal } from '@/components/ui';
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import { SkeletonLoader } from "../components";
 import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
-import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
+import { checkAdminAuthOrRedirect } from '@/utils/admin/tokenManager';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 import pageStyles from "./page.module.css";
 
 // Track if organization page has been visited
@@ -530,23 +531,26 @@ export default function OrganizationPage() {
         status: "ACTIVE"
       };
 
-      const response = await fetch(url, {
-        method,
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: { 
-          "Content-Type": "application/json",
-          // No Authorization header needed - httpOnly cookies handle authentication
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        url,
+        {
+          method,
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody)
         },
-        body: JSON.stringify(requestBody)
-      });
+        null // No router available in this component
+      );
 
-      if (!response.ok) {
-        const errorInfo = handleApiError({ status: response.status }, 'organization_save', {
+      if (!response || !response.ok) {
+        const errorInfo = handleApiError({ status: response?.status || 500 }, 'organization_save', {
           redirectOnAuth: true,
           logError: true
         });
-        const errorText = await response.text().catch(() => '');
-        throw new Error(errorInfo.message || `HTTP ${response.status}: ${errorText}`);
+        const errorText = response ? await response.text().catch(() => '') : 'Request failed';
+        throw new Error(errorInfo.message || `HTTP ${response?.status || 500}: ${errorText}`);
       }
       
       const result = await response.json();
@@ -644,9 +648,8 @@ export default function OrganizationPage() {
         throw new Error('No organization ID available');
       }
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
+      if (!checkAdminAuthOrRedirect()) {
+        return; // Redirect handled by checkAdminAuthOrRedirect
       }
 
       // Save advocacy/competency directly to their respective tables (no approval needed)

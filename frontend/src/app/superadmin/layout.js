@@ -7,6 +7,7 @@ import { clearAuthImmediate, USER_TYPES } from "@/utils/shared/authService";
 import { Sidebar, superadminNavLinks, TopBar } from "@/components";
 import { Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
+import { useTokenRefresh } from "@/hooks/shared/useTokenRefresh";
 import styles from "./styles/layout.module.css"
 
 // Mobile restriction component
@@ -65,6 +66,9 @@ function SuperAdminLayoutContent({ children }) {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  // Enable proactive token refresh to keep session alive
+  useTokenRefresh({ enabled: !isInitialLoading });
 
   // Check for mobile device
   useEffect(() => {

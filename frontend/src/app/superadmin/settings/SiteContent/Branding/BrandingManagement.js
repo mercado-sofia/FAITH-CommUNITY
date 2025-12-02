@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { mutate } from 'swr';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { ConfirmationModal } from '@/components';
 import { getBrandingImageUrl } from '@/utils/shared/uploadPaths';
 import { API_BASE_URL } from '@/config/api';
@@ -75,12 +76,16 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
 
       const uploadUrl = `${baseUrl}/api/superadmin/branding/upload-${type}`;
 
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        // Don't set Content-Type - browser will set it with boundary for FormData
-        body: formData,
-      });
+      // Use centralized API client with automatic token refresh
+      const response = await makeSuperadminRequest(
+        uploadUrl,
+        {
+          method: 'POST',
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          body: formData,
+        },
+        null // No router available
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -105,7 +110,13 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         // Return the URL for batch uploads
         return fileUrl;
       } else {
-        // Handle 401 responses
+        // If response is null, token refresh failed and redirect occurred
+        if (!response) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return null;
+        }
+        
+        // Handle 401 responses (should not happen if token refresh worked)
         if (response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
           return null;

@@ -1,3 +1,14 @@
+/**
+ * AWS S3 Configuration and Utilities
+ * 
+ * NOTE: This module is used specifically for Post-Act Report document uploads.
+ * For image uploads (branding, profiles, news, programs, etc.), use Cloudinary instead.
+ * 
+ * Usage:
+ * - Post-Act Reports: Use S3 (documents/PDFs)
+ * - All other uploads: Use Cloudinary (images)
+ */
+
 import { S3Client } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
 import { logError } from './logger.js';

@@ -495,7 +495,34 @@ export const formatProgramDates = (program) => {
     
     // 5. Handle legacy start/end date format (for backward compatibility)
     if (program.startDate && program.endDate) {
-      return formatProgramDate(program.startDate, program.endDate);
+      const startDate = new Date(program.startDate);
+      const endDate = new Date(program.endDate);
+      
+      // Check if dates are valid
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return 'Invalid date range';
+      }
+      
+      // If same day, show single date
+      if (startDate.getTime() === endDate.getTime()) {
+        return startDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      } else {
+        const startFormatted = startDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        const endFormatted = endDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        return `${startFormatted} - ${endFormatted}`;
+      }
     }
     
     // 6. Handle single start date (legacy)

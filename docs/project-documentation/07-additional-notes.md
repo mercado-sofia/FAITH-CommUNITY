@@ -59,8 +59,7 @@
 - **Frequency**: Runs every 1 minute
 - **Function**: Automatically publishes scheduled news items when their `published_at` time arrives
 - **Location**: `backend/src/admin/controllers/newsController.js` - `autoUpdateScheduledNews()`
-- **Timezone Handling**: All scheduled times are stored in UTC and compared using `UTC_TIMESTAMP()`
-- **Documentation**: See [Scheduling & Timezone Guide](./SCHEDULING_TIMEZONE_GUIDE.md) for detailed timezone handling
+- **Timezone Handling**: All scheduled times are stored in UTC and compared using `UTC_TIMESTAMP()` to ensure consistent timezone handling across different server environments
 - **Note**: Only runs in traditional server environments (not serverless)
 
 ### Deleted News Cleanup

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
@@ -10,9 +10,9 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation 
 } from '@/rtk/admin/notificationsApi';
-import { FiX, FiXCircle, FiTrash2 } from 'react-icons/fi';
+import { FiXCircle, FiTrash2 } from 'react-icons/fi';
+import { IoCloseOutline } from 'react-icons/io5';
 import { PiChecksBold } from 'react-icons/pi';
-import { MdCancel } from 'react-icons/md';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal, ErrorBoundary } from '@/components';
 import { handleApiError } from '@/utils/admin/errorHandler';
@@ -78,15 +78,10 @@ export default function NotificationsPage() {
     { skip: !adminId }
   );
 
-  // Calculate unread counts for each tab
-  const getUnreadCount = (tabType) => {
-    if (!sampleNotificationsData?.notifications) return 0;
-    
-    const notifications = sampleNotificationsData.notifications;
-    
-    const filtered = notifications.filter(notification => {
-      const isUnread = !notification.is_read;
-      if (!isUnread) return false;
+  // Helper function to filter notifications by tab type
+  const filterNotificationsByTab = useCallback((notifications, tabType, includeRead = true) => {
+    return notifications.filter(notification => {
+      if (!includeRead && notification.is_read) return false;
       
       switch (tabType) {
         case 'submissions':
@@ -101,12 +96,17 @@ export default function NotificationsPage() {
           return notification.type === 'message';
         case 'all':
         default:
-          return true; // 'all' counts all unread
+          return true;
       }
     });
-    
+  }, []);
+
+  // Calculate unread counts for each tab
+  const getUnreadCount = useCallback((tabType) => {
+    if (!sampleNotificationsData?.notifications) return 0;
+    const filtered = filterNotificationsByTab(sampleNotificationsData.notifications, tabType, false);
     return filtered.length;
-  };
+  }, [sampleNotificationsData, filterNotificationsByTab]);
 
   // Handle tab change
   const handleTabChange = (tab) => {
@@ -128,6 +128,17 @@ export default function NotificationsPage() {
   const handleCancelSelection = () => {
     setSelectedNotifications([]);
   };
+
+  // Handle select all notifications
+  const handleSelectAll = useCallback(() => {
+    if (!sampleNotificationsData?.notifications) return;
+    
+    const filtered = filterNotificationsByTab(sampleNotificationsData.notifications, currentTab);
+    const allIds = filtered.map(n => n.id);
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedNotifications.includes(id));
+    
+    setSelectedNotifications(allSelected ? [] : allIds);
+  }, [sampleNotificationsData, currentTab, selectedNotifications, filterNotificationsByTab]);
 
   // Handle mark as read
   const handleMarkAsRead = useCallback(async (notificationId) => {
@@ -192,6 +203,15 @@ export default function NotificationsPage() {
       });
     }
   }, [deleteNotification, selectedNotifications, adminId]);
+
+  // Calculate select all button text
+  const selectAllButtonText = useMemo(() => {
+    if (!sampleNotificationsData?.notifications) return 'Select All';
+    const filtered = filterNotificationsByTab(sampleNotificationsData.notifications, currentTab);
+    const allIds = filtered.map(n => n.id);
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedNotifications.includes(id));
+    return allSelected ? 'Deselect All' : 'Select All';
+  }, [sampleNotificationsData, currentTab, selectedNotifications, filterNotificationsByTab]);
 
   // Get notification icon based on type (memoized)
   const getNotificationIcon = useCallback((type) => {
@@ -295,45 +315,33 @@ export default function NotificationsPage() {
     <ErrorBoundary>
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <h1>Notifications</h1>
-          <p className={styles.subheader}>
-            {unreadCountData?.count > 0 
-              ? `${unreadCountData.count} unread notification${unreadCountData.count !== 1 ? 's' : ''}` 
-              : 'No unread notifications'
-            }
-          </p>
+        <div className={styles.headerTop}>
+          <h1 className={styles.pageTitle}>Notifications</h1>
+          <div className={styles.headerActions}>
+            <button 
+              className={styles.selectAllBtn}
+              onClick={handleSelectAll}
+            >
+              {selectAllButtonText}
+            </button>
+            {unreadCountData?.count > 0 && (
+              <button 
+                className={styles.markAllReadBtn}
+                onClick={handleMarkAllAsRead}
+              >
+                <PiChecksBold size={16} />
+                Mark All as Read
+              </button>
+            )}
+          </div>
         </div>
         
-        <div className={styles.headerActions}>
-          {selectedNotifications.length > 0 && (
-            <div className={styles.bulkActionsContainer}>
-              <button 
-                className={styles.deleteSelectedBtn}
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <FiTrash2 size={16} />
-                Delete Selected ({selectedNotifications.length})
-              </button>
-              <button 
-                className={styles.cancelSelectionBtn}
-                onClick={handleCancelSelection}
-                title="Cancel selection"
-              >
-                <FiX size={16} />
-              </button>
-            </div>
-          )}
-          {unreadCountData?.count > 0 && (
-            <button 
-              className={styles.markAllReadBtn}
-              onClick={handleMarkAllAsRead}
-            >
-              <PiChecksBold size={16} />
-              Mark All as Read
-            </button>
-          )}
-        </div>
+        <p className={styles.subheader}>
+          {unreadCountData?.count > 0 
+            ? `${unreadCountData.count} unread notification${unreadCountData.count !== 1 ? 's' : ''}` 
+            : 'No unread notifications'
+          }
+        </p>
       </div>
       
       {/* Navigation Tabs */}
@@ -371,6 +379,34 @@ export default function NotificationsPage() {
       </div>
 
       <div className={styles.content}>
+        {/* Bulk Actions Bar */}
+        {selectedNotifications.length > 0 && (
+          <div className={styles.bulkActionsBar}>
+            <div className={styles.bulkActionsLeft}>
+              <span className={styles.selectedCount}>
+                {selectedNotifications.length} notification{selectedNotifications.length !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className={styles.bulkActionsRight}>
+              <button 
+                className={`${styles.bulkButton} ${styles.deleteButton}`}
+                onClick={() => setShowDeleteModal(true)}
+                title="Delete selected notifications"
+              >
+                <FiTrash2 size={16} />
+                Delete Selected
+              </button>
+              <button 
+                className={styles.cancelSelectionBtn}
+                onClick={handleCancelSelection}
+                title="Cancel selection"
+              >
+                <IoCloseOutline />
+              </button>
+            </div>
+          </div>
+        )}
+
         <InfiniteScrollNotifications
           currentTab={currentTab}
           onNotificationSelect={handleNotificationSelect}

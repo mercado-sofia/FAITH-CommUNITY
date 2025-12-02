@@ -142,7 +142,9 @@ app.use(express.urlencoded({ extended: true }))
 
 // Body parser error handler - catches errors from express.json() middleware
 app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+  // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
+  // that are not instances of SyntaxError, so we check both conditions
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400 && 'body' in err) {
     // JSON parsing error
     return res.status(400).json({
       success: false,

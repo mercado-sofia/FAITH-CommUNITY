@@ -401,6 +401,8 @@ export default function SubmissionsPage() {
           selectedItems={selectedItems}
           onSelectItems={setSelectedItems}
           onShowBulkActions={setShowBulkActions}
+          sortOrder={sortOrder}
+          totalCount={totalItems}
         />
         
         {filteredSubmissions.length > 0 && (

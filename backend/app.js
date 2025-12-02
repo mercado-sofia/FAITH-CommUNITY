@@ -140,32 +140,6 @@ app.use(cookieParser())
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true }))
 
-// Body parser error handler - catches errors from express.json() middleware
-app.use((err, req, res, next) => {
-  // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
-  // that are not instances of SyntaxError, so we check both conditions
-  // Note: We don't check for 'body' property as body-parser errors may not always have it
-  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400) {
-    // JSON parsing error
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid JSON in request body',
-      error: 'Malformed JSON',
-      errorType: 'JSON_PARSE_ERROR'
-    });
-  }
-  if (err.type === 'entity.too.large') {
-    // Payload too large error
-    return res.status(413).json({
-      success: false,
-      message: 'Request payload too large',
-      error: 'Payload exceeds the maximum allowed size',
-      errorType: 'PAYLOAD_TOO_LARGE',
-      maxSizeMB: err.limit ? (parseInt(err.limit) / (1024 * 1024)).toFixed(0) : '10'
-    });
-  }
-  next(err);
-});
 // Static file serving for uploads removed - using Cloudinary now
 
 // Global rate limiting and burst control
@@ -409,6 +383,34 @@ app.get('/api/csrf-token', (req, res) => {
 app.post('/api/users/refresh', doubleCsrfProtection)
 
 // Error Handling
+// Body parser error handler - catches errors from express.json() and express.urlencoded() middleware
+// MUST be placed after all routes to properly catch parsing errors
+app.use((err, req, res, next) => {
+  // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
+  // that are not instances of SyntaxError, so we check both conditions
+  // Note: We don't check for 'body' property as body-parser errors may not always have it
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400) {
+    // JSON parsing error
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON in request body',
+      error: 'Malformed JSON',
+      errorType: 'JSON_PARSE_ERROR'
+    });
+  }
+  if (err.type === 'entity.too.large') {
+    // Payload too large error
+    return res.status(413).json({
+      success: false,
+      message: 'Request payload too large',
+      error: 'Payload exceeds the maximum allowed size',
+      errorType: 'PAYLOAD_TOO_LARGE',
+      maxSizeMB: err.limit ? (parseInt(err.limit) / (1024 * 1024)).toFixed(0) : '10'
+    });
+  }
+  next(err);
+});
+
 // General server error handler
 app.use((err, req, res, next) => {
   logger.error("Server error", err, {

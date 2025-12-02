@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle } from 'react-icons/fi';
+import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle, FiMail } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
 import { formatDateTime } from '@/utils/shared/dateUtils';
@@ -12,6 +12,7 @@ import styles from './styles/InvitationsTable.module.css';
 export default function InvitationsTable({ 
   invitations, 
   onCancel,
+  onResend,
   onDeactivate,
   onDelete,
   onBulkCancel,
@@ -20,9 +21,12 @@ export default function InvitationsTable({
   onSelectAll,
   onSelectItem,
   isCancelling,
+  isResending,
   isDeleting,
   isDeactivating,
-  startIndex = 0
+  startIndex = 0,
+  sortBy = 'newest',
+  totalCount = 0
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
@@ -67,6 +71,13 @@ export default function InvitationsTable({
   const handleCancelClick = (invitation) => {
     setSelectedItemForDelete({ ...invitation, action: 'cancel' });
     setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleResendClick = (invitation) => {
+    if (onResend) {
+      onResend(invitation.id);
+    }
     setActiveDropdown(null);
   };
 
@@ -268,10 +279,14 @@ export default function InvitationsTable({
                 </td>
               </tr>
             ) : (
-              invitations.map((invitation, index) => (
+              invitations.map((invitation, index) => {
+                const rowNumber = sortBy === 'oldest' 
+                  ? totalCount - (startIndex + index)
+                  : startIndex + index + 1;
+                return (
                 <tr key={invitation.id} className={styles.tableRow}>
                   <td className={styles.numberCell}>
-                    {startIndex + index + 1}
+                    {rowNumber}
                   </td>
                   <td className={styles.checkboxColumn}>
                     <input
@@ -347,17 +362,30 @@ export default function InvitationsTable({
                             )}
                             
                             {invitation.status === 'pending' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCancelClick(invitation);
-                                }}
-                                className={styles.dropdownItem}
-                                disabled={isCancelling}
-                              >
-                                <FiX size={16} />
-                                Cancel
-                              </button>
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResendClick(invitation);
+                                  }}
+                                  className={styles.dropdownItem}
+                                  disabled={isResending}
+                                >
+                                  <FiMail size={16} />
+                                  Resend
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelClick(invitation);
+                                  }}
+                                  className={styles.dropdownItem}
+                                  disabled={isCancelling}
+                                >
+                                  <FiX size={16} />
+                                  Cancel
+                                </button>
+                              </>
                             )}
                             
                             <button
@@ -377,7 +405,8 @@ export default function InvitationsTable({
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

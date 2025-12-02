@@ -58,7 +58,9 @@ export default function NewsTable({
   itemsPerPage = 10,
   onSelectionChange,
   selectedItems = [],
-  isArchiveMode = false
+  isArchiveMode = false,
+  sortBy = 'newest',
+  totalCount = 0
 }) {
   const [selectedNews, setSelectedNews] = useState([])
   const [showDropdown, setShowDropdown] = useState(null)
@@ -326,10 +328,14 @@ export default function NewsTable({
               const sanitizedTitle = sanitizeInput(newsItem.title);
               const sanitizedDescription = sanitizeInput(newsItem.description);
 
+              const rowNumber = sortBy === 'oldest' 
+                ? totalCount - (startIndex + index)
+                : startIndex + index + 1;
+              
               return (
                 <tr key={newsItem.id}>
                   <td className={styles.numberCell}>
-                    {startIndex + index + 1}
+                    {rowNumber}
                   </td>
                   <td>
                     <input

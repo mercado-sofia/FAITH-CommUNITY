@@ -219,6 +219,8 @@ export default function AdminNewsPage() {
                 onSelectionChange={handleSelectionChange}
                 selectedItems={modals.selectedItems}
                 itemsPerPage={urlState.showCount}
+                sortBy={urlState.sortBy}
+                totalCount={displayedNews?.length || 0}
               />
             )}
           </>

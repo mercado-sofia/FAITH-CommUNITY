@@ -389,6 +389,90 @@ export const cancelInvitation = async (req, res) => {
   }
 }
 
+// Resend invitation (generates new token and resets expiration)
+export const resendInvitation = async (req, res) => {
+  const { id } = req.params
+
+  const connection = await db.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    // Get the invitation and verify it exists and is pending
+    const [invitationRows] = await connection.execute(
+      "SELECT id, email, token, status, expires_at FROM admin_invitations WHERE id = ?",
+      [id]
+    )
+
+    if (invitationRows.length === 0) {
+      await connection.rollback()
+      return res.status(404).json({ error: "Invitation not found" })
+    }
+
+    const invitation = invitationRows[0]
+
+    // Only allow resending for pending invitations
+    if (invitation.status !== 'pending') {
+      await connection.rollback()
+      return res.status(400).json({ 
+        error: `Cannot resend invitation. Invitation status is '${invitation.status}'` 
+      })
+    }
+
+    // Check if invitation has already expired
+    if (new Date() > new Date(invitation.expires_at)) {
+      await connection.rollback()
+      return res.status(400).json({ error: "Cannot resend expired invitation" })
+    }
+
+    // Generate new token
+    const newToken = generateInvitationToken()
+    
+    // Reset expiration to 7 days from now
+    const newExpiresAt = new Date()
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7)
+
+    // Update invitation with new token and expiration
+    await connection.execute(
+      "UPDATE admin_invitations SET token = ?, expires_at = ? WHERE id = ?",
+      [newToken, newExpiresAt, id]
+    )
+
+    // Send invitation email with new token
+    const emailResult = await sendInvitationEmail(invitation.email, newToken)
+    
+    if (!emailResult.success) {
+      // Rollback token update if email fails - keep original token
+      await connection.rollback()
+      return res.status(500).json({ 
+        error: emailResult.error || "Failed to send invitation email",
+        details: emailResult.error || "Please check your SMTP configuration"
+      })
+    }
+
+    await connection.commit()
+
+    // Log the resend action
+    await logSuperadminAction(
+      req.superadmin?.id, 
+      'resend_invitation', 
+      `Resent admin invitation to ${invitation.email}`, 
+      req
+    )
+
+    res.json({ 
+      message: "Invitation resent successfully",
+      email: invitation.email
+    })
+  } catch (err) {
+    await connection.rollback()
+    console.error("Resend invitation error:", err)
+    res.status(500).json({ error: "Internal server error while resending invitation" })
+  } finally {
+    connection.release()
+  }
+}
+
 // Delete invitation and associated admin account (permanent deletion)
 export const deleteInvitation = async (req, res) => {
   const { id } = req.params

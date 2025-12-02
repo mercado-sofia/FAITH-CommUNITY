@@ -58,7 +58,7 @@ const VolunteerAvatar = ({ volunteer, size = 40 }) => {
   );
 };
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10, isUpdatingStatus = false, isBulkUpdatingStatus = false }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10, isUpdatingStatus = false, isBulkUpdatingStatus = false, sortOrder = 'latest', totalCount = 0 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -332,10 +332,14 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
               const sanitizedProgram = sanitizeInput(volunteer.program);
               const formattedDate = formatDateShort(volunteer.date);
 
+              const rowNumber = sortOrder === 'oldest' 
+                ? totalCount - (startIndex + index)
+                : startIndex + index + 1;
+              
               return (
                 <tr key={volunteer.id}>
                   <td className={styles.numberCell}>
-                    {startIndex + index + 1}
+                    {rowNumber}
                   </td>
                   <td>
                     <input

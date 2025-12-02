@@ -22,7 +22,9 @@ export default function ApprovalsTable({
   dropdownPosition,
   setDropdownPosition,
   calculateDropdownPosition,
-  startIndex = 0
+  startIndex = 0,
+  sortBy = 'latest',
+  totalCount = 0
 }) {
   // Local modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -109,10 +111,13 @@ export default function ApprovalsTable({
             ) : (
               approvals.map((item, index) => {
                 const itemTitle = getItemTitle(item);
+                const rowNumber = sortBy === 'oldest' 
+                  ? totalCount - (startIndex + index)
+                  : startIndex + index + 1;
                 return (
                 <tr key={item.uniqueKey || item.id} className={styles.tableRow}>
                   <td className={styles.numberCell}>
-                    {startIndex + index + 1}
+                    {rowNumber}
                   </td>
                   <td className={styles.selectCell}>
                     <input

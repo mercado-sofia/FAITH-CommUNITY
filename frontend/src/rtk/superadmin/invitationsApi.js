@@ -31,6 +31,15 @@ export const invitationsApi = createApi({
       invalidatesTags: ["Invitation"],
     }),
 
+    // Resend invitation
+    resendInvitation: builder.mutation({
+      query: (id) => ({
+        url: `/api/invitations/resend/${id}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Invitation"],
+    }),
+
     // Delete invitation
     deleteInvitation: builder.mutation({
       query: (id) => ({
@@ -69,6 +78,7 @@ export const {
   useSendInvitationMutation,
   useGetAllInvitationsQuery,
   useCancelInvitationMutation,
+  useResendInvitationMutation,
   useDeleteInvitationMutation,
   useDeactivateAdminFromInvitationMutation,
   useValidateInvitationTokenQuery,

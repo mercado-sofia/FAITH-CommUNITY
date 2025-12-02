@@ -1,28 +1,9 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { API_BASE_URL } from "@/config/api"
-
-// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
-const getBaseUrl = () => {
-  // In development, use empty string for relative paths (Next.js rewrites handle /api/*)
-  if (process.env.NODE_ENV === 'development') {
-    return '';
-  }
-  // In production, use the API_BASE_URL if available
-  const base = API_BASE_URL || '';
-  return base;
-};
+import { createApi } from "@reduxjs/toolkit/query/react"
+import { createBaseQuery } from '../baseQueryWithTokenRefresh';
 
 export const invitationsApi = createApi({
   reducerPath: "invitationsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: getBaseUrl(),
-    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json")
-      // No Authorization header needed - httpOnly cookies handle authentication
-      return headers
-    },
-  }),
+  baseQuery: createBaseQuery('', false), // Empty basePath since endpoints use full paths
   tagTypes: ["Invitation"],
   endpoints: (builder) => ({
     // Send invitation

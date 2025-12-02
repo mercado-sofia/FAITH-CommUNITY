@@ -17,16 +17,168 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '', onRestore =
     setVideoError(false)
   }, [highlight.id])
 
-  const truncateText = (text, maxLength = 120) => {
-    if (!text) return ''
-    // Strip HTML tags for preview
-    if (typeof document !== 'undefined') {
-      const textContent = document.createElement('div')
-      textContent.innerHTML = DOMPurify.sanitize(text)
-      const plainText = (textContent.textContent || textContent.innerText || '').trim()
-      return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText
+  // Utility function to truncate HTML while preserving formatting
+  const truncateHTML = (html, maxChars = 100) => {
+    if (!html) return ''
+    
+    // First sanitize the HTML
+    const sanitized = DOMPurify.sanitize(html)
+    
+    // Check if we need to truncate by getting plain text length
+    if (typeof document === 'undefined') {
+      // Server-side: return sanitized HTML (will be handled on client)
+      return sanitized
     }
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+    
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = sanitized
+    const plainText = (tempDiv.textContent || tempDiv.innerText || '').trim()
+    
+    // If content is short enough, return as-is
+    if (plainText.length <= maxChars) {
+      return sanitized
+    }
+    
+    // Need to truncate - use a simpler approach that preserves HTML structure
+    return truncateHTMLContent(tempDiv, maxChars)
+  }
+
+  // Helper function to truncate HTML content while preserving tags
+  const truncateHTMLContent = (container, maxChars) => {
+    let charCount = 0
+    const result = document.createElement('div')
+    const stack = [result]
+    
+    const walk = (node) => {
+      if (charCount >= maxChars) {
+        return
+      }
+      
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || ''
+        const remaining = maxChars - charCount
+        
+        if (text.length <= remaining) {
+          // Add all text
+          stack[stack.length - 1].appendChild(document.createTextNode(text))
+          charCount += text.length
+        } else {
+          // Truncate text
+          const truncated = text.substring(0, remaining)
+          stack[stack.length - 1].appendChild(document.createTextNode(truncated))
+          charCount = maxChars
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Clone the element (without children)
+        const clone = node.cloneNode(false)
+        stack[stack.length - 1].appendChild(clone)
+        stack.push(clone)
+        
+        // Process children
+        const children = Array.from(node.childNodes)
+        for (const child of children) {
+          if (charCount >= maxChars) break
+          walk(child)
+        }
+        
+        stack.pop()
+      }
+    }
+    
+    // Process all nodes
+    const children = Array.from(container.childNodes)
+    for (const child of children) {
+      if (charCount >= maxChars) break
+      walk(child)
+    }
+    
+    // Add ellipsis if truncated
+    if (charCount >= maxChars) {
+      const lastNode = getLastTextNode(result)
+      if (lastNode) {
+        lastNode.textContent = (lastNode.textContent || '') + '...'
+      } else {
+        result.appendChild(document.createTextNode('...'))
+      }
+    }
+    
+    return result.innerHTML
+  }
+
+  // Helper to get the last text node in a tree
+  const getLastTextNode = (node) => {
+    let lastTextNode = null
+    const walker = document.createTreeWalker(
+      node,
+      NodeFilter.SHOW_TEXT,
+      null
+    )
+    
+    let currentNode
+    while ((currentNode = walker.nextNode())) {
+      lastTextNode = currentNode
+    }
+    
+    return lastTextNode
+  }
+
+  // Function to highlight search terms in HTML content
+  const highlightHTML = (html, query) => {
+    if (!html || !query || !query.trim()) {
+      return html
+    }
+
+    const searchTerm = query.trim()
+    const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0)
+    
+    if (searchWords.length === 0) {
+      return html
+    }
+
+    // Extract plain text to find matches
+    if (typeof document === 'undefined') {
+      return html
+    }
+
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = html
+    
+    // Find all text nodes and highlight matches
+    const walker = document.createTreeWalker(
+      tempDiv,
+      NodeFilter.SHOW_TEXT,
+      null
+    )
+
+    const textNodes = []
+    let currentNode
+    while ((currentNode = walker.nextNode())) {
+      textNodes.push(currentNode)
+    }
+
+    // Process each text node
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent || ''
+      let newHTML = text
+      
+      // Apply highlighting for each search word
+      searchWords.forEach(word => {
+        if (word.length > 0) {
+          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(`(${escapedWord})`, 'gi')
+          newHTML = newHTML.replace(regex, '<mark class="' + styles.highlightedText + '">$1</mark>')
+        }
+      })
+
+      // Replace the text node with HTML if it changed
+      if (newHTML !== text) {
+        const wrapper = document.createElement('span')
+        wrapper.innerHTML = newHTML
+        textNode.parentNode.replaceChild(wrapper, textNode)
+      }
+    })
+
+    return tempDiv.innerHTML
   }
 
   // Function to highlight matching text sequences
@@ -314,12 +466,16 @@ const HighlightCard = ({ highlight, onViewDetails, searchQuery = '', onRestore =
           )}
         </div>
         
-        <p className={styles.cardDescription}>
-          {searchQuery 
-            ? highlightText(truncateText(highlight.description, 100), searchQuery)
-            : truncateText(highlight.description, 100)
-          }
-        </p>
+        <div 
+          className={`${styles.cardDescription} richTextContent`}
+          dangerouslySetInnerHTML={{ 
+            __html: highlight.description 
+              ? (searchQuery 
+                  ? highlightHTML(truncateHTML(highlight.description, 100), searchQuery)
+                  : truncateHTML(highlight.description, 100))
+              : '' 
+          }} 
+        />
         
         {/* View Details Button */}
         <div className={styles.featuredCardFooter}>

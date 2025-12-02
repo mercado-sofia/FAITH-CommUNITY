@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg, updateAdminLogo } from "@/rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "@/hooks/admin/useAdminData";
-import { applyRoleHierarchyOrdering } from "@/utils/admin/organizationUtils";
+import { applyRoleHierarchyOrdering } from "@/utils/admin/roleHierarchy";
 import { EditModal, OrgInfoSection } from "./OrgInfo";
 import { Section, SectionEditModal } from "./AdvocacyCompetency";
 import { SummaryModal } from '@/components/ui';

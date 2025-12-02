@@ -31,4 +31,3 @@ For detailed implementation documentation, see:
 ---
 
 *This documentation provides a high-level overview of the entire system. For implementation details, refer to the component-specific documentation in `backend/docs/` and `frontend/docs/`.*
-

@@ -39,7 +39,6 @@ export default function EmailChange({
   const [currentStep, setCurrentStep] = useState(1);
   const [otpToken, setOtpToken] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null);
-  const [emailChangeData, setEmailChangeData] = useState({ oldEmail: '', newEmail: '' });
   
   // Email change states
   const [emailData, setEmailData] = useState({
@@ -222,12 +221,6 @@ export default function EmailChange({
       }
 
       if (userType === 'public') {
-        // Store email change data for the success modal
-        setEmailChangeData({
-          oldEmail: getCurrentEmail(),
-          newEmail: newEmail
-        });
-        
         // Update user data in localStorage
         const updatedUserData = {
           ...JSON.parse(localStorage.getItem('userData')),

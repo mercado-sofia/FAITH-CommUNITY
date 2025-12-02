@@ -79,6 +79,49 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow: hidden;
 }
 
+/* Rich Text Content Utility Class - For HTML content from content editor */
+/* Apply this class alongside component-specific classes to style nested HTML elements */
+.richTextContent p {
+  margin: 0 0 0.5rem 0;
+  display: inline;
+}
+
+.richTextContent p:last-child {
+  margin-bottom: 0;
+}
+
+.richTextContent strong,
+.richTextContent b {
+  font-weight: 700;
+}
+
+.richTextContent em,
+.richTextContent i {
+  font-style: italic;
+}
+
+.richTextContent u {
+  text-decoration: underline;
+}
+
+.richTextContent ul,
+.richTextContent ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  display: inline-block;
+}
+
+.richTextContent li {
+  margin: 0.25rem 0;
+}
+
+.richTextContent blockquote {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid #1A685B;
+  font-style: italic;
+}
+
 /* Font fallback definitions for removed Google Fonts */
 :root {
   --font-roboto: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

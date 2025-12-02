@@ -1,25 +1,9 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { API_BASE_URL } from '@/config/api';
-
-const getBaseUrl = () => {
-  // In development, use relative paths for Next.js rewrites
-  if (process.env.NODE_ENV === 'development') {
-    return '/api';
-  }
-  return `${API_BASE_URL || ''}/api`;
-};
+import { createApi } from "@reduxjs/toolkit/query/react"
+import { createBaseQuery } from '../baseQueryWithTokenRefresh';
 
 export const programsApi = createApi({
   reducerPath: "programsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: getBaseUrl(),
-    credentials: 'include', // CRITICAL: Include httpOnly cookies
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json")
-      // No Authorization header needed - httpOnly cookies handle authentication
-      return headers
-    },
-  }),
+  baseQuery: createBaseQuery('/api', false),
   tagTypes: ["Program"],
   endpoints: (builder) => ({
     // Get all approved programs with status "Upcoming" for public display

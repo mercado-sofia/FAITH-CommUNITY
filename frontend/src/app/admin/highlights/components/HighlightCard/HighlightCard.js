@@ -19,16 +19,109 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete, onA
     }
   };
 
-  const truncateText = (text, maxLength = 120) => {
-    if (!text) return '';
-    // Strip HTML tags for preview
-    if (typeof document !== 'undefined') {
-      const textContent = document.createElement('div');
-      textContent.innerHTML = DOMPurify.sanitize(text);
-      const plainText = (textContent.textContent || textContent.innerText || '').trim();
-      return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText;
+  // Utility function to truncate HTML while preserving formatting
+  const truncateHTML = (html, maxChars = 120) => {
+    if (!html) return '';
+    
+    // First sanitize the HTML
+    const sanitized = DOMPurify.sanitize(html);
+    
+    // Check if we need to truncate by getting plain text length
+    if (typeof document === 'undefined') {
+      // Server-side: return sanitized HTML (will be handled on client)
+      return sanitized;
     }
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = sanitized;
+    const plainText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+    
+    // If content is short enough, return as-is
+    if (plainText.length <= maxChars) {
+      return sanitized;
+    }
+    
+    // Need to truncate - use a simpler approach that preserves HTML structure
+    return truncateHTMLContent(tempDiv, maxChars);
+  };
+
+  // Helper function to truncate HTML content while preserving tags
+  const truncateHTMLContent = (container, maxChars) => {
+    let charCount = 0;
+    const result = document.createElement('div');
+    const stack = [result];
+    
+    const walk = (node) => {
+      if (charCount >= maxChars) {
+        return;
+      }
+      
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        const remaining = maxChars - charCount;
+        
+        if (text.length <= remaining) {
+          // Add all text
+          stack[stack.length - 1].appendChild(document.createTextNode(text));
+          charCount += text.length;
+        } else {
+          // Truncate text
+          const truncated = text.substring(0, remaining);
+          stack[stack.length - 1].appendChild(document.createTextNode(truncated));
+          charCount = maxChars;
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Clone the element (without children)
+        const clone = node.cloneNode(false);
+        stack[stack.length - 1].appendChild(clone);
+        stack.push(clone);
+        
+        // Process children
+        const children = Array.from(node.childNodes);
+        for (const child of children) {
+          if (charCount >= maxChars) break;
+          walk(child);
+        }
+        
+        stack.pop();
+      }
+    };
+    
+    // Process all nodes
+    const children = Array.from(container.childNodes);
+    for (const child of children) {
+      if (charCount >= maxChars) break;
+      walk(child);
+    }
+    
+    // Add ellipsis if truncated
+    if (charCount >= maxChars) {
+      const lastNode = getLastTextNode(result);
+      if (lastNode) {
+        lastNode.textContent = (lastNode.textContent || '') + '...';
+      } else {
+        result.appendChild(document.createTextNode('...'));
+      }
+    }
+    
+    return result.innerHTML;
+  };
+
+  // Helper to get the last text node in a tree
+  const getLastTextNode = (node) => {
+    let lastTextNode = null;
+    const walker = document.createTreeWalker(
+      node,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    
+    let currentNode;
+    while ((currentNode = walker.nextNode())) {
+      lastTextNode = currentNode;
+    }
+    
+    return lastTextNode;
   };
 
   const getFirstMediaItem = () => {
@@ -179,9 +272,14 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete, onA
           </div>
         )}
 
-        <p className={styles.description}>
-          {truncateText(highlight.description)}
-        </p>
+        <div 
+          className={`${styles.description} richTextContent`}
+          dangerouslySetInnerHTML={{ 
+            __html: highlight.description 
+              ? truncateHTML(highlight.description, 120)
+              : '' 
+          }} 
+        />
 
         <div className={styles.footer}>
           <div className={styles.meta}>

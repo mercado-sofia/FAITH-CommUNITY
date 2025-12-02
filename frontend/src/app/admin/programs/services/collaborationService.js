@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/utils/admin/constants';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 
 // Fetch available admins for collaboration
 export const fetchAvailableAdmins = async (isEditMode = false, programId = null) => {
@@ -7,16 +8,19 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
       ? `${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/available-admins`
       : `${API_CONFIG.BASE_URL || ''}/api/collaborations/available-admins`;
         
-    const response = await fetch(endpoint, {
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
-      }
-    });
+    // Use centralized API client with automatic token refresh
+    const response = await makeAdminRequest(
+      endpoint,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      },
+      null // No router available in service
+    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!response || !response.ok) {
+      throw new Error(`HTTP ${response?.status || 500}: ${response?.statusText || 'Request failed'}`);
     }
 
     // Parse JSON with error handling
@@ -35,17 +39,20 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
 // Add collaborator to existing program
 export const addCollaboratorToProgram = async (programId, collaboratorAdminId) => {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/invite-collaborator`, {
-      method: 'POST',
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
+    // Use centralized API client with automatic token refresh
+    const response = await makeAdminRequest(
+      `${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/invite-collaborator`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ collaboratorAdminId })
       },
-      body: JSON.stringify({ collaboratorAdminId })
-    });
+      null // No router available in service
+    );
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       let errorData = {};
       try {
         errorData = await response.json();
@@ -72,15 +79,18 @@ export const addCollaboratorToProgram = async (programId, collaboratorAdminId) =
 // Fetch existing collaborators for a program
 export const fetchProgramCollaborators = async (programId) => {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators`, {
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
-      }
-    });
+    // Use centralized API client with automatic token refresh
+    const response = await makeAdminRequest(
+      `${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      },
+      null // No router available in service
+    );
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       let errorData = {};
       try {
         errorData = await response.json();
@@ -107,16 +117,19 @@ export const fetchProgramCollaborators = async (programId) => {
 // Remove collaborator from program
 export const removeCollaboratorFromProgram = async (programId, adminId) => {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators/${adminId}`, {
-      method: 'DELETE',
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
-      }
-    });
+    // Use centralized API client with automatic token refresh
+    const response = await makeAdminRequest(
+      `${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators/${adminId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      },
+      null // No router available in service
+    );
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       let errorData = {};
       try {
         errorData = await response.json();
@@ -143,16 +156,19 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 // Opt out of collaboration (for collaborators)
 export const optOutCollaboration = async (collaborationId) => {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
-      method: 'PUT',
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
-      }
-    });
+    // Use centralized API client with automatic token refresh
+    const response = await makeAdminRequest(
+      `${API_CONFIG.BASE_URL || ''}/api/collaborations/collaborations/${collaborationId}/opt-out`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      },
+      null // No router available in service
+    );
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       let errorData = {};
       try {
         errorData = await response.json();

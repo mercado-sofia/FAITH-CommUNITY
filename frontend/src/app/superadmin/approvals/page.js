@@ -12,148 +12,10 @@ import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { SkeletonLoader } from '../components';
 import { API_BASE_URL, logError } from '@/config/api';
-import { clearAuthImmediate, USER_TYPES } from '@/utils/shared/authService';
 import { useDispatch } from 'react-redux';
 import { superadminHighlightsApi } from '@/rtk/superadmin/highlightsApi';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import styles from './approvals.module.css';
-
-// Helper function to make authenticated API calls
-const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
-  // Check for window to avoid SSR errors
-  if (typeof window === 'undefined') {
-    throw new Error('Cannot make authenticated request on server side');
-  }
-
-  // Create abort signal with timeout to prevent indefinite hangs
-  // Use longer timeout (60 seconds) for approvals requests that may contain large data (post-act reports)
-  // Use standard timeout (30 seconds) for other API requests
-  const isApprovalsRequest = url && url.includes('/api/approvals');
-  const timeoutMs = isApprovalsRequest ? 60000 : 30000;
-  const abortController = new AbortController();
-  let timeoutId = null;
-
-  try {
-    // Set timeout
-    timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
-
-    // No need to check token - cookies handle authentication
-    const response = await fetch(url, {
-      ...options,
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-        // No Authorization header needed - httpOnly cookies handle authentication
-        ...options.headers
-      },
-      signal: abortController.signal,
-    });
-
-    clearTimeout(timeoutId);
-  
-  // Handle 401/403 - redirect to login if unauthorized
-  if (response.status === 401 || response.status === 403) {
-    clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    if (router) {
-      router.push('/login');
-    } else {
-      window.location.href = '/login';
-    }
-    return null;
-  }
-
-  // Check if response is JSON before parsing (only if content-type header exists)
-  const contentType = response.headers.get('content-type');
-  if (contentType && !contentType.includes('application/json')) {
-    throw new Error('Server returned an invalid response. Please try again.');
-  }
-
-  // Handle different HTTP status codes
-  if (response.status === 401) {
-    // Unauthorized - token expired or invalid
-    clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    if (router) {
-      router.push('/login');
-    } else if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-    return null;
-  } else if (response.status === 403) {
-    // Forbidden - user doesn't have permission
-    throw new Error('You do not have permission to perform this action.');
-  } else if (response.status === 404) {
-    // Not found
-    throw new Error('The requested resource was not found.');
-  } else if (response.status >= 500 || response.status === 503) {
-    // Server error - try to get detailed error message from response
-    let errorMessage = 'Server error. Please try again later.';
-    let errorType = 'UNKNOWN_ERROR';
-    
-    try {
-      // Try to parse error response to get specific error type
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        // Clone response before reading to avoid consuming the body
-        const clonedResponse = response.clone();
-        const errorData = await clonedResponse.json();
-        if (errorData.errorType) {
-          errorType = errorData.errorType;
-        }
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      }
-    } catch (parseError) {
-      // If parsing fails, use default message
-      logError(parseError, { context: 'makeAuthenticatedRequest-parseError' });
-    }
-    
-    // Create error object with type information
-    const error = new Error(errorMessage);
-    error.errorType = errorType;
-    throw error;
-  } else if (!response.ok) {
-    // Other client errors (400-499) - try to get detailed error message
-    let errorMessage = `Request failed with status ${response.status}. Please try again.`;
-    
-    try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        // Clone response before reading to avoid consuming the body
-        const clonedResponse = response.clone();
-        const errorData = await clonedResponse.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      }
-    } catch (parseError) {
-      // If parsing fails, use default message
-      logError(parseError, { context: 'makeAuthenticatedRequest-parseError' });
-    }
-    
-    throw new Error(errorMessage);
-  }
-
-  return response;
-  } catch (fetchError) {
-    clearTimeout(timeoutId);
-    
-    // Handle timeout/abort errors
-    if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
-      const timeoutError = new Error('Request timed out. The server is taking too long to respond. This may happen when loading approvals with large data (post-act reports, images). Please try again.');
-      timeoutError.status = 408; // Request Timeout
-      timeoutError.isTimeout = true;
-      logError(timeoutError, { context: 'makeAuthenticatedRequest-timeout', url, timeoutMs });
-      throw timeoutError;
-    }
-    
-    // Re-throw other errors
-    throw fetchError;
-  }
-};
 
 // Helper function to normalize organization acronym for comparison (case-insensitive, trim spaces)
 const normalizeOrgAcronym = (acronym) => {
@@ -268,7 +130,7 @@ export default function PendingApprovalsPage() {
       setIsLoading(true);
       
       // Fetch submissions only (collaborative programs are now handled as regular submissions)
-      const submissionsRes = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`, {}, router);
+      const submissionsRes = await makeSuperadminRequest(`${API_BASE_URL}/api/approvals`, {}, router);
       
       if (!submissionsRes) return; // Helper function handled redirect
       
@@ -339,7 +201,7 @@ export default function PendingApprovalsPage() {
     try {
       setOrgsLoading(true);
       
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/organizations`, {}, router);
+      const res = await makeSuperadminRequest(`${API_BASE_URL}/api/organizations`, {}, router);
       if (!res) return; // Helper function handled redirect
       
       const result = await res.json();
@@ -727,7 +589,7 @@ export default function PendingApprovalsPage() {
     try {
       const url = `${API_BASE_URL}/api/approvals/${item.id}/approve`;
 
-      const res = await makeAuthenticatedRequest(url, {
+      const res = await makeSuperadminRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       }, router);
@@ -797,7 +659,7 @@ export default function PendingApprovalsPage() {
     try {
       const url = `${API_BASE_URL}/api/approvals/${item.id}/reject`;
 
-      const res = await makeAuthenticatedRequest(url, {
+      const res = await makeSuperadminRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejection_comment: rejectComment })
@@ -830,7 +692,7 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/approve`, {
+      const res = await makeSuperadminRequest(`${API_BASE_URL}/api/approvals/bulk/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
@@ -908,7 +770,7 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/reject`, {
+      const res = await makeSuperadminRequest(`${API_BASE_URL}/api/approvals/bulk/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds, rejection_comment: rejectComment })
@@ -940,7 +802,7 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/delete`, {
+      const res = await makeSuperadminRequest(`${API_BASE_URL}/api/approvals/bulk/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
@@ -1115,7 +977,7 @@ export default function PendingApprovalsPage() {
     
     setIsIndividualDeleting(true);
     try {
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
+      const res = await makeSuperadminRequest(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       }, router);

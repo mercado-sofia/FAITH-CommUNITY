@@ -6,6 +6,7 @@ import { formatDateTime, formatDateShort } from '@/utils/shared/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/shared/collaborationStatusUtils';
 import DOMPurify from 'dompurify';
 import logger from '@/utils/shared/logger';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import styles from './styles/ViewDetailsModal.module.css';
 
 // Helper function to calculate program status from dates (for program details)
@@ -303,15 +304,13 @@ const ViewDetailsModal = ({
       const fetchFullData = async () => {
         try {
           const { API_BASE_URL } = await import('@/config/api');
-          const response = await fetch(`${API_BASE_URL || ''}/api/submissions/details/${submissionData.id}`, {
-            credentials: 'include', // CRITICAL: Include httpOnly cookies
-            headers: {
-              'Content-Type': 'application/json',
-              // No Authorization header needed - httpOnly cookies handle authentication
-            },
-          });
+          const response = await makeSuperadminRequest(
+            `${API_BASE_URL || ''}/api/submissions/details/${submissionData.id}`,
+            {},
+            null // No router available in this component
+          );
 
-          if (response.ok) {
+          if (response && response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
               setFullSubmissionData(result.data);
@@ -320,7 +319,7 @@ const ViewDetailsModal = ({
               setFullSubmissionData(submissionData);
             }
           } else {
-            logger.warn(`Failed to fetch full submission data: ${response.status}`, { 
+            logger.warn(`Failed to fetch full submission data: ${response?.status || 'unknown'}`, { 
               context: 'ViewDetailsModal',
               submissionId: submissionData.id 
             });

@@ -6,9 +6,9 @@ import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import styles from './OrgHeadModal.module.css'
 import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '@/utils/admin/organizationUtils'
-import { getAdminTokenOrRedirect } from '@/utils/admin/tokenManager';
 import { API_CONFIG } from '@/utils/admin/constants';
 import { handleApiError } from '@/utils/admin/errorHandler';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 import LazyImage from '../components/LazyImage/LazyImage'
 
 export default function AddOrgHeadModal({
@@ -149,16 +149,20 @@ export default function AddOrgHeadModal({
       formData.append('file', compressedFile)
       formData.append('uploadType', 'organization-head')
 
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload`, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        // Don't set Content-Type - browser will set it with boundary for FormData
-        body: formData,
-      })
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/upload`,
+        {
+          method: 'POST',
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          body: formData,
+        },
+        null // No router available in this component
+      )
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+      if (!response || !response.ok) {
+        const errorText = response ? await response.text().catch(() => '') : 'Upload failed'
+        throw new Error(`Upload failed: ${response?.status || 'unknown'} ${response?.statusText || errorText}`)
       }
 
       setUploadProgress(80)

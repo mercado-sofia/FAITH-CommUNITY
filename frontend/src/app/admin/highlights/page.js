@@ -11,6 +11,7 @@ import { HighlightDetailsModal } from '@/components/portal';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
 import { useAdminPrograms } from '@/hooks/admin/useAdminData';
+import { makeAdminRequest } from '@/utils/admin/apiClient';
 import styles from './highlights.module.css';
 
 export default function AdminHighlightsPage() {
@@ -91,19 +92,22 @@ export default function AdminHighlightsPage() {
         throw new Error('Cannot fetch highlights on server side');
       }
       
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights`, {
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // No Authorization header needed - httpOnly cookies handle authentication
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/admin/highlights`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        router
+      );
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         // Only redirect on actual 401 authentication errors
         // Other errors should be shown but not redirect
-        const shouldRedirect = response.status === 401;
-        const errorInfo = handleApiError({ status: response.status }, 'highlights_fetch', {
+        const shouldRedirect = response?.status === 401;
+        const errorInfo = handleApiError({ status: response?.status || 500 }, 'highlights_fetch', {
           redirectOnAuth: shouldRedirect,
           logError: true
         });
@@ -130,7 +134,7 @@ export default function AdminHighlightsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   // Load highlights on component mount - wait for admin auth to be ready
   useEffect(() => {
@@ -274,15 +278,18 @@ export default function AdminHighlightsPage() {
   const handleEditHighlight = useCallback(async (highlight) => {
     try {
       // Fetch fresh highlight data from API to ensure we have the latest program_id
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${highlight.id}`, {
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // No Authorization header needed - httpOnly cookies handle authentication
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${highlight.id}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        router
+      );
       
-      if (response.ok) {
+      if (response && response.ok) {
         const data = await response.json();
         setEditingHighlight(data.highlight);
         setPageMode('edit');
@@ -297,7 +304,7 @@ export default function AdminHighlightsPage() {
       setEditingHighlight(highlight);
       setPageMode('edit');
     }
-  }, []);
+  }, [router]);
 
   // Handle view highlight details
   const handleViewHighlight = useCallback((highlight) => {
@@ -321,19 +328,22 @@ export default function AdminHighlightsPage() {
     try {
       setIsDeleting(true);
       
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${deletingHighlight.id}`, {
-        method: 'DELETE',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // No Authorization header needed - httpOnly cookies handle authentication
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${deletingHighlight.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        router
+      );
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         // Only redirect on actual 401 authentication errors
-        const shouldRedirect = response.status === 401;
-        const errorInfo = handleApiError({ status: response.status }, 'highlights_delete', {
+        const shouldRedirect = response?.status === 401;
+        const errorInfo = handleApiError({ status: response?.status || 500 }, 'highlights_delete', {
           redirectOnAuth: shouldRedirect,
           logError: true
         });
@@ -358,7 +368,7 @@ export default function AdminHighlightsPage() {
       setIsDeleting(false);
       setDeletingHighlight(null);
     }
-  }, [deletingHighlight, loadHighlights]);
+  }, [deletingHighlight, loadHighlights, router]);
 
   // Confirm archive highlight
   const confirmArchiveHighlight = useCallback(async () => {
@@ -367,17 +377,21 @@ export default function AdminHighlightsPage() {
     try {
       setIsArchiving(true);
       
-      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${archivingHighlight.id}/archive`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        `${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${archivingHighlight.id}/archive`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        router
+      );
 
-      if (!response.ok) {
-        const shouldRedirect = response.status === 401;
-        const errorInfo = handleApiError({ status: response.status }, 'highlights_archive', {
+      if (!response || !response.ok) {
+        const shouldRedirect = response?.status === 401;
+        const errorInfo = handleApiError({ status: response?.status || 500 }, 'highlights_archive', {
           redirectOnAuth: shouldRedirect,
           logError: true
         });
@@ -402,7 +416,7 @@ export default function AdminHighlightsPage() {
       setIsArchiving(false);
       setArchivingHighlight(null);
     }
-  }, [archivingHighlight, loadHighlights]);
+  }, [archivingHighlight, loadHighlights, router]);
 
   // Handle form submission
   const handleFormSubmit = useCallback(async (formData) => {
@@ -415,17 +429,20 @@ export default function AdminHighlightsPage() {
       
       const method = isEdit ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // No Authorization header needed - httpOnly cookies handle authentication
+      // Use centralized API client with automatic token refresh
+      const response = await makeAdminRequest(
+        url,
+        {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      });
+        router
+      );
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         // Try to get error details from response
         let errorMessage = `Failed to ${isEdit ? 'update' : 'create'} highlight`;
         try {
@@ -465,7 +482,7 @@ export default function AdminHighlightsPage() {
         type: 'error'
       });
     }
-  }, [pageMode, editingHighlight, loadHighlights]);
+  }, [pageMode, editingHighlight, loadHighlights, router]);
 
   // Handle form cancel
   const handleFormCancel = useCallback(async () => {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
+import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
 import styles from './HeadManagement.module.css';
 
@@ -120,18 +121,27 @@ export default function HeadManagement({ showSuccessModal }) {
 
       const uploadUrl = `${baseUrl}/api/superadmin/heads-faces/upload-image`;
 
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        credentials: 'include', // CRITICAL: Include httpOnly cookies
-        // Don't set Content-Type - browser will set it with boundary for FormData
-        body: formData,
-      });
+      // Use centralized API client with automatic token refresh
+      const response = await makeSuperadminRequest(
+        uploadUrl,
+        {
+          method: 'POST',
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          body: formData,
+        },
+        null // No router available
+      );
 
       if (response.ok) {
         const data = await response.json();
         return data.data.url;
       } else {
-        // Handle 401 responses
+        // If response is null, token refresh failed and redirect occurred
+        if (!response) {
+          throw new Error('Authentication expired. Please log in again.');
+        }
+        
+        // Handle 401 responses (should not happen if token refresh worked)
         if (response.status === 401) {
           throw new Error('Authentication expired. Please log in again.');
         }

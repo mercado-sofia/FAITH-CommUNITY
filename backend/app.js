@@ -144,7 +144,8 @@ app.use(express.urlencoded({ extended: true }))
 app.use((err, req, res, next) => {
   // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
   // that are not instances of SyntaxError, so we check both conditions
-  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400 && 'body' in err) {
+  // Note: We don't check for 'body' property as body-parser errors may not always have it
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400) {
     // JSON parsing error
     return res.status(400).json({
       success: false,

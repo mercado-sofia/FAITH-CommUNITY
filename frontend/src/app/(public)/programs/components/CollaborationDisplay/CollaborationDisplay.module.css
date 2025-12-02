@@ -1,7 +1,8 @@
 /* Collaboration Display Styles - Redesigned for Better UX */
 .collaborationSection {
-  margin: 2rem 0;
-  padding-top: 2rem;
+  margin: 0;
+  padding-top: 1rem;
+  margin-top: 1rem;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -125,7 +126,8 @@
 @media (max-width: 768px) {
   .collaborationSection {
     margin: 0;
-    padding-top: 1rem;
+    padding-top: 0.5rem;
+    margin-top: 0;
   }
   
   .sectionHeader {
@@ -183,7 +185,8 @@
 @media (max-width: 480px) {
   .collaborationSection {
     margin: 0 0 2rem;
-    padding-top: 1rem;
+    padding-top: 0.5rem;
+    margin-top: 0;
   }
   
   .collaboratorsGrid {

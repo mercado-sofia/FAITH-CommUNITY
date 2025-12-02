@@ -461,7 +461,8 @@ let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
 let initialScheduledNewsTimeout = null;
 let sessionCleanupInterval = null;
-let initialSessionCleanupTimeout = null;
+let sessionCleanupTimeout = null;
+let sessionCleanupActive = false;
 
 httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
@@ -650,7 +651,12 @@ httpServer.listen(PORT, async () => {
     }, 3000); // 3 second delay to ensure database is fully initialized
     
     // Session cleanup job (runs every hour)
-    sessionCleanupInterval = setInterval(async () => {
+    // Use recursive setTimeout instead of setInterval to prevent race conditions
+    // This ensures each cleanup completes before the next one starts
+    sessionCleanupActive = true;
+    const runSessionCleanup = async () => {
+      if (!sessionCleanupActive) return;
+      
       try {
         const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
         await SessionSecurity.cleanExpiredSessions();
@@ -665,22 +671,17 @@ httpServer.listen(PORT, async () => {
       } catch (error) {
         console.error('Error in session cleanup:', error);
       }
-    }, 60 * 60 * 1000); // 1 hour
-    
-    // Run initial session cleanup on startup (with delay to ensure DB is ready)
-    initialSessionCleanupTimeout = setTimeout(async () => {
-      try {
-        const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
-        await SessionSecurity.cleanExpiredSessions();
-        const db = await import("./src/database.js");
-        await db.default.query(
-          'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
-        );
-        console.log('✅ Initial session cleanup completed');
-      } catch (error) {
-        console.error('Initial session cleanup failed:', error);
+      
+      // Schedule next cleanup only if still active (after current cleanup completes)
+      if (sessionCleanupActive) {
+        sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
       }
-    }, 30000); // 30 seconds after startup
+    };
+    
+    // Start the recursive cleanup cycle with a short initial delay to ensure DB is ready
+    // This runs immediately on startup (30 seconds delay) rather than waiting 1 hour
+    // This ensures expired sessions are cleaned up promptly and the recursive cycle establishes properly
+    sessionCleanupTimeout = setTimeout(runSessionCleanup, 30000); // 30 seconds after startup
   } else {
     // In serverless environments, cleanup should be triggered via:
     // - API endpoint (e.g., /api/admin/cleanup)
@@ -718,16 +719,16 @@ const gracefulShutdown = (signal) => {
     initialScheduledNewsTimeout = null;
   }
   
-  // Clear session cleanup interval
+  // Stop session cleanup (recursive setTimeout pattern)
+  sessionCleanupActive = false;
+  if (sessionCleanupTimeout) {
+    clearTimeout(sessionCleanupTimeout);
+    sessionCleanupTimeout = null;
+  }
+  // Keep sessionCleanupInterval for backward compatibility (no longer used)
   if (sessionCleanupInterval) {
     clearInterval(sessionCleanupInterval);
     sessionCleanupInterval = null;
-  }
-  
-  // Clear initial session cleanup timeout
-  if (initialSessionCleanupTimeout) {
-    clearTimeout(initialSessionCleanupTimeout);
-    initialSessionCleanupTimeout = null;
   }
   
   // Store forced shutdown timeout so we can clear it on successful shutdown

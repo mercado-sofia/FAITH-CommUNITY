@@ -52,11 +52,11 @@
 }
 
 .orgNav {
-  width: 100%;
+  width: calc(100% + 2rem);
   position: relative;
   left: 0;
-  margin-left: calc(-1rem - 1px);
-  margin-right: calc(-1rem - 1px);
+  margin-left: -1rem;
+  margin-right: -1rem;
   background: #f5f7f6;
   overflow-x: hidden;
   overflow-y: visible;

@@ -123,10 +123,16 @@ export default function VolunteersPage() {
   }, []);
 
   // Enhanced status update with rate limiting and validation
-  const handleStatusUpdate = useCallback(async (id, newStatus) => {
+  const handleStatusUpdate = useCallback(async (id, newStatus, rejectionComment) => {
     // Validate status
     if (!validateStatus(newStatus)) {
       showToast('Invalid status provided', 'error');
+      return;
+    }
+
+    // Validate rejection comment for decline status
+    if (newStatus === 'Declined' && (!rejectionComment || rejectionComment.trim() === '')) {
+      showToast('Rejection comment is required when declining a volunteer application', 'error');
       return;
     }
 
@@ -143,6 +149,11 @@ export default function VolunteersPage() {
 
     setIsUpdatingStatus(true);
     try {
+      const requestBody = { status: newStatus };
+      if (newStatus === 'Declined' && rejectionComment) {
+        requestBody.rejection_comment = rejectionComment.trim();
+      }
+
       const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${id}/status`, {
         method: 'PUT',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
@@ -150,12 +161,13 @@ export default function VolunteersPage() {
           'Content-Type': 'application/json',
           // No Authorization header needed - httpOnly cookies handle authentication
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(requestBody)
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'status_update', {
+        const errorMessage = errorData.message || errorData.error || 'Failed to update status';
+        const errorInfo = handleApiError({ status: response.status, message: errorMessage }, 'status_update', {
           redirectOnAuth: true,
           logError: true
         });
@@ -183,7 +195,7 @@ export default function VolunteersPage() {
   }, [refreshVolunteers, currentAdmin?.id, showToast, volunteersData])
 
   // Enhanced bulk status update with validation
-  const handleBulkStatusUpdate = useCallback(async (volunteerIds, newStatus) => {
+  const handleBulkStatusUpdate = useCallback(async (volunteerIds, newStatus, rejectionComment) => {
     if (!volunteerIds || volunteerIds.length === 0) return;
 
     // Validate status
@@ -192,9 +204,20 @@ export default function VolunteersPage() {
       return;
     }
 
+    // Validate rejection comment for decline status
+    if (newStatus === 'Declined' && (!rejectionComment || rejectionComment.trim() === '')) {
+      showToast('Rejection comment is required when declining volunteer applications', 'error');
+      return;
+    }
+
     setIsBulkUpdatingStatus(true);
     try {
       // Process all status updates
+      const requestBody = { status: newStatus };
+      if (newStatus === 'Declined' && rejectionComment) {
+        requestBody.rejection_comment = rejectionComment.trim();
+      }
+
       const updatePromises = volunteerIds.map(async (volunteerId) => {
         const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${volunteerId}/status`, {
           method: 'PUT',
@@ -203,12 +226,13 @@ export default function VolunteersPage() {
             'Content-Type': 'application/json',
             // No Authorization header needed - httpOnly cookies handle authentication
           },
-          body: JSON.stringify({ status: newStatus })
+          body: JSON.stringify(requestBody)
         });
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Failed to update volunteer ${volunteerId}: ${errorData.message || response.statusText}`);
+          const errorMessage = errorData.message || errorData.error || response.statusText;
+          throw new Error(`Failed to update volunteer ${volunteerId}: ${errorMessage}`);
         }
         
         return { success: true, id: volunteerId };

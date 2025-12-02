@@ -81,10 +81,10 @@
 }
 
 .cardContent {
-  padding: 24px;
+  padding: 14px 24px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   flex: 1;
 }
 
@@ -92,8 +92,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: 8px;
 }
 
 .cardTitle {
@@ -180,7 +179,7 @@
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
 

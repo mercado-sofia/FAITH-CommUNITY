@@ -498,12 +498,19 @@ export const getVolunteerById = async (req, res) => {
 export const updateVolunteerStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, rejection_comment } = req.body;
     
     // Validate status values
     if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({ 
         error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` 
+      });
+    }
+    
+    // Validate rejection_comment is provided when declining
+    if (status === 'Declined' && (!rejection_comment || rejection_comment.trim() === '')) {
+      return res.status(400).json({ 
+        error: 'Rejection comment is required when declining a volunteer application' 
       });
     }
     
@@ -554,12 +561,16 @@ export const updateVolunteerStatus = async (req, res) => {
       });
     }
     
-    // Update the volunteer status
-    const [result] = await db.execute(`
-      UPDATE volunteers 
-      SET status = ?, updated_at = NOW()
-      WHERE id = ?
-    `, [status, id]);
+    // Update the volunteer status and rejection_comment if provided
+    const updateQuery = status === 'Declined' && rejection_comment
+      ? `UPDATE volunteers SET status = ?, rejection_comment = ?, updated_at = NOW() WHERE id = ?`
+      : `UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ?`;
+    
+    const updateValues = status === 'Declined' && rejection_comment
+      ? [status, rejection_comment.trim(), id]
+      : [status, id];
+    
+    const [result] = await db.execute(updateQuery, updateValues);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -579,7 +590,8 @@ export const updateVolunteerStatus = async (req, res) => {
         notificationMessage = `Your volunteer application for "${programName}" has been approved! You will be contacted soon with further details.`;
       } else if (status === 'Declined') {
         notificationTitle = 'Application Status Update';
-        notificationMessage = `Your volunteer application for "${programName}" has been reviewed. Please check your email for more details.`;
+        const commentText = rejection_comment ? `\n\nReason: ${rejection_comment}` : '';
+        notificationMessage = `Your volunteer application for "${programName}" has been reviewed. Please check your email for more details.${commentText}`;
       } else if (status === 'Cancelled') {
         notificationTitle = 'Application Cancelled';
         notificationMessage = `Your volunteer application for "${programName}" has been cancelled.`;
@@ -624,7 +636,8 @@ export const updateVolunteerStatus = async (req, res) => {
               userName,
               programName,
               status,
-              siteName
+              siteName,
+              rejectionComment: status === 'Declined' ? rejection_comment : undefined
             });
 
             // Attempt to send email
@@ -659,6 +672,7 @@ export const updateVolunteerStatus = async (req, res) => {
       data: {
         id: parseInt(id),
         status: status,
+        rejection_comment: status === 'Declined' ? rejection_comment : undefined,
         updated_at: new Date().toISOString()
       }
     });

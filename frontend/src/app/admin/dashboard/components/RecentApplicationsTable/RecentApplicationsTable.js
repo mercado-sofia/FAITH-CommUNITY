@@ -8,6 +8,7 @@ import { FaUser } from "react-icons/fa";
 import Image from "next/image";
 import { formatDateForAPI, formatDateShort } from '@/utils/shared/dateUtils';
 import { getProfilePhotoUrl } from '@/utils/shared/uploadPaths';
+import { ApprovalConfirmationModal } from '@/components';
 import styles from './RecentTables.module.css';
 
 // Helper function to safely parse dates for sorting
@@ -89,10 +90,10 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
     setShowDropdown(null);
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = (rejectionComment) => {
     if (selectedVolunteer && modalType && onStatusUpdate) {
       const newStatus = modalType === "approve" ? "Approved" : "Declined";
-      onStatusUpdate(selectedVolunteer.id, newStatus);
+      onStatusUpdate(selectedVolunteer.id, newStatus, rejectionComment);
     }
     closeModal();
   };
@@ -351,7 +352,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                                 </li>
                               )}
                               {volunteer.status !== "Declined" && (
-                                <li onClick={() => handleAction(volunteer, "reject")}>
+                                <li onClick={() => handleAction(volunteer, "decline")}>
                                   Decline
                                 </li>
                               )}
@@ -381,24 +382,20 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
         </div>
       </div>
 
-      {hasActionHandlers && (modalType === "approve" || modalType === "reject") && selectedVolunteer && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <h2>{modalType === "approve" ? "Approve" : "Reject"} Application</h2>
-            <p>
-              Are you sure you want to {modalType} <strong>{selectedVolunteer.name}</strong>&apos;s application?
-            </p>
-            <div className={styles.confirmActions}>
-              <button onClick={closeModal}>Cancel</button>
-              <button 
-                onClick={handleConfirmAction}
-                className={modalType === 'approve' ? '' : styles.declineButton}
-              >
-                Yes, {modalType === 'approve' ? 'Approve' : 'Decline'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {hasActionHandlers && (modalType === "approve" || modalType === "decline") && selectedVolunteer && (
+        <ApprovalConfirmationModal
+          isOpen={true}
+          actionType={modalType}
+          selectedCount={1}
+          itemName={selectedVolunteer.name}
+          actionableCount={1}
+          hasMixedStatus={false}
+          showComment={modalType === "decline"}
+          onConfirm={handleConfirmAction}
+          onClose={closeModal}
+          isProcessing={false}
+          customMessage="application"
+        />
       )}
     </>
   );

@@ -137,8 +137,27 @@ app.use(
 app.use(cookieParser())
 
 // Global body parser (applies to all routes except submissions which has its own)
-app.use(express.json({ limit: "10mb" }))
-app.use(express.urlencoded({ extended: true }))
+// Skip body parsing for submission routes - they have their own parser with 50MB limit
+const jsonParser = express.json({ limit: "10mb" });
+const urlencodedParser = express.urlencoded({ extended: true });
+
+// Helper to check if request should skip global body parsing
+const shouldSkipBodyParsing = (req) => req.path.startsWith('/api/submissions');
+
+app.use((req, res, next) => {
+  // Skip body parsing for submission routes - they handle their own parsing
+  if (shouldSkipBodyParsing(req)) {
+    return next();
+  }
+  jsonParser(req, res, next);
+});
+app.use((req, res, next) => {
+  // Skip body parsing for submission routes - they handle their own parsing
+  if (shouldSkipBodyParsing(req)) {
+    return next();
+  }
+  urlencodedParser(req, res, next);
+})
 
 // Static file serving for uploads removed - using Cloudinary now
 
@@ -388,8 +407,8 @@ app.post('/api/users/refresh', doubleCsrfProtection)
 app.use((err, req, res, next) => {
   // Check for JSON parsing errors - body-parser may create errors with type 'entity.parse.failed'
   // that are not instances of SyntaxError, so we check both conditions
-  // Note: We don't check for 'body' property as body-parser errors may not always have it
-  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && err.status === 400) {
+  // Note: body-parser errors use statusCode, not status, so we check both
+  if ((err instanceof SyntaxError || err.type === 'entity.parse.failed') && (err.statusCode === 400 || err.status === 400)) {
     // JSON parsing error
     return res.status(400).json({
       success: false,

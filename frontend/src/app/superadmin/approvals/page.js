@@ -5,8 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { FiCheck, FiX, FiTrash2, FiInfo } from 'react-icons/fi';
 import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
-import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
-import { ConfirmationModal } from '@/components';
+import { ConfirmationModal, ApprovalConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
@@ -1469,14 +1468,15 @@ export default function PendingApprovalsPage() {
       </div>
 
       {/* Bulk Action Confirmation Modal */}
-      <BulkActionConfirmationModal
+      <ApprovalConfirmationModal
         isOpen={showBulkConfirmation}
         actionType={pendingBulkAction}
         selectedCount={selectedItems.size}
         actionableCount={selectedStatusInfo.canApprove || selectedStatusInfo.canReject ? selectedStatusInfo.pending : selectedItems.size}
         hasMixedStatus={selectedStatusInfo.hasMixed}
+        showComment={pendingBulkAction === 'reject'}
         onConfirm={handleBulkConfirmationConfirm}
-        onCancel={handleBulkConfirmationCancel}
+        onClose={handleBulkConfirmationCancel}
         isProcessing={isBulkActionLoading}
       />
 
@@ -1491,15 +1491,16 @@ export default function PendingApprovalsPage() {
       />
 
       {/* Individual Action Confirmation Modal */}
-      <BulkActionConfirmationModal
+      <ApprovalConfirmationModal
         isOpen={showIndividualModal}
         actionType={pendingIndividualAction}
         selectedCount={1}
+        itemName={selectedItemForAction?.org || selectedItemForAction?.organization_acronym || selectedItemForAction?.orgName || selectedItemForAction?.organization_name || 'this submission'}
         actionableCount={selectedItemForAction && (selectedItemForAction.status === 'pending' || selectedItemForAction.status === 'pending_superadmin_approval') ? 1 : 0}
         hasMixedStatus={false}
-        selectedItem={selectedItemForAction}
+        showComment={pendingIndividualAction === 'reject'}
         onConfirm={handleIndividualActionConfirm}
-        onCancel={handleIndividualActionCancel}
+        onClose={handleIndividualActionCancel}
         isProcessing={isProcessing}
       />
 

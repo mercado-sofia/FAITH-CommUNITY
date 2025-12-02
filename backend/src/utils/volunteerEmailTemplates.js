@@ -9,9 +9,10 @@
  * @param {string} params.programName - Program name
  * @param {string} params.status - New status (Approved, Declined, Cancelled)
  * @param {string} params.siteName - Site name (from siteName utility)
+ * @param {string} params.rejectionComment - Rejection comment (optional, for Declined status)
  * @returns {Object} Email content with subject, html, and text
  */
-export function getVolunteerStatusEmail({ userName, programName, status, siteName = 'FAITH CommUNITY' }) {
+export function getVolunteerStatusEmail({ userName, programName, status, siteName = 'FAITH CommUNITY', rejectionComment }) {
   const statusMessages = {
     'Approved': {
       subject: `🎉 Your Volunteer Application Has Been Approved!`,
@@ -150,6 +151,12 @@ export function getVolunteerStatusEmail({ userName, programName, status, siteNam
       <div class="details">
         <p><strong>Program:</strong> <span class="program-name">${programName}</span></p>
         <p>${statusInfo.details}</p>
+        ${status === 'Declined' && rejectionComment ? `
+        <div style="margin-top: 20px; padding: 15px; background-color: #fff9e6; border-left: 4px solid #ff9800; border-radius: 4px;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; color: #e65100;">Reason for Decline:</p>
+          <p style="margin: 0; color: #555; white-space: pre-wrap;">${rejectionComment}</p>
+        </div>
+        ` : ''}
       </div>
       
       <div class="action-text">
@@ -178,6 +185,11 @@ ${statusInfo.message}
 Program: ${programName}
 
 ${statusInfo.details}
+${status === 'Declined' && rejectionComment ? `
+
+Reason for Decline:
+${rejectionComment}
+` : ''}
 
 ${statusInfo.actionText}
 

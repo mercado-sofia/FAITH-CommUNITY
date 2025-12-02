@@ -4,11 +4,12 @@
 import { useState, useRef, useEffect } from "react"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { IoCloseOutline } from "react-icons/io5";
-import { FiTrash2, FiX } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import ViewDetailsModal from "../ViewDetailsModal/ViewDetailsModal"
+import { ApprovalConfirmationModal } from "@/components"
 import { getProfilePhotoUrl } from "@/utils/shared/uploadPaths"
 import { formatDateShort } from "@/utils/shared/dateUtils"
 import { sanitizeInput } from "@/utils/admin/formValidation"
@@ -133,10 +134,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     setShowDropdown(null)
   }
 
-  const handleConfirmAction = async () => {
+  const handleConfirmAction = async (rejectionComment) => {
     if (selectedVolunteer && modalType && !isUpdatingStatus) {
       const newStatus = modalType === "approve" ? "Approved" : "Declined"
-      await onStatusUpdate(selectedVolunteer.id, newStatus)
+      await onStatusUpdate(selectedVolunteer.id, newStatus, rejectionComment)
       // Only close modal after operation completes (success or error)
       closeModal()
     }
@@ -162,7 +163,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     }
   }
 
-  const handleConfirmBulkAction = async () => {
+  const handleConfirmBulkAction = async (rejectionComment) => {
     if (selectedVolunteers.length === 0 || !bulkAction || isBulkUpdatingStatus) return
     
     const newStatus = bulkAction === 'approve' ? 'Approved' : 'Declined'
@@ -172,10 +173,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
     
     // Use bulk status update handler if available, otherwise fall back to individual updates
     if (onBulkStatusUpdate && actionableVolunteerIds.length > 0) {
-      await onBulkStatusUpdate(actionableVolunteerIds, newStatus)
+      await onBulkStatusUpdate(actionableVolunteerIds, newStatus, rejectionComment)
     } else if (onStatusUpdate) {
       // Fallback to individual updates if bulk handler not available
-      await Promise.all(actionableVolunteerIds.map(volunteerId => onStatusUpdate(volunteerId, newStatus)))
+      await Promise.all(actionableVolunteerIds.map(volunteerId => onStatusUpdate(volunteerId, newStatus, rejectionComment)))
     }
     
     // Only close modal and clear selections after operation completes
@@ -436,109 +437,32 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
         />
       )}
 
-      {(modalType === "approve" || modalType === "decline") && selectedVolunteer && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <button 
-              className={styles.modalCloseBtn}
-              onClick={closeModal}
-              disabled={isUpdatingStatus}
-            >
-              <FiX />
-            </button>
-            
-            <div className={styles.modalContent}>
-              <h2>
-                <span 
-                  className={modalType === "approve" ? styles.approveHeading : styles.declineHeading}
-                  style={{ color: modalType === "approve" ? "#10b981" : "#d50808" }}
-                >
-                  {modalType === "approve" ? "Approve" : "Decline"}
-                </span> Application
-              </h2>
-              <p>
-                Are you sure you want to {modalType} <strong>{sanitizeInput(selectedVolunteer.name)}</strong>&apos;s application?
-              </p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button 
-                className={styles.modalCancelBtn}
-                onClick={closeModal}
-                disabled={isUpdatingStatus}
-              >
-                Cancel
-              </button>
-              <button 
-                className={modalType === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
-                onClick={handleConfirmAction}
-                disabled={isUpdatingStatus}
-              >
-                {isUpdatingStatus 
-                  ? (modalType === 'approve' ? 'Approving...' : 'Declining...')
-                  : (modalType === 'approve' ? 'Approve' : 'Decline')
-                }
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ApprovalConfirmationModal
+        isOpen={(modalType === "approve" || modalType === "decline") && selectedVolunteer !== null}
+        actionType={modalType === "approve" ? "approve" : "decline"}
+        selectedCount={1}
+        itemName={selectedVolunteer ? sanitizeInput(selectedVolunteer.name) : ''}
+        actionableCount={1}
+        hasMixedStatus={false}
+        showComment={modalType === "decline"}
+        onConfirm={handleConfirmAction}
+        onClose={closeModal}
+        isProcessing={isUpdatingStatus}
+        customMessage="application"
+      />
 
       {/* Bulk Action Confirmation Modal */}
-      {showBulkModal && bulkAction && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <button 
-              className={styles.modalCloseBtn}
-              onClick={closeBulkModal}
-              disabled={isBulkUpdatingStatus}
-            >
-              <FiX />
-            </button>
-            
-            <div className={styles.modalContent}>
-              <h2>
-                <span 
-                  className={bulkAction === 'approve' ? styles.approveHeading : styles.declineHeading}
-                  style={{ color: bulkAction === 'approve' ? '#10b981' : '#d50808' }}
-                >
-                  {bulkAction === 'approve' ? 'Approve' : 'Decline'}
-                </span> Selected Volunteers
-              </h2>
-              <p>
-                Are you sure you want to {bulkAction} <strong>
-                  {bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
-                </strong> selected volunteer{(bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline) !== 1 ? 's' : ''}?
-                {selectedVolunteers.length > actionableSelectedVolunteers.length && (
-                  <span style={{ display: 'block', marginTop: '8px', fontSize: '0.9em', color: '#666' }}>
-                    Note: {selectedVolunteers.length - actionableSelectedVolunteers.length} volunteer{selectedVolunteers.length - actionableSelectedVolunteers.length !== 1 ? 's' : ''} with Cancelled or Completed status will be skipped.
-                  </span>
-                )}
-              </p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button 
-                className={styles.modalCancelBtn}
-                onClick={closeBulkModal}
-                disabled={isBulkUpdatingStatus}
-              >
-                Cancel
-              </button>
-              <button 
-                className={bulkAction === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
-                onClick={handleConfirmBulkAction}
-                disabled={isBulkUpdatingStatus}
-              >
-                {isBulkUpdatingStatus
-                  ? (bulkAction === 'approve' ? 'Approving...' : 'Declining...')
-                  : (bulkAction === 'approve' ? 'Approve' : 'Decline')
-                }
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ApprovalConfirmationModal
+        isOpen={showBulkModal && bulkAction !== null}
+        actionType={bulkAction === 'approve' ? 'approve' : 'decline'}
+        selectedCount={selectedVolunteers.length}
+        actionableCount={bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
+        hasMixedStatus={selectedVolunteers.length > actionableSelectedVolunteers.length}
+        showComment={bulkAction === 'decline'}
+        onConfirm={handleConfirmBulkAction}
+        onClose={closeBulkModal}
+        isProcessing={isBulkUpdatingStatus}
+      />
 
 
     </>

@@ -497,6 +497,30 @@ const runIncrementalMigrations = async (connection) => {
       await connection.query(`ALTER TABLE submissions CHANGE COLUMN comment_reject rejection_reason TEXT`);
     }
 
+    // Add rejection_comment column to volunteers table if it doesn't exist
+    try {
+      const [volunteersColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'volunteers' 
+        AND COLUMN_NAME = 'rejection_comment'
+      `);
+      
+      if (volunteersColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE volunteers 
+          ADD COLUMN rejection_comment TEXT NULL
+        `);
+        logInfo('Added rejection_comment column to volunteers table', { context: 'database' });
+      }
+    } catch (error) {
+      logWarn('Could not add rejection_comment column to volunteers table (may already exist)', { 
+        context: 'database', 
+        error: error.message 
+      });
+    }
+
     // Remove unused previous_data column from submissions table
     try {
       const [previousDataColumn] = await connection.query(`
@@ -1384,6 +1408,7 @@ const initializeDatabase = async () => {
           program_id INT NOT NULL,
           reason TEXT NOT NULL,
           status ENUM('Pending', 'Approved', 'Declined', 'Cancelled', 'Completed') DEFAULT 'Pending',
+          rejection_comment TEXT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -6,7 +6,8 @@ import {
   getAllInvitations,
   cancelInvitation,
   deleteInvitation,
-  deactivateAdminFromInvitation
+  deactivateAdminFromInvitation,
+  resendInvitation
 } from "../controllers/invitationController.js"
 import { verifyAdminOrSuperadmin } from "../middleware/verifyAdminOrSuperadmin.js"
 
@@ -20,6 +21,7 @@ router.post("/accept", acceptInvitation)
 router.post("/send", verifyAdminOrSuperadmin, sendInvitation)
 router.get("/", verifyAdminOrSuperadmin, getAllInvitations)
 router.put("/cancel/:id", verifyAdminOrSuperadmin, cancelInvitation)
+router.put("/resend/:id", verifyAdminOrSuperadmin, resendInvitation)
 router.put("/deactivate/:id", verifyAdminOrSuperadmin, deactivateAdminFromInvitation)
 router.delete("/:id", verifyAdminOrSuperadmin, deleteInvitation)
 

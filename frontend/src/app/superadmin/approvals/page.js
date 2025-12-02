@@ -1395,6 +1395,8 @@ export default function PendingApprovalsPage() {
           setDropdownPosition={setDropdownPosition}
           calculateDropdownPosition={calculateDropdownPosition}
           startIndex={startIndex}
+          sortBy={sortBy}
+          totalCount={filteredApprovals.length}
         />
 
         {/* Pagination - Only show if there are items */}

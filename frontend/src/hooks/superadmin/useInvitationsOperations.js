@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import {
   useSendInvitationMutation,
   useCancelInvitationMutation,
+  useResendInvitationMutation,
   useDeleteInvitationMutation,
   useDeactivateAdminFromInvitationMutation,
 } from '@/rtk/superadmin/invitationsApi'
@@ -21,6 +22,7 @@ export const useInvitationsOperations = () => {
   // API mutations
   const [sendInvitation, { isLoading: isSendingInvitation }] = useSendInvitationMutation()
   const [cancelInvitation, { isLoading: isCancellingInvitation }] = useCancelInvitationMutation()
+  const [resendInvitation, { isLoading: isResendingInvitation }] = useResendInvitationMutation()
   const [deleteInvitation, { isLoading: isDeletingInvitation }] = useDeleteInvitationMutation()
   const [deactivateAdminFromInvitation, { isLoading: isDeactivatingFromInvitation }] = useDeactivateAdminFromInvitationMutation()
   const [deactivateAdmin, { isLoading: isDeactivatingAdmin }] = useDeactivateAdminMutation()
@@ -58,6 +60,17 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Failed to cancel invitation')
     }
   }, [cancelInvitation, showSuccessModal])
+
+  const handleResendInvitation = useCallback(async (id, refetchCallback) => {
+    try {
+      const result = await resendInvitation(id).unwrap()
+      showSuccessModal(result.message || 'Invitation resent successfully!')
+      if (refetchCallback) refetchCallback()
+    } catch (error) {
+      const errorMessage = error?.data?.error || error?.data?.details || error?.message || 'Failed to resend invitation'
+      showSuccessModal(errorMessage)
+    }
+  }, [resendInvitation, showSuccessModal])
 
   const handleDeleteInvitation = useCallback(async (id, refetchCallback) => {
     try {
@@ -118,6 +131,7 @@ export const useInvitationsOperations = () => {
     // Loading states
     isSendingInvitation,
     isCancellingInvitation,
+    isResendingInvitation,
     isDeletingInvitation,
     isDeactivatingFromInvitation,
     isDeactivatingAdmin,
@@ -131,6 +145,7 @@ export const useInvitationsOperations = () => {
     // Operations
     handleSendInvitation,
     handleCancelInvitation,
+    handleResendInvitation,
     handleDeleteInvitation,
     handleDeactivateAdminFromInvitation,
     handleDeactivateAdmin,

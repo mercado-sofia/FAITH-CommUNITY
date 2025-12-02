@@ -42,12 +42,14 @@ const ManageProfiles = () => {
     successModal,
     isSendingInvitation,
     isCancellingInvitation,
+    isResendingInvitation,
     isDeletingInvitation,
     isDeactivatingFromInvitation,
     showSuccessModal,
     closeSuccessModal,
     handleSendInvitation,
     handleCancelInvitation,
+    handleResendInvitation,
     handleDeleteInvitation,
     handleDeactivateAdminFromInvitation,
   } = useInvitationsOperations()
@@ -147,6 +149,7 @@ const ManageProfiles = () => {
       <InvitationsTable
         invitations={paginatedInvitations}
         onCancel={(id) => handleCancelInvitation(id, refetchInvitations)}
+        onResend={(id) => handleResendInvitation(id, refetchInvitations)}
         onDeactivate={(id) => handleDeactivateAdminFromInvitation(id, refetchInvitations)}
         onDelete={(id) => handleDeleteInvitation(id, refetchInvitations)}
         onBulkCancel={handleBulkCancelRequest}
@@ -155,10 +158,13 @@ const ManageProfiles = () => {
         onSelectAll={(e) => handleSelectAll(e, paginatedInvitations)}
         onSelectItem={handleSelectItem}
         isCancelling={isCancellingInvitation}
+        isResending={isResendingInvitation}
         isDeleting={isDeletingInvitation}
         isDeactivating={isDeactivatingFromInvitation}
         itemsPerPage={params.show}
         startIndex={startIndex}
+        sortBy={params.sort || 'newest'}
+        totalCount={filteredCount}
       />
 
       {/* Pagination */}

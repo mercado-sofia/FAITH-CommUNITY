@@ -22,7 +22,9 @@ export default function FAQTable({
   setShowDropdown,
   dropdownPosition = {},
   setDropdownPosition,
-  calculateDropdownPosition
+  calculateDropdownPosition,
+  sortBy = 'newest',
+  totalCount = 0
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
@@ -233,10 +235,14 @@ export default function FAQTable({
                 </td>
               </tr>
             ) : (
-              faqs.map((faq, index) => (
+              faqs.map((faq, index) => {
+                const rowNumber = sortBy === 'oldest' 
+                  ? totalCount - (startIndex + index)
+                  : startIndex + index + 1;
+                return (
                 <tr key={faq.id} className={styles.tableRow}>
                   <td className={styles.numberCell}>
-                    {startIndex + index + 1}
+                    {rowNumber}
                   </td>
                   <td className={styles.checkboxColumn}>
                     <input
@@ -335,7 +341,8 @@ export default function FAQTable({
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

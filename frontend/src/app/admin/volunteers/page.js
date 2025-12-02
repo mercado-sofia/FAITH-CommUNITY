@@ -598,6 +598,8 @@ export default function VolunteersPage() {
         itemsPerPage={showCount}
         isUpdatingStatus={isUpdatingStatus}
         isBulkUpdatingStatus={isBulkUpdatingStatus}
+        sortOrder={sortOrder}
+        totalCount={filteredVolunteers.length}
       />
 
       {/* Delete Confirmation Modal */}

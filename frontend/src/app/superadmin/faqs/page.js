@@ -415,6 +415,8 @@ export default function ManageFaqs() {
         dropdownPosition={dropdownPosition}
         setDropdownPosition={setDropdownPosition}
         calculateDropdownPosition={calculateDropdownPosition}
+        sortBy={sortBy}
+        totalCount={filteredFaqs.length}
       />
 
       {/* Pagination */}

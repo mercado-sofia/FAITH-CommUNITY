@@ -14,7 +14,9 @@ export default function SubmissionTable({
   itemsPerPage = 10,
   selectedItems = new Set(),
   onSelectItems = () => {},
-  onShowBulkActions = () => {}
+  onShowBulkActions = () => {},
+  sortOrder = 'latest',
+  totalCount = 0
 }) {
   const dropdownRefs = useRef({});
   const [selected, setSelected] = useState(null);
@@ -214,7 +216,9 @@ export default function SubmissionTable({
             ) : (
               currentSubmissions.map((s, index) => {
                 const startIndex = (currentPage - 1) * itemsPerPage;
-                const rowNumber = startIndex + index + 1;
+                const rowNumber = sortOrder === 'oldest' 
+                  ? totalCount - (startIndex + index)
+                  : startIndex + index + 1;
                 
                 return (
               <tr key={s.id}>

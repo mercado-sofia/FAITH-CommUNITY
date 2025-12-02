@@ -60,12 +60,14 @@ export const generateTwoFAQRCode = async (otpauth) => {
 /**
  * Alternative: Generate QR code using a simple fallback method
  * This creates a basic QR code without external dependencies
+ * NOTE: Currently unused - kept as placeholder for future implementation
  * @param {string} otpauth - The otpauth URL
  * @returns {string|null} - Simple QR code representation or null
  */
 export const generateSimpleQRCode = (otpauth) => {
   // This is a placeholder - in a real implementation, you might use a different approach
   // For now, we'll just return null to indicate no QR code is available
+  // Currently unused but exported for potential future use
   return null;
 };
 

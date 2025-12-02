@@ -1,3 +1,14 @@
+/**
+ * Cloudinary Configuration and Utilities
+ * 
+ * NOTE: This is the primary upload system for images (branding, profiles, news, programs, etc.).
+ * For Post-Act Report documents, use S3 instead.
+ * 
+ * Usage:
+ * - Images (branding, profiles, news, programs, highlights, organizations): Use Cloudinary
+ * - Post-Act Reports (documents/PDFs): Use S3
+ */
+
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
 import dotenv from 'dotenv';

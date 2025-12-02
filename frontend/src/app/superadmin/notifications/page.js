@@ -270,7 +270,7 @@ export default function SuperAdminNotificationsPage() {
           onClick={() => handleTabChange('all')}
         >
           <span>View all</span>
-          <span className={styles.tabCount}>{getTabCount('all')}</span>
+          <span className={styles.tabCount}>{unreadCountData?.count || 0}</span>
         </button>
         <button 
           className={`${styles.navTab} ${currentTab === 'unread' ? styles.active : ''}`}

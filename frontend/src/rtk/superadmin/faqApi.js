@@ -1,23 +1,9 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { API_BASE_URL } from "@/config/api"
-
-// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
-const getBaseUrl = () => {
-  const base = API_BASE_URL || '';
-  return base ? `${base}/api/faqs` : '/api/faqs';
-};
+import { createApi } from "@reduxjs/toolkit/query/react"
+import { createBaseQuery } from '../baseQueryWithTokenRefresh';
 
 export const faqApi = createApi({
   reducerPath: "faqApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: getBaseUrl(),
-    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json")
-      // No Authorization header needed - httpOnly cookies handle authentication
-      return headers
-    },
-  }),
+  baseQuery: createBaseQuery('/api/faqs', false),
   tagTypes: ["FAQ"],
   endpoints: (builder) => ({
     // Get all FAQs (for admin)

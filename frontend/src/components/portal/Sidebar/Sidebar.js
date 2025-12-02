@@ -191,43 +191,9 @@ export default function Sidebar({
 
   return (
     <aside className={styles.sidebar}>
-      {/* Branding Section (Superadmin) */}
-      {userType === USER_TYPES.SUPERADMIN && (brandingData?.logo_url || brandingData?.name_url) && (
-        <div className={styles.brandingSection}>
-          {brandingData?.logo_url && (
-            <div className={styles.brandingLogo}>
-              <Image
-                src={getBrandingImageUrl(brandingData.logo_url, 'logo')}
-                alt="Logo"
-                width={34}
-                height={34}
-                unoptimized={true}
-                onError={(e) => {
-                  e.target.src = "/defaults/default-profile.png";
-                }}
-              />
-            </div>
-          )}
-          {brandingData?.name_url && (
-            <div className={styles.brandingTextLogo}>
-              <Image
-                src={getBrandingImageUrl(brandingData.name_url, 'name')}
-                alt="Text Logo"
-                width={130}
-                height={32}
-                unoptimized={true}
-                style={{ objectFit: 'contain' }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Branding Section (Admin) */}
-      {userType === USER_TYPES.ADMIN && (brandingData?.logo_url || brandingData?.name_url) && (
+      {/* Branding Section */}
+      {(userType === USER_TYPES.SUPERADMIN || userType === USER_TYPES.ADMIN) && 
+       (brandingData?.logo_url || brandingData?.name_url) && (
         <div className={styles.brandingSection}>
           {brandingData?.logo_url && (
             <div className={styles.brandingLogo}>

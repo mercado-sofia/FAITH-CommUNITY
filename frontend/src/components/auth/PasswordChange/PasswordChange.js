@@ -132,7 +132,6 @@ const PasswordRequirements = ({ password }) => {
  * @param {string} props.userType - 'public' | 'admin' | 'superadmin'
  * @param {object} props.currentUser - Current user object (for superadmin)
  * @param {string} props.userId - User ID (for superadmin)
- * @param {boolean} props.showSuccessModal - Whether to show success modal (public users)
  * @param {function} props.setUserData - Set user data callback (public users)
  * @param {function} props.setShowModal - Set modal state callback (public users)
  */
@@ -143,7 +142,6 @@ export default function PasswordChange({
   userType = 'public',
   currentUser,
   userId,
-  showSuccessModal = false,
   setUserData,
   setShowModal
 }) {
@@ -434,9 +432,6 @@ export default function PasswordChange({
 
   const handleSuccessModalClose = () => {
     setShowSuccessModalState(false);
-    if (showSuccessModal) {
-      // For public users, you might want to show a toast or other notification
-    }
   };
 
   if (!isOpen) return null;

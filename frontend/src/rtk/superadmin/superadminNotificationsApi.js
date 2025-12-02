@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQueryWithTokenRefresh';
 import { API_BASE_URL } from '@/config/api';
 
 // Production-ready baseQuery with proper error handling
@@ -18,20 +19,8 @@ const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
     };
   }
 
-  // Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
-  const getBaseUrl = () => {
-    const base = API_BASE_URL || '';
-    return base ? `${base}/api/superadmin/notifications` : '/api/superadmin/notifications';
-  };
-
-  const result = await fetchBaseQuery({
-    baseUrl: getBaseUrl(),
-    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
-    prepareHeaders: (headers) => {
-      // No Authorization header needed - httpOnly cookies handle authentication
-      return headers;
-    },
-  })(args, api, extraOptions);
+  const baseQuery = createBaseQuery('/api/superadmin/notifications', false);
+  const result = await baseQuery(args, api, extraOptions);
 
   // Normalize error responses for consistent handling
   if (result.error) {

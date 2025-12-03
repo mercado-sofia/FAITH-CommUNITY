@@ -662,24 +662,38 @@ httpServer.listen(PORT, async () => {
     // Use recursive setTimeout instead of setInterval to prevent race conditions
     // This ensures each cleanup completes before the next one starts
     sessionCleanupActive = true;
+    const CLEANUP_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max execution time
+    
     const runSessionCleanup = async () => {
       // Prevent overlapping executions - if a cleanup is already running, skip this one
-      // But still schedule the next cleanup to ensure the cycle continues
+      // The running cleanup will schedule the next one in its finally block
       if (!sessionCleanupActive) {
         return;
       }
       
       if (sessionCleanupRunning) {
-        // A cleanup is already running - schedule the next one as a backup
-        // This ensures the cleanup cycle continues even if the running cleanup fails to schedule it
-        if (sessionCleanupActive) {
-          sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
-        }
+        // A cleanup is already running - skip this invocation
+        // The running cleanup will schedule the next one in its finally block
+        // No need to schedule a backup timeout here as it would cause duplicate scheduling
         return;
       }
       
       // Mark cleanup as running to prevent concurrent executions
       sessionCleanupRunning = true;
+      
+      // Set a timeout to reset the running flag if cleanup hangs (prevents indefinite lock)
+      // Store timeout ID locally so each cleanup invocation manages its own timeout
+      const cleanupTimeoutId = setTimeout(() => {
+        // Only reset if cleanup is still marked as running (it hung)
+        if (sessionCleanupRunning) {
+          console.warn('⚠️ Session cleanup exceeded timeout - resetting running flag');
+          sessionCleanupRunning = false;
+          // Schedule next cleanup attempt
+          if (sessionCleanupActive) {
+            sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
+          }
+        }
+      }, CLEANUP_TIMEOUT_MS);
       
       try {
         const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
@@ -695,6 +709,9 @@ httpServer.listen(PORT, async () => {
       } catch (error) {
         console.error('Error in session cleanup:', error);
       } finally {
+        // Clear the timeout since cleanup completed (or errored)
+        clearTimeout(cleanupTimeoutId);
+        
         // Always reset the running flag, even if an error occurred
         sessionCleanupRunning = false;
         

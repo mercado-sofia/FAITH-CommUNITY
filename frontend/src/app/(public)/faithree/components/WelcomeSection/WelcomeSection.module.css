@@ -33,7 +33,7 @@
   width: 100%;
   max-width: none;
   text-align: center;
-  padding: 1.4rem 2rem 2rem 2rem;
+  padding: 1rem 2rem 2rem 2rem;
   animation: slideUpFadeIn 0.8s ease-out 0.2s both;
 }
 
@@ -149,7 +149,7 @@
 .messageCard {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   flex: 1;
   gap: 1.4rem;
   padding: 1.8rem 2.25rem 2rem 2.25rem;
@@ -199,17 +199,17 @@
 /* Message Icon */
 .messageIcon {
   flex-shrink: 0;
-  width: 45px;
-  height: 45px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #3A9A8B;
   background: rgba(26, 104, 91, 0.12);
   border-radius: 12px;
-  padding: 0.75rem;
+  padding: 0.7rem;
   transition: all 0.3s ease;
-  align-self: center;
+  align-self: flex-start;
 }
 
 .messageCard:hover .messageIcon {
@@ -224,7 +224,7 @@
 
 /* Message Text */
 .message {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.8;
   margin: 0;
   text-align: left;
@@ -423,9 +423,9 @@
   }
 
   .messageIcon {
-    width: 40px;
-    height: 40px;
-    padding: 0.7rem;
+    width: 38px;
+    height: 38px;
+    padding: 0.65rem;
   }
 
   .message {

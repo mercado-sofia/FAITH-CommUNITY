@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import styles from "./FloatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
 import { FaChevronRight, FaSpinner } from "react-icons/fa";
@@ -9,6 +10,9 @@ import { useGetAllOrganizationsQuery } from "../../../../rtk/(public)/organizati
 import { useSubmitMessageMutation } from "../../../../rtk/(public)/messagesApi";
 
 export default function FloatingMessage() {
+  const pathname = usePathname();
+  
+  // All hooks must be called before any conditional returns
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [org, setOrg] = useState("");
@@ -301,6 +305,11 @@ export default function FloatingMessage() {
       setIsSubmitting(false);
     }
   };
+
+  // Hide FloatingMessage on faithree page - check after all hooks are called
+  if (pathname?.includes('/faithree')) {
+    return null;
+  }
 
   return (
     <div className={styles.floatingWrapper}>

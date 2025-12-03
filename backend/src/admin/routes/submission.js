@@ -16,6 +16,7 @@ const router = express.Router()
 // Apply route-specific body parser with higher limit for large payloads (post-act reports, images)
 // This must be applied BEFORE authentication middleware to handle body parsing errors properly
 router.use(express.json({ limit: "50mb" }))
+router.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
 // Body parser error handler for this router
 router.use((err, req, res, next) => {

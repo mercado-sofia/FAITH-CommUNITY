@@ -280,11 +280,6 @@ export default function TreeModel({
   // Callback when model is loaded
   onLoad = null
 }) {
-  // Debug: Log when chunkHighlights changes
-  useEffect(() => {
-    // Chunk highlights are loaded from parent component
-  }, [chunkHighlights]);
-  
   // Load saved camera position from localStorage
   // Returns null if saved position matches old default (x ~= 0.5) to force reset
   const getSavedCameraPosition = () => {
@@ -307,15 +302,6 @@ export default function TreeModel({
 
   // State to track current tree position (updates in real-time)
   const [treePosition, setTreePosition] = useState(initialTreePosition)
-  const savedCamPos = getSavedCameraPosition()
-  const initialCamPos = savedCamPos 
-    ? [savedCamPos.x, savedCamPos.y, savedCamPos.z]
-    : [
-        initialTreePosition[0] + cameraOffset[0],
-        initialTreePosition[1] + cameraOffset[1],
-        initialTreePosition[2] + cameraOffset[2]
-      ]
-  const [cameraPosition, setCameraPosition] = useState(initialCamPos)
 
   // State for star modal
   const [selectedStarId, setSelectedStarId] = useState(null)
@@ -392,9 +378,9 @@ export default function TreeModel({
   }, [isModelLoaded, onLoad])
 
   // Calculate initial camera position - use saved position if available
-  const savedPos = getSavedCameraPosition()
-  const initialCameraPosition = savedPos
-    ? [savedPos.x, savedPos.y, savedPos.z]
+  const savedCamPos = getSavedCameraPosition()
+  const initialCameraPosition = savedCamPos
+    ? [savedCamPos.x, savedCamPos.y, savedCamPos.z]
     : [
         treePosition[0] + cameraOffset[0],
         treePosition[1] + cameraOffset[1],

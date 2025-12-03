@@ -49,12 +49,8 @@
   height: 100%;
   background: linear-gradient(
     180deg,
-    #87ceeb 0%,
-    #b0e0e6 20%,
-    #e0f6ff 40%,
-    #f0f8ff 60%,
-    #f8fffe 80%,
-    #ffffff 100%
+    #ffffff 0%,
+    #C5E2DE 100%
   );
   overflow: hidden;
   z-index: 1;
@@ -386,7 +382,7 @@
 
 /* Show instruction content when open on desktop */
 .instructionContentOpen {
-  display: flex !important;
+  display: flex;
   max-height: 500px;
   opacity: 1;
   transform: scale(1);
@@ -648,13 +644,13 @@
 .toggleButtonsRainy .instructionToggleButton,
 .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton,
 .instructionToggleButton.toggleButtonsRainy {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%) !important;
-  border: 2px solid rgba(135, 206, 250, 0.3) !important;
-  color: #E0F6FF !important;
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
+  border: 2px solid rgba(135, 206, 250, 0.3);
+  color: #E0F6FF;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(20, 84, 126, 0.25),
-    inset 0 1px 0 rgba(135, 206, 250, 0.2) !important;
+    inset 0 1px 0 rgba(135, 206, 250, 0.2);
   transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
@@ -935,7 +931,7 @@
   
   /* Show instruction content when open */
   .instructionContentOpen {
-    display: flex !important;
+    display: flex;
     max-height: 200px;
     opacity: 1;
   }

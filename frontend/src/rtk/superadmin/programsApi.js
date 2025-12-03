@@ -177,6 +177,7 @@ export const superadminProgramsApi = createApi({
               orgAcronym: project.orgAcronym,
               orgName: project.orgName,
               orgColor: project.orgColor,
+              orgLogo: project.orgLogo,
               category: project.category,
               slug: project.slug,
               is_collaborative: project.is_collaborative || false,

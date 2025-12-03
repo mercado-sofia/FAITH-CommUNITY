@@ -313,6 +313,7 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.statusColumn}>
                     <div className={`${styles.statusBadge} ${getStatusColor(invitation)}`}>
+                      <span className={styles.statusDot}></span>
                       <span>{getStatusText(invitation)}</span>
                     </div>
                   </td>

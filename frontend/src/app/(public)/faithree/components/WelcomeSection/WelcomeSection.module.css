@@ -9,13 +9,12 @@
   align-items: center;
   justify-content: center;
   z-index: 20;
-  background: #ffffff;
+  background-image: url('/assets/backgrounds/welcomebg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   overflow: hidden;
   animation: fadeIn 0.6s ease-out;
-}
-
-.welcomeRainy {
-  background: #ffffff;
 }
 
 @keyframes fadeIn {
@@ -27,15 +26,14 @@
   }
 }
 
-
 /* Content */
 .content {
   position: relative;
   z-index: 2;
-  max-width: 800px;
-  width: 90%;
+  width: 100%;
+  max-width: none;
   text-align: center;
-  padding: 2rem;
+  padding: 1.4rem 2rem 2rem 2rem;
   animation: slideUpFadeIn 0.8s ease-out 0.2s both;
 }
 
@@ -72,12 +70,8 @@
 .treeIcon {
   width: 120px;
   height: 120px;
-  color: #2e7d32;
+  color: #1A685B;
   animation: gentlePulse 3s ease-in-out infinite;
-}
-
-.welcomeRainy .treeIcon {
-  color: #87CEEB;
 }
 
 @keyframes gentlePulse {
@@ -100,10 +94,10 @@
 .heading {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #2e7d32;
+  color: #1A685B;
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
-  text-shadow: 0 2px 10px rgba(46, 125, 50, 0.2);
+  text-shadow: 0 2px 10px rgba(26, 104, 91, 0.2);
   animation: fadeInUp 0.8s ease-out 0.6s both;
 }
 
@@ -127,7 +121,7 @@
   display: block;
   font-size: 1.3rem;
   font-weight: 400;
-  color: #4caf50;
+  color: #3A9A8B;
   margin-top: 0.5rem;
   opacity: 0.9;
 }
@@ -138,85 +132,89 @@
 
 /* Message Container */
 .messageContainer {
-  margin: 2.5rem 0;
+  margin: 4rem 0 3.5rem 0;
   animation: fadeInUp 0.8s ease-out 0.8s both;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 1.25rem;
-  max-width: 700px;
+  width: 100%;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
+  justify-content: center;
+  align-items: stretch;
 }
 
 /* Message Card */
 .messageCard {
   display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  padding: 1.5rem 1.75rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 1.4rem;
+  padding: 1.8rem 2.25rem 2rem 2.25rem;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    0 4px 12px rgba(76, 175, 80, 0.08),
-    0 0 0 1px rgba(76, 175, 80, 0.05);
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(207, 226, 223, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(207, 226, 223, 0.1);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.messageCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+  z-index: 1;
 }
 
 .messageCard:hover {
   transform: translateY(-2px) scale(1.01);
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.06),
-    0 8px 24px rgba(76, 175, 80, 0.12),
-    0 0 0 1px rgba(76, 175, 80, 0.08);
-  background: rgba(255, 255, 255, 1);
-}
-
-.welcomeRainy .messageCard {
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 4px 12px rgba(20, 84, 126, 0.1),
-    0 0 0 1px rgba(135, 206, 250, 0.08);
-}
-
-.welcomeRainy .messageCard:hover {
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.08),
-    0 8px 24px rgba(20, 84, 126, 0.15),
-    0 0 0 1px rgba(135, 206, 250, 0.12);
-  background: rgba(255, 255, 255, 1);
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(207, 226, 223, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(207, 226, 223, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 /* Message Icon */
 .messageIcon {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4caf50;
-  background: rgba(76, 175, 80, 0.08);
-  border-radius: 10px;
-  padding: 8px;
+  color: #3A9A8B;
+  background: rgba(26, 104, 91, 0.12);
+  border-radius: 12px;
+  padding: 0.75rem;
   transition: all 0.3s ease;
+  align-self: center;
 }
 
 .messageCard:hover .messageIcon {
-  background: rgba(76, 175, 80, 0.12);
+  background: rgba(26, 104, 91, 0.18);
   transform: scale(1.05);
-}
-
-.welcomeRainy .messageIcon {
-  color: #87CEEB;
-  background: rgba(135, 206, 250, 0.1);
-}
-
-.welcomeRainy .messageCard:hover .messageIcon {
-  background: rgba(135, 206, 250, 0.15);
 }
 
 .messageIcon svg {
@@ -226,11 +224,11 @@
 
 /* Message Text */
 .message {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.8;
   margin: 0;
   text-align: left;
-  flex: 1;
+  width: 100%;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -239,25 +237,13 @@
 
 /* Introduction Message */
 .messageIntro {
-  color: #2e7d32;
-}
-
-.welcomeRainy .messageIntro {
-  color: #E0F6FF;
+  color: #1A685B;
 }
 
 .messageIntro strong {
-  color: #1b5e20;
+  color: #1A685B;
   font-weight: 700;
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.welcomeRainy .messageIntro strong {
-  color: #87CEEB;
-  background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 100%);
+  background: linear-gradient(135deg, #3A9A8B 0%, #4CAA9B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -265,39 +251,65 @@
 
 /* Concept Message */
 .messageConcept {
-  color: #2e7d32;
-}
-
-.welcomeRainy .messageConcept {
-  color: #E0F6FF;
+  color: #1A685B;
 }
 
 .messageConcept strong {
-  color: #1b5e20;
+  color: #1A685B;
   font-weight: 600;
-}
-
-.welcomeRainy .messageConcept strong {
-  color: #87CEEB;
 }
 
 /* Action Message */
 .messageAction {
-  color: #2e7d32;
+  color: #1A685B;
   font-weight: 500;
 }
 
-.welcomeRainy .messageAction {
-  color: #E0F6FF;
-}
-
 .messageAction strong {
-  color: #1b5e20;
+  color: #1A685B;
   font-weight: 600;
 }
 
-.welcomeRainy .messageAction strong {
-  color: #87CEEB;
+/* Dark Theme for First Message Card */
+.messageCardDark {
+  background: #1A685B !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 
+    0 8px 32px rgba(26, 104, 91, 0.3),
+    0 4px 16px rgba(26, 104, 91, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+.messageCardDark:hover {
+  background: #145048 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 12px 40px rgba(26, 104, 91, 0.4),
+    0 6px 20px rgba(26, 104, 91, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+.messageCardDark .messageIntro {
+  color: #ffffff !important;
+}
+
+.messageCardDark .messageIntro strong {
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-clip: unset !important;
+}
+
+.messageIconDark {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.messageCardDark:hover .messageIconDark {
+  background: rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Continue Button */
@@ -306,52 +318,67 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.2rem 2.5rem;
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: white;
-  border: none;
+  background: rgba(26, 104, 91, 0.3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: #1A685B;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 50px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
-    0 8px 24px rgba(76, 175, 80, 0.3),
-    0 4px 12px rgba(76, 175, 80, 0.2);
+    0 8px 32px rgba(26, 104, 91, 0.25),
+    0 4px 16px rgba(26, 104, 91, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(26, 104, 91, 0.1);
   animation: fadeInUp 0.8s ease-out 1s both;
   margin-top: 1rem;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.continueButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.3), 
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.continueButton:hover::before {
+  left: 100%;
 }
 
 .continueButton:hover {
-  background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
-  transform: translateY(-2px) scale(1.02);
+  background: rgba(26, 104, 91, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px) scale(1.05);
   box-shadow: 
-    0 12px 32px rgba(76, 175, 80, 0.4),
-    0 6px 16px rgba(76, 175, 80, 0.3);
+    0 12px 40px rgba(26, 104, 91, 0.35),
+    0 6px 20px rgba(26, 104, 91, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(26, 104, 91, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .continueButton:active {
   transform: translateY(0) scale(1);
   box-shadow: 
-    0 6px 16px rgba(76, 175, 80, 0.3),
-    0 3px 8px rgba(76, 175, 80, 0.2);
-}
-
-.welcomeRainy .continueButton {
-  background: linear-gradient(135deg, #14547e 0%, #194970 100%);
-  box-shadow: 
-    0 8px 24px rgba(20, 84, 126, 0.4),
-    0 4px 12px rgba(20, 84, 126, 0.3);
-}
-
-.welcomeRainy .continueButton:hover {
-  background: linear-gradient(135deg, #194970 0%, #1e3449 100%);
-  box-shadow: 
-    0 12px 32px rgba(20, 84, 126, 0.5),
-    0 6px 16px rgba(20, 84, 126, 0.4);
+    0 6px 20px rgba(26, 104, 91, 0.3),
+    0 3px 10px rgba(26, 104, 91, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .arrowIcon {
@@ -384,22 +411,26 @@
     font-size: 1.1rem;
   }
 
-  .messageCard {
+  .messageContainer {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 1.25rem 1.5rem;
-    gap: 1rem;
+    max-width: none;
+  }
+
+  .messageCard {
+    flex: none;
+    padding: 1.5rem 1.75rem 1.65rem 1.75rem;
+    gap: 1.25rem;
   }
 
   .messageIcon {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
+    padding: 0.7rem;
   }
 
   .message {
-    font-size: 0.9rem;
-    text-align: center;
+    font-size: 0.875rem;
+    text-align: left;
   }
 
   .treeIcon {
@@ -422,18 +453,26 @@
     font-size: 1rem;
   }
 
+  .messageContainer {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
   .messageCard {
-    padding: 1rem 1.25rem;
-    gap: 0.85rem;
+    flex: none;
+    padding: 1.25rem 1.5rem 1.4rem 1.5rem;
+    gap: 1rem;
   }
 
   .messageIcon {
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
+    padding: 0.6rem;
   }
 
   .message {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
+    text-align: left;
   }
 
   .treeIcon {
@@ -475,4 +514,3 @@
     transform: none;
   }
 }
-

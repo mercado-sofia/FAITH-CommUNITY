@@ -463,6 +463,7 @@ let initialScheduledNewsTimeout = null;
 let sessionCleanupInterval = null;
 let sessionCleanupTimeout = null;
 let sessionCleanupActive = false;
+let sessionCleanupRunning = false; // Prevents overlapping cleanup executions
 
 httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
@@ -655,7 +656,23 @@ httpServer.listen(PORT, async () => {
     // This ensures each cleanup completes before the next one starts
     sessionCleanupActive = true;
     const runSessionCleanup = async () => {
-      if (!sessionCleanupActive) return;
+      // Prevent overlapping executions - if a cleanup is already running, skip this one
+      // But still schedule the next cleanup to ensure the cycle continues
+      if (!sessionCleanupActive) {
+        return;
+      }
+      
+      if (sessionCleanupRunning) {
+        // A cleanup is already running - schedule the next one as a backup
+        // This ensures the cleanup cycle continues even if the running cleanup fails to schedule it
+        if (sessionCleanupActive) {
+          sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
+        }
+        return;
+      }
+      
+      // Mark cleanup as running to prevent concurrent executions
+      sessionCleanupRunning = true;
       
       try {
         const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
@@ -670,11 +687,14 @@ httpServer.listen(PORT, async () => {
         console.log('✅ Session cleanup completed');
       } catch (error) {
         console.error('Error in session cleanup:', error);
-      }
-      
-      // Schedule next cleanup only if still active (after current cleanup completes)
-      if (sessionCleanupActive) {
-        sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
+      } finally {
+        // Always reset the running flag, even if an error occurred
+        sessionCleanupRunning = false;
+        
+        // Schedule next cleanup only if still active (after current cleanup completes)
+        if (sessionCleanupActive) {
+          sessionCleanupTimeout = setTimeout(runSessionCleanup, 60 * 60 * 1000); // 1 hour
+        }
       }
     };
     

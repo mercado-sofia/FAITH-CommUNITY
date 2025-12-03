@@ -283,9 +283,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                             preload="metadata"
                             playsInline
                             key={currentImageIndex} // Force re-render when changing videos
-                            onError={(e) => {
-                              console.error('Video playback error:', e)
-                            }}
                           >
                             <source src={currentMediaUrl} type={currentMedia.mimetype || 'video/mp4'} />
                             Your browser does not support the video tag.

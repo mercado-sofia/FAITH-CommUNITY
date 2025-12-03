@@ -95,12 +95,6 @@ function FAITHreePage() {
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[FAITHree] API response error:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
           throw new Error(`Failed to fetch featured highlights: ${response.status} ${response.statusText}`);
         }
         
@@ -111,22 +105,6 @@ function FAITHreePage() {
         // No limit - can feature unlimited highlights
         setFeaturedHighlights(highlights);
       } catch (error) {
-        // Enhanced error logging
-        if (error.name === 'AbortError') {
-          console.error('[FAITHree] Request timeout: Featured highlights fetch took too long');
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-          console.error('[FAITHree] Network error: Cannot connect to backend API', {
-            error: error.message,
-            API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'not set',
-            suggestion: 'Check if NEXT_PUBLIC_API_URL is set correctly in deployment environment'
-          });
-        } else {
-          console.error('[FAITHree] Error fetching featured highlights:', {
-            error: error.message,
-            stack: error.stack,
-            name: error.name
-          });
-        }
         // Set empty array on error - stars won't show but page will still load
         setFeaturedHighlights([]);
       }
@@ -251,7 +229,6 @@ function FAITHreePage() {
       {showWelcome && (
         <WelcomeSection 
           onContinue={handleContinue}
-          theme={theme}
         />
       )}
 

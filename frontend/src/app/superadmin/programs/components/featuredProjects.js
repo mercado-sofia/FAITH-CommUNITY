@@ -286,6 +286,7 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
             organization_name: project.orgName,
             organization_acronym: project.orgAcronym,
             organization_color: project.orgColor,
+            organization_logo: project.orgLogo,
             event_start_date: project.event_start_date,
             event_end_date: project.event_end_date,
             created_at: project.created_at,
@@ -304,10 +305,12 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
                 setIsModalOpen(true)
               }}
               showOrganizationBadge={true}
+              showOrganizationName={true}
               organizationData={{
                 name: project.orgName,
                 acronym: project.orgAcronym,
-                color: project.orgColor || '#444444'
+                color: project.orgColor || '#444444',
+                logo: project.orgLogo
               }}
             />
           )

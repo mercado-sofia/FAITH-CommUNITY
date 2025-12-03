@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { getProgramImageUrl } from '@/utils/shared/uploadPaths'
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/shared/uploadPaths'
 import { formatProgramDatesForCard } from '@/utils/shared/dateUtils'
 import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils'
 import DOMPurify from 'dompurify'
@@ -15,7 +15,7 @@ const ProgramCard = ({
   showOrganizationBadge = false, 
   organizationData = null,
   onRestore = null,
-  showOrganizationName = true
+  showOrganizationName = false
 }) => {
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
@@ -28,7 +28,8 @@ const ProgramCard = ({
   const orgData = organizationData || {
     name: program.organization_name || 'Unknown Organization',
     acronym: program.organization_acronym || 'ORG',
-    color: program.organization_color || '#444444'
+    color: program.organization_color || '#444444',
+    logo: program.organization_logo || null
   }
 
   return (
@@ -83,7 +84,43 @@ const ProgramCard = ({
           <h3 className={styles.cardTitle}>{program.title}</h3>
         </div>
         {showOrganizationName && (
-          <p className={styles.cardOrganization}>{orgData.name}</p>
+          <div className={styles.cardOrganization}>
+            {orgData.logo ? (() => {
+              const logoUrl = getOrganizationImageUrl(orgData.logo, 'logo');
+              if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
+                return (
+                  <>
+                    <Image
+                      src={logoUrl}
+                      alt={`${orgData.acronym || orgData.name} logo`}
+                      width={16}
+                      height={16}
+                      className={styles.orgLogo}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        if (e.target.nextSibling) {
+                          e.target.nextSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                    <div 
+                      className={styles.orgLogoPlaceholder}
+                      style={{ display: 'none' }}
+                    >
+                      {(orgData.acronym || orgData.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })() : null}
+            {!orgData.logo && (
+              <div className={styles.orgLogoPlaceholder}>
+                {(orgData.acronym || orgData.name || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className={styles.orgNameText}>{orgData.name}</span>
+          </div>
         )}
         
         {/* Display collaborating organizations (excluding primary organization) */}

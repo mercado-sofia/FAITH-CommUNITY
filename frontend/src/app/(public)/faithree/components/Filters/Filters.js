@@ -56,30 +56,23 @@ function Filters({
       {/* Year Filter */}
       {years.length > 0 && (
         <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Year</label>
-          <div className={styles.filterChips}>
-            <button
-              className={`${styles.filterChip} ${selectedYear === null ? styles.active : ''}`}
-              onClick={() => onYearChange(null)}
-              aria-label="Show all years"
-              aria-pressed={selectedYear === null}
-            >
-              All
-            </button>
+          <label className={styles.filterLabel} htmlFor="year-select">Year</label>
+          <select
+            id="year-select"
+            className={`${styles.yearDropdown} ${theme === 'rainy' ? styles.yearDropdownRainy : ''}`}
+            value={selectedYear || ''}
+            onChange={(e) => onYearChange(e.target.value === '' ? null : parseInt(e.target.value))}
+            aria-label="Filter by year"
+          >
+            <option value="">All Years</option>
             {years
               .sort((a, b) => b - a) // Sort descending (newest first)
               .map((year) => (
-                <button
-                  key={year}
-                  className={`${styles.filterChip} ${selectedYear === year ? styles.active : ''}`}
-                  onClick={() => onYearChange(year)}
-                  aria-label={`Filter by year ${year}`}
-                  aria-pressed={selectedYear === year}
-                >
+                <option key={year} value={year}>
                   {year}
-                </button>
+                </option>
               ))}
-          </div>
+          </select>
         </div>
       )}
     </div>

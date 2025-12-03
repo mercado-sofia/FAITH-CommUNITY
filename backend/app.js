@@ -142,10 +142,16 @@ const jsonParser = express.json({ limit: "10mb" });
 const urlencodedParser = express.urlencoded({ extended: true });
 
 // Helper to check if request should skip global body parsing
-const shouldSkipBodyParsing = (req) => req.path.startsWith('/api/submissions');
+// Use originalUrl for reliable path checking - it's set early and doesn't change
+const shouldSkipBodyParsing = (req) => {
+  // Check both originalUrl and path for maximum reliability
+  const url = req.originalUrl || req.url || req.path || '';
+  return url.startsWith('/api/submissions');
+};
 
 app.use((req, res, next) => {
   // Skip body parsing for submission routes - they handle their own parsing
+  // This prevents the request stream from being consumed before the submission router's parsers
   if (shouldSkipBodyParsing(req)) {
     return next();
   }
@@ -153,6 +159,7 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => {
   // Skip body parsing for submission routes - they handle their own parsing
+  // This prevents the request stream from being consumed before the submission router's parsers
   if (shouldSkipBodyParsing(req)) {
     return next();
   }

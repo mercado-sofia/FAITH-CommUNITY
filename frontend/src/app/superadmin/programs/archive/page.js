@@ -420,6 +420,7 @@ const ArchiveProgramsPage = () => {
                 program={program}
                 onViewDetails={handleViewDetails}
                 showOrganizationBadge={true}
+                showOrganizationName={false}
                 onRestore={handleRestoreClick}
               />
             ))}

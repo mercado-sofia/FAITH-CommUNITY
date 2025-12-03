@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
-import { LuMousePointerClick } from "react-icons/lu";
+import { API_BASE_URL } from '@/config/api';
 import styles from './faithree.module.css';
 import { TreeModel, LoadingOverlay, PageLoadingOverlay, WelcomeSection, Filters } from './components';
 
@@ -12,15 +12,13 @@ const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
   : false;
 
-import { API_BASE_URL } from '@/config/api';
-
 function FAITHreePage() {
   const [showWelcome, setShowWelcome] = useState(true); // Show welcome section initially
   const [theme, setTheme] = useState('morning'); // 'morning' or 'rainy'
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextTheme, setNextTheme] = useState(null);
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
-  const [isInstructionOpen, setIsInstructionOpen] = useState(false); // Mobile instruction toggle
+  const [allOrganizations, setAllOrganizations] = useState([]); // All active organizations
   const [isModelLoading, setIsModelLoading] = useState(true); // Track 3D model loading
   const [selectedOrganization, setSelectedOrganization] = useState(null); // Filter: organization
   const [selectedYear, setSelectedYear] = useState(null); // Filter: year
@@ -37,7 +35,6 @@ function FAITHreePage() {
       size: 1 + Math.random() * 2 // Variable size
     }));
   }, []);
-
 
   const toggleTheme = useCallback(() => {
     if (isTransitioning) return;
@@ -73,6 +70,46 @@ function FAITHreePage() {
       document.body.style.overflow = originalOverflow;
       document.documentElement.style.overflow = originalHtmlOverflow;
     };
+  }, []);
+
+  // Fetch all active organizations from API
+  useEffect(() => {
+    const fetchAllOrganizations = async () => {
+      try {
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          setAllOrganizations([]);
+          return;
+        }
+        
+        const response = await fetch(`${API_BASE_URL || ''}/api/organizations`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch organizations: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const organizations = data.success && Array.isArray(data.data) ? data.data : [];
+        
+        // Sort organizations by acronym
+        const sortedOrgs = organizations.sort((a, b) => 
+          (a.acronym || '').localeCompare(b.acronym || '')
+        );
+        
+        setAllOrganizations(sortedOrgs);
+      } catch (error) {
+        // Set empty array on error - filters won't show but page will still load
+        setAllOrganizations([]);
+      }
+    };
+
+    fetchAllOrganizations();
   }, []);
 
   // Fetch featured highlights from API
@@ -125,38 +162,19 @@ function FAITHreePage() {
     }
   }, []);
 
-
-  // Extract unique organizations from featured highlights
-  const uniqueOrganizations = useMemo(() => {
-    const orgMap = new Map();
-    featuredHighlights.forEach(highlight => {
-      if (highlight.organization_id && highlight.organization_name && highlight.organization_acronym) {
-        const orgId = highlight.organization_id;
-        if (!orgMap.has(orgId)) {
-          orgMap.set(orgId, {
-            id: orgId,
-            name: highlight.organization_name,
-            acronym: highlight.organization_acronym,
-            logo: highlight.organization_logo || null
-          });
-        }
-      }
-    });
-    return Array.from(orgMap.values()).sort((a, b) => 
-      a.acronym.localeCompare(b.acronym)
-    );
-  }, [featuredHighlights]);
-
-  // Extract unique years from featured highlights
+  // Generate all years from starting year to current year
   const uniqueYears = useMemo(() => {
-    const yearSet = new Set();
-    featuredHighlights.forEach(highlight => {
-      if (highlight.year) {
-        yearSet.add(highlight.year);
-      }
-    });
-    return Array.from(yearSet);
-  }, [featuredHighlights]);
+    const currentYear = new Date().getFullYear();
+    const startYear = 2010; // Starting year for the filter
+    const years = [];
+    
+    // Generate years from startYear to currentYear (inclusive)
+    for (let year = currentYear; year >= startYear; year--) {
+      years.push(year);
+    }
+    
+    return years;
+  }, []);
 
   // Filter featured highlights based on selected organization and year
   const filteredHighlights = useMemo(() => {
@@ -372,49 +390,11 @@ function FAITHreePage() {
               </>
             )}
           </button>
-          {/* Click Me Button - Beside Theme Toggle (Desktop) */}
-          <button
-            className={`${styles.instructionToggleButton} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
-            onClick={() => setIsInstructionOpen(!isInstructionOpen)}
-            aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
-            aria-expanded={isInstructionOpen}
-          >
-            <LuMousePointerClick className={styles.instructionToggleIcon} aria-hidden="true" />
-            <span className={styles.instructionToggleText}>Click me!</span>
-          </button>
-        </div>
-
-        {/* Click Me Button - Top Left (Mobile) */}
-        <div className={`${styles.instructionToggleContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-          <button
-            className={`${styles.instructionToggleButton} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
-            onClick={() => setIsInstructionOpen(!isInstructionOpen)}
-            aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
-            aria-expanded={isInstructionOpen}
-          >
-            <LuMousePointerClick className={styles.instructionToggleIcon} aria-hidden="true" />
-            <span className={styles.instructionToggleText}>Click me!</span>
-          </button>
-        </div>
-
-        {/* Instructional Text - Right Side */}
-        <div className={`${styles.instructionContainer} ${styles[`instruction${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isInstructionOpen ? styles.instructionOpen : ''}`}>
-          {/* Instruction Content */}
-          <div className={`${styles.instructionContent} ${isInstructionOpen ? styles.instructionContentOpen : ''}`}>
-            <div className={styles.instructionIcon}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
-              </svg>
-            </div>
-            <p className={styles.instructionText}>
-              <span className={styles.instructionHighlight}>Click the stars</span> on the tree to discover inspiring success stories from our programs
-            </p>
-          </div>
         </div>
 
         {/* Filters */}
         <Filters
-          organizations={uniqueOrganizations}
+          organizations={allOrganizations}
           years={uniqueYears}
           selectedOrganization={selectedOrganization}
           selectedYear={selectedYear}

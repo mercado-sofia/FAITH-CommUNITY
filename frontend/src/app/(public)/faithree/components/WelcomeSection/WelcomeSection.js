@@ -43,7 +43,7 @@ function WelcomeSection({ onContinue }) {
           </div>
 
           {/* Call to Action Message */}
-          <div className={styles.messageCard}>
+          <div className={`${styles.messageCard} ${styles.messageCardMobileHidden}`}>
             <div className={styles.messageIcon}>
               <LuMousePointerClick aria-hidden="true" />
             </div>

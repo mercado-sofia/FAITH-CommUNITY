@@ -396,11 +396,20 @@
   .welcomeContainer {
     top: 70px;
     height: calc(100vh - 70px);
+    background-image: url('/assets/backgrounds/mobilewelcomebg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: flex-start;
+    padding: 1.5rem 0;
   }
 
   .content {
-    padding: 1.5rem;
-    width: 95%;
+    padding: 1rem 1.5rem 2rem 1.5rem;
+    width: 100%;
+    max-width: 100%;
   }
 
   .heading {
@@ -414,12 +423,18 @@
   .messageContainer {
     flex-direction: column;
     max-width: none;
+    margin: 2.5rem 0 2rem 0;
+    gap: 1rem;
   }
 
   .messageCard {
     flex: none;
     padding: 1.5rem 1.75rem 1.65rem 1.75rem;
     gap: 1.25rem;
+  }
+
+  .messageCardMobileHidden {
+    display: none;
   }
 
   .messageIcon {
@@ -445,6 +460,23 @@
 }
 
 @media (max-width: 480px) {
+  .welcomeContainer {
+    background-image: url('/assets/backgrounds/mobilewelcomebg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: flex-start;
+    padding: 1rem 0;
+  }
+
+  .content {
+    padding: 0.75rem 1.25rem 1.5rem 1.25rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .heading {
     font-size: 1.75rem;
   }
@@ -456,12 +488,18 @@
   .messageContainer {
     flex-direction: column;
     max-width: 100%;
+    margin: 2rem 0 1.5rem 0;
+    gap: 0.875rem;
   }
 
   .messageCard {
     flex: none;
     padding: 1.25rem 1.5rem 1.4rem 1.5rem;
     gap: 1rem;
+  }
+
+  .messageCardMobileHidden {
+    display: none;
   }
 
   .messageIcon {

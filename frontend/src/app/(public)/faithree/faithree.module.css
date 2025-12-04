@@ -48,7 +48,7 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    0deg,
+    180deg,
     #FFFFFF 0%,
     #D5E0DA 50%,
     #EDF4E4 100%
@@ -738,9 +738,11 @@
   position: absolute;
   top: 2rem;
   left: 2rem;
+  bottom: 2rem;
   z-index: 15;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 1rem;
   max-width: 380px;
   width: 100%;
@@ -751,6 +753,17 @@
   pointer-events: auto;
   position: relative;
   z-index: 15;
+}
+
+/* Filters wrapper - stays at top */
+.leftSidebar > *:first-child {
+  flex-shrink: 0;
+}
+
+/* Impact Level Showcase - positioned at bottom */
+.leftSidebar > *:last-child {
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 /* Right Sidebar - Tree Carousel and Navigation */
@@ -774,7 +787,7 @@
 /* Floating Ground with Tree - Centered */
 .floatingGround {
   position: absolute;
-  top: 98%;
+  top: 95%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 4;
@@ -1023,7 +1036,7 @@
   
   
   .floatingGround {
-    top: 92%; /* Lowered */
+    top: 89%; /* Lifted */
   }
 }
 
@@ -1132,7 +1145,7 @@
   }
   
   .floatingGround {
-    top: 92%; /* Lowered */
+    top: 89%; /* Lifted */
   }
   
 }
@@ -1236,7 +1249,7 @@
   }
   
   .floatingGround {
-    top: 92%; /* Lowered */
+    top: 89%; /* Lifted */
   }
 }
 
@@ -1274,7 +1287,7 @@
   
   
   .floatingGround {
-    top: 94%; /* Adjusted to avoid instruction container overlap in landscape */
+    top: 91%; /* Adjusted to avoid instruction container overlap in landscape */
   }
 }
 
@@ -1316,6 +1329,6 @@
   
   
   .floatingGround {
-    top: 92%; /* Adjusted to avoid instruction container overlap in landscape */
+    top: 89%; /* Adjusted to avoid instruction container overlap in landscape */
   }
 }

@@ -572,7 +572,9 @@ export const forgotPassword = async (req, res) => {
     )
 
     // Send email with reset link
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}&type=admin`
+    // URL encode the token to ensure proper handling across all email clients and browsers
+    const encodedToken = encodeURIComponent(token);
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${encodedToken}&type=admin`
     
     const { sendMail } = await import('../../utils/mailer.js')
     const { getSiteName } = await import('../../utils/siteName.js')

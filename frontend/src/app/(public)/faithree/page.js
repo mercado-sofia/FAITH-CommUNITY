@@ -5,7 +5,7 @@ import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import { API_BASE_URL } from '@/config/api';
 import styles from './faithree.module.css';
-import { TreeModel, LoadingOverlay, PageLoadingOverlay, WelcomeSection, Filters } from './components';
+import { TreeModel, LoadingOverlay, PageLoadingOverlay, WelcomeSection, Filters, ImpactLevelShowcase, TreeCarousel, TreeNavigation } from './components';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -22,6 +22,7 @@ function FAITHreePage() {
   const [isModelLoading, setIsModelLoading] = useState(true); // Track 3D model loading
   const [selectedOrganization, setSelectedOrganization] = useState(null); // Filter: organization
   const [selectedYear, setSelectedYear] = useState(null); // Filter: year
+  const [currentTreeIndex, setCurrentTreeIndex] = useState(0); // Current tree being displayed
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -204,27 +205,21 @@ function FAITHreePage() {
   
   // Handle individual tree load
   const handleTreeLoad = useCallback((treeIndex) => {
-    setLoadedTrees(prev => {
-      const newSet = new Set(prev);
-      newSet.add(treeIndex);
-      // Only set isModelLoading to false when all trees are loaded
-      if (newSet.size === highlightChunks.length && highlightChunks.length > 0) {
+    // Only track loading for the current tree
+    if (treeIndex === currentTreeIndex) {
         setIsModelLoading(false);
       }
-      return newSet;
-    });
-  }, [highlightChunks.length]);
+  }, [currentTreeIndex]);
   
-  // Reset loaded trees when chunks change
+  // Reset loading when current tree changes
   useEffect(() => {
+    setIsModelLoading(true);
     setLoadedTrees(new Set());
     // If no chunks or empty chunks, set loading to false immediately
     if (highlightChunks.length === 0 || (highlightChunks.length === 1 && highlightChunks[0].length === 0)) {
       setIsModelLoading(false);
-    } else {
-      setIsModelLoading(true);
     }
-  }, [highlightChunks]);
+  }, [currentTreeIndex, highlightChunks]);
 
   // Handle continue from welcome section
   const handleContinue = useCallback(() => {
@@ -239,6 +234,24 @@ function FAITHreePage() {
   // Handle year filter change
   const handleYearChange = useCallback((year) => {
     setSelectedYear(year);
+  }, []);
+
+  // Reset current tree index when chunks change
+  useEffect(() => {
+    setCurrentTreeIndex(0);
+  }, [highlightChunks]);
+
+  // Handle tree navigation
+  const handlePreviousTree = useCallback(() => {
+    setCurrentTreeIndex(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const handleNextTree = useCallback(() => {
+    setCurrentTreeIndex(prev => Math.min(highlightChunks.length - 1, prev + 1));
+  }, [highlightChunks.length]);
+
+  const handleTreeSelect = useCallback((treeIndex) => {
+    setCurrentTreeIndex(treeIndex);
   }, []);
 
   return (
@@ -341,30 +354,29 @@ function FAITHreePage() {
           </div>
         </div>
         
-        {/* 3D Tree Models - Multiple trees for chunks of 12 highlights */}
+        {/* 3D Tree Model - Show only current tree */}
         <div className={styles.floatingGround}>
           <div className={styles.treesContainer}>
-            {highlightChunks.map((chunk, index) => {
-              // Position trees horizontally: tree 1 at x=0, tree 2 at x=8, tree 3 at x=16, etc.
-              const treeXOffset = index * 8;
-              const chunkOffset = index * 12;
+            {highlightChunks.length > 0 && highlightChunks[currentTreeIndex] && (() => {
+              const chunk = highlightChunks[currentTreeIndex];
+              const chunkOffset = currentTreeIndex * 12;
               
               return (
                 <div 
-                  key={index} 
+                  key={currentTreeIndex} 
                   className={styles.tree3D}
                 >
                   <TreeModel 
                     theme={theme} 
-                    treePosition={[treeXOffset, -1.8, 0]} 
+                    treePosition={[0, -1.8, 0]} 
                     chunkHighlights={chunk}
                     chunkOffset={chunkOffset}
                     allFeaturedHighlights={filteredHighlights}
-                    onLoad={() => handleTreeLoad(index)}
+                    onLoad={() => handleTreeLoad(currentTreeIndex)}
                   />
                 </div>
               );
-            })}
+            })()}
           </div>
         </div>
         
@@ -392,7 +404,8 @@ function FAITHreePage() {
           </button>
         </div>
 
-        {/* Filters */}
+        {/* Left Sidebar - Filters and Impact Level Showcase */}
+        <div className={styles.leftSidebar}>
         <Filters
           organizations={allOrganizations}
           years={uniqueYears}
@@ -402,6 +415,25 @@ function FAITHreePage() {
           onYearChange={handleYearChange}
           theme={theme}
         />
+          <ImpactLevelShowcase theme={theme} />
+        </div>
+
+        {/* Right Sidebar - Tree Carousel and Navigation */}
+        <div className={styles.rightSidebar}>
+          <TreeCarousel
+            highlightChunks={highlightChunks}
+            currentTreeIndex={currentTreeIndex}
+            onTreeSelect={handleTreeSelect}
+            theme={theme}
+          />
+          <TreeNavigation
+            currentIndex={currentTreeIndex}
+            totalTrees={highlightChunks.length}
+            onPrevious={handlePreviousTree}
+            onNext={handleNextTree}
+            theme={theme}
+          />
+        </div>
         </div>
       )}
     </>

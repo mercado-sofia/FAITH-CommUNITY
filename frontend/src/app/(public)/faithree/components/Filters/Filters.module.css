@@ -2,29 +2,24 @@
    FILTERS WRAPPER
    ============================================ */
 .filtersWrapper {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  z-index: 15;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 380px;
+  width: 100%;
 }
 
 /* ============================================
    FILTER CONTAINER (Base Styles)
    ============================================ */
 .filterContainer {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 255, 248, 0.88) 100%);
+  background: rgba(27, 69, 57, 0.15);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1.5px solid rgba(76, 175, 80, 0.2);
   border-radius: 16px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.12),
-    0 4px 16px rgba(76, 175, 80, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 4px 16px rgba(76, 175, 80, 0.08);
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: slideInLeft 0.5s ease-out;
@@ -33,15 +28,16 @@
 /* Year filter needs overflow visible for dropdown options */
 .yearFilter {
   overflow: visible;
+  position: relative;
+  z-index: 20; /* Higher than impact level showcase to ensure dropdown appears above */
 }
 
 .filterRainy {
-  background: linear-gradient(135deg, rgba(20, 84, 126, 0.92) 0%, rgba(30, 52, 73, 0.88) 100%);
+  background: rgba(27, 69, 57, 0.15);
   border: 1.5px solid rgba(135, 206, 250, 0.25);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.25),
-    0 4px 16px rgba(20, 84, 126, 0.15),
-    inset 0 1px 0 rgba(135, 206, 250, 0.2);
+    0 4px 16px rgba(20, 84, 126, 0.15);
 }
 
 @keyframes slideInLeft {
@@ -79,7 +75,7 @@
 .filterTitle {
   font-size: 0.875rem; /* 14px */
   font-weight: 700;
-  color: #2e7d32;
+  color: #66bb6a;
   text-transform: uppercase;
   letter-spacing: 0.75px;
 }
@@ -90,7 +86,7 @@
 
 .expandIcon {
   font-size: 0.875rem; /* 14px */
-  color: #2e7d32;
+  color: #66bb6a;
   transition: transform 0.3s ease;
   transform: rotate(0deg);
 }
@@ -150,14 +146,14 @@
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: rgba(27, 69, 57, 0.15);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   border: 2px solid rgba(76, 175, 80, 0.25);
   border-radius: 24px;
   font-size: 0.875rem; /* 14px */
   font-weight: 600;
-  color: #2e7d32;
+  color: #66bb6a;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
@@ -171,7 +167,7 @@
 }
 
 .filterChip:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 255, 248, 0.98) 100%);
+  background: rgba(27, 69, 57, 0.25);
   border-color: rgba(76, 175, 80, 0.4);
   transform: translateY(-2px);
   box-shadow: 
@@ -207,7 +203,7 @@
 
 /* Rainy Theme - Filter Chips */
 .filterRainy .filterChip {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 0.98) 0%, rgba(20, 84, 126, 0.9) 100%);
+  background: rgba(27, 69, 57, 0.15);
   border: 2px solid rgba(135, 206, 250, 0.25);
   color: #E0F6FF;
   box-shadow: 
@@ -216,7 +212,7 @@
 }
 
 .filterRainy .filterChip:hover {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.98) 100%);
+  background: rgba(27, 69, 57, 0.25);
   border-color: rgba(135, 206, 250, 0.4);
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.25),
@@ -287,6 +283,7 @@
 .yearDropdownWrapper {
   position: relative;
   width: 100%;
+  z-index: 100; /* High z-index to appear above impact level container */
 }
 
 .yearDropdownHeader {
@@ -343,7 +340,7 @@
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.12),
     0 4px 12px rgba(76, 175, 80, 0.1);
-  z-index: 20;
+  z-index: 200; /* Very high z-index to ensure it appears above everything */
   overflow: hidden;
   max-height: 200px;
   overflow-y: auto;
@@ -412,6 +409,7 @@
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(20, 84, 126, 0.2);
+  z-index: 200; /* Very high z-index to ensure it appears above everything */
 }
 
 .filterRainy .yearOption {

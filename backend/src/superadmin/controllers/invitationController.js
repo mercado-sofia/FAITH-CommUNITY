@@ -16,7 +16,9 @@ const sendInvitationEmail = async (email, token) => {
       throw new Error('FRONTEND_URL not configured')
     }
 
-    const invitationLink = `${process.env.FRONTEND_URL}/invitation/accept?token=${token}`
+    // URL encode the token to ensure proper handling across all email clients and browsers
+    const encodedToken = encodeURIComponent(token);
+    const invitationLink = `${process.env.FRONTEND_URL}/invitation/accept?token=${encodedToken}`
     const siteName = await getSiteName()
   
     await sendMail({

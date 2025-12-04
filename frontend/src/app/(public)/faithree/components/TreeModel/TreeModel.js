@@ -8,15 +8,20 @@ import StarModal from '../StarModal/StarModal'
 import styles from './TreeModel.module.css'
 
 // Star component - creates a glowing star shape (static like fruit on tree)
-function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover, onHoverOut }) {
+function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average' }) {
   const meshRef = useRef()
   const [hovered, setHovered] = useState(false)
   
-  // Create star geometry
+  // Calculate star size based on impact level
+  const sizeMultiplier = impactLevel === 'high' ? 1.4 : impactLevel === 'average' ? 1.2 : 1.0
+  
+  // Create star geometry with size based on impact level
   const starShape = useMemo(() => {
     const shape = new THREE.Shape()
-    const outerRadius = 0.13
-    const innerRadius = 0.07
+    const baseOuterRadius = 0.13
+    const baseInnerRadius = 0.07
+    const outerRadius = baseOuterRadius * sizeMultiplier
+    const innerRadius = baseInnerRadius * sizeMultiplier
     const spikes = 5
     const step = (Math.PI * 2) / spikes
 
@@ -34,15 +39,19 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
     }
     shape.closePath()
     return shape
-  }, [])
+  }, [sizeMultiplier])
 
   const extrudeSettings = useMemo(() => ({
-    depth: 0.045,
+    depth: 0.045 * sizeMultiplier,
     bevelEnabled: true,
-    bevelThickness: 0.018,
-    bevelSize: 0.009,
+    bevelThickness: 0.018 * sizeMultiplier,
+    bevelSize: 0.009 * sizeMultiplier,
     bevelSegments: 3
-  }), [])
+  }), [sizeMultiplier])
+
+  // Color and emissive based on impact level
+  const starColor = impactLevel === 'high' ? '#FFD700' : impactLevel === 'average' ? '#FFE135' : '#FFD700'
+  const baseEmissiveIntensity = impactLevel === 'high' ? 0.8 : impactLevel === 'average' ? 0.6 : 0.5
   
   // Calculate base position (static - no animation)
   const basePosition = useMemo(() => [
@@ -87,18 +96,18 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
       >
         <extrudeGeometry args={[starShape, extrudeSettings]} />
         <meshStandardMaterial
-          color="#FFD700"
-          emissive="#FFD700"
-          emissiveIntensity={hovered ? 1.2 : 0.5}
+          color={starColor}
+          emissive={starColor}
+          emissiveIntensity={hovered ? baseEmissiveIntensity * 1.5 : baseEmissiveIntensity}
           metalness={0.3}
           roughness={0.2}
         />
       </mesh>
-      {/* Add a point light to make the star glow - enhanced on hover */}
+      {/* Add a point light to make the star glow - enhanced on hover and based on impact level */}
       <pointLight
-        color="#FFD700"
-        intensity={hovered ? 0.8 : 0.3}
-        distance={hovered ? 3 : 2}
+        color={starColor}
+        intensity={hovered ? (impactLevel === 'high' ? 1.0 : impactLevel === 'average' ? 0.7 : 0.5) : (impactLevel === 'high' ? 0.6 : impactLevel === 'average' ? 0.4 : 0.3)}
+        distance={hovered ? (impactLevel === 'high' ? 4 : 3) : (impactLevel === 'high' ? 3 : 2)}
       />
     </group>
   )
@@ -444,6 +453,8 @@ export default function TreeModel({
                 const localStarId = index + 1 // 1-12 (local to this tree)
                 // Only render if there's a corresponding highlight in this chunk
                 if (localStarId <= chunkHighlights.length) {
+                  const highlight = chunkHighlights[localStarId - 1]
+                  const impactLevel = highlight?.impact_level || 'average'
                   return (
                     <Star 
                       key={localStarId}
@@ -453,6 +464,7 @@ export default function TreeModel({
                       onStarClick={handleStarClick}
                       onHover={handleStarHover}
                       onHoverOut={handleStarHoverOut}
+                      impactLevel={impactLevel}
                     />
                   )
                 }

@@ -1,0 +1,267 @@
+/* Tree Carousel Container */
+.carouselContainer {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 255, 248, 0.88) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(76, 175, 80, 0.2);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(76, 175, 80, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideInRight 0.5s ease-out;
+}
+
+.carouselRainy {
+  background: linear-gradient(135deg, rgba(20, 84, 126, 0.92) 0%, rgba(30, 52, 73, 0.88) 100%);
+  border: 1.5px solid rgba(135, 206, 250, 0.25);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 4px 16px rgba(20, 84, 126, 0.15),
+    inset 0 1px 0 rgba(135, 206, 250, 0.2);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Carousel Header */
+.carouselHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(76, 175, 80, 0.1);
+}
+
+.carouselRainy .carouselHeader {
+  border-bottom: 1px solid rgba(135, 206, 250, 0.15);
+}
+
+.carouselTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+}
+
+.carouselRainy .carouselTitle {
+  color: #E0F6FF;
+}
+
+/* Carousel Content */
+.carouselContent {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Tree Preview */
+.treePreview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.carouselRainy .treePreview {
+  background: rgba(20, 84, 126, 0.3);
+}
+
+.treePreview:hover {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
+  transform: translateX(4px);
+}
+
+.carouselRainy .treePreview:hover {
+  background: rgba(135, 206, 250, 0.2);
+  border-color: rgba(135, 206, 250, 0.4);
+}
+
+.treePreview:active {
+  transform: translateX(2px);
+}
+
+.treePreview:focus {
+  outline: 2px solid rgba(76, 175, 80, 0.5);
+  outline-offset: 2px;
+}
+
+.carouselRainy .treePreview:focus {
+  outline-color: rgba(135, 206, 250, 0.5);
+}
+
+/* Tree Preview Icon */
+.treePreviewIcon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.carouselRainy .treePreviewIcon {
+  background: rgba(20, 84, 126, 0.4);
+}
+
+.treeSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Tree Preview Info */
+.treePreviewInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.treeNumber {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.carouselRainy .treeNumber {
+  color: #E0F6FF;
+}
+
+.starCount {
+  font-size: 0.75rem;
+  color: #4caf50;
+  opacity: 0.8;
+}
+
+.carouselRainy .starCount {
+  color: #87CEEB;
+  opacity: 0.9;
+}
+
+/* Scrollbar Styling */
+.carouselContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.carouselContent::-webkit-scrollbar-track {
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 3px;
+}
+
+.carouselContent::-webkit-scrollbar-thumb {
+  background: rgba(76, 175, 80, 0.3);
+  border-radius: 3px;
+}
+
+.carouselContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(76, 175, 80, 0.5);
+}
+
+.carouselRainy .carouselContent::-webkit-scrollbar-track {
+  background: rgba(135, 206, 250, 0.1);
+}
+
+.carouselRainy .carouselContent::-webkit-scrollbar-thumb {
+  background: rgba(135, 206, 250, 0.3);
+}
+
+.carouselRainy .carouselContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(135, 206, 250, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .carouselHeader {
+    padding: 0.65rem 0.85rem;
+  }
+
+  .carouselTitle {
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+  }
+
+  .carouselContent {
+    padding: 0.85rem;
+    gap: 0.65rem;
+    max-height: 300px;
+  }
+
+  .treePreview {
+    padding: 0.65rem;
+    gap: 0.65rem;
+  }
+
+  .treePreviewIcon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .treeNumber {
+    font-size: 0.875rem;
+  }
+
+  .starCount {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .carouselHeader {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .carouselContent {
+    padding: 0.75rem;
+    gap: 0.6rem;
+    max-height: 250px;
+  }
+
+  .treePreview {
+    padding: 0.6rem;
+    gap: 0.6rem;
+  }
+
+  .treePreviewIcon {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .carouselContainer {
+    animation: none;
+  }
+
+  .treePreview {
+    transition: none;
+  }
+
+  .treePreview:hover {
+    transform: none;
+  }
+}
+

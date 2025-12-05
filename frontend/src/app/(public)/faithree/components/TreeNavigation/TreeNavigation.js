@@ -1,6 +1,6 @@
 'use client';
 
-import { FiChevronLeft, FiChevronRight, FiStar, FiClock } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import styles from './TreeNavigation.module.css';
 
 function TreeNavigation({ 
@@ -16,9 +16,9 @@ function TreeNavigation({
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < totalTrees - 1;
   
-  // Calculate remaining highlights
+  // Calculate remaining highlights across all future trees
   const currentTreeStart = currentIndex * CHUNK_SIZE;
-  const nextTreeHighlights = canGoNext ? Math.min(CHUNK_SIZE, totalHighlights - (currentTreeStart + CHUNK_SIZE)) : 0;
+  const totalRemainingHighlights = canGoNext ? totalHighlights - (currentTreeStart + CHUNK_SIZE) : 0;
 
   // Don't show navigation if there's only one tree or no trees
   if (totalTrees <= 1 && !hasMoreTrees) {
@@ -34,19 +34,17 @@ function TreeNavigation({
         >
           {canGoNext ? (
             <div className={styles.indicatorContent}>
-              <FiStar className={styles.indicatorIcon} aria-hidden="true" />
               <div className={styles.indicatorTextWrapper}>
                 <span className={styles.indicatorTextMain}>
                   More highlights await
                 </span>
                 <span className={styles.indicatorTextSub}>
-                  {nextTreeHighlights} {nextTreeHighlights === 1 ? 'story' : 'stories'} waiting to be discovered →
+                  {totalRemainingHighlights} {totalRemainingHighlights === 1 ? 'story' : 'stories'} waiting to be discovered →
                 </span>
               </div>
             </div>
           ) : (
             <div className={styles.indicatorContent}>
-              <FiClock className={styles.indicatorIcon} aria-hidden="true" />
               <div className={styles.indicatorTextWrapper}>
                 <span className={styles.indicatorTextMain}>
                   More highlights behind you

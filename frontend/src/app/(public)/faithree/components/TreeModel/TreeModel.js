@@ -289,12 +289,12 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
           roughness={0.2}
         />
       </mesh>
-      {/* Point light for all stars on hover, particles only for high impact stars */}
-      {hovered && (
+      {/* Point light glow effect only for high impact stars on hover */}
+      {hovered && impactLevel === 'high' && (
         <pointLight
           color={starColor}
-          intensity={impactLevel === 'high' ? 1.0 : impactLevel === 'average' ? 0.7 : 0.5}
-          distance={impactLevel === 'high' ? 4 : impactLevel === 'average' ? 3 : 2.5}
+          intensity={1.0}
+          distance={4}
         />
       )}
       {/* Particles only for high impact stars */}
@@ -312,11 +312,10 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null
   // Notify parent when model is loaded
   useEffect(() => {
     if (scene && onLoad) {
-      // Small delay to ensure everything is ready
-      const timer = setTimeout(() => {
+      // Wait for next frame to ensure scene is rendered to canvas
+      requestAnimationFrame(() => {
         onLoad()
-      }, 100)
-      return () => clearTimeout(timer)
+      })
     }
   }, [scene, onLoad])
   
@@ -391,8 +390,8 @@ function StaticControls({
   const controlsRef = useRef()
 
   useEffect(() => {
-    // Wait a bit for controls to be ready
-    const timer = setTimeout(() => {
+    // Initialize controls immediately on next frame
+    requestAnimationFrame(() => {
       const controls = controlsRef.current
       if (!controls || !controls.domElement) return
 
@@ -407,11 +406,7 @@ function StaticControls({
       controls.object.position.copy(idealPos)
       controls.target.copy(new THREE.Vector3(...treePosition))
       controls.update()
-    }, 100)
-
-    return () => {
-      clearTimeout(timer)
-    }
+    })
   }, [treePosition, cameraOffset])
 
   useFrame(() => {
@@ -512,19 +507,19 @@ function Loading() {
 function generateStarPositions(count) {
   const fixedPositions = [
     // Primary row - evenly spaced, moved leftmost stars to right side
-    [0.75, 1.85, 1.5],     // Star 1 - Center-right, medium (moved down more)
-    [-0.7, 1.8, 1.5],      // Star 2 - Left-center, high (moved right a little)
-    [-0.15, 1.9, 1.45],    // Star 3 - Center-left, medium (moved down more)
-    [0.3, 2.05, 1.4],      // Star 4 - Center, high (0.45 spacing from Star 3)
-    [-1.05, 1.95, 1.4],    // Star 5 - Left, medium (moved from far left)
-    [1.25, 1.85, 1.45],    // Star 6 - Right, high (moved right more)
-    [1.5, 2.0, 1.4],       // Star 7 - Far right, medium (0.25 spacing from Star 6)
-    [0.05, 2.3, 1.45],     // Star 8 - Center, very high (moved right a little)
+    [0.6, 1.85, 0.9],     // Star 1 - Center-right, medium (moved left a little, closer to tree)
+    [-0.9, 1.8, 1.2],      // Star 2 - Left-center, high (moved further left)
+    [-0.05, 1.9, 1.1],    // Star 3 - Center-left, medium (moved slightly right, closer to tree)
+    [0.4, 2.05, 1.2],      // Star 4 - Center, high (moved slightly left)
+    [-0.5, 1.85, 1.2],    // Star 5 - Left, medium (moved down and left)
+    [1.0, 1.75, 0.6],    // Star 6 - Right, high (moved left a little, closer to tree)
+    [1.3, 1.9, 0.5],       // Star 7 - Far right, medium (moved left a little, super close to tree)
+    [0.15, 2.3, 1.2],     // Star 8 - Center, very high (moved right a little)
     // Secondary row - positioned with maximum spacing from primary stars
-    [-0.7, 2.15, 1.4],     // Star 9 - Center-left, high (moved down more)
-    [0.75, 2.25, 1.5],     // Star 10 - Center-right, high (moved left a little)
-    [1.15, 2.15, 1.45],    // Star 11 - Far right, very high (moved left and down more)
-    [-0.35, 2.35, 1.5]     // Star 12 - Center-left, very high (moved left more)
+    [-0.9, 2.15, 1.2],     // Star 9 - Center-left, high (moved left)
+    [0.65, 2.25, 0.8],     // Star 10 - Center-right, high (moved left a little more, closer to tree)
+    [0.95, 2.1, 0.4],    // Star 11 - Far right, very high (moved left and down a little)
+    [-0.35, 2.2, 1.0]     // Star 12 - Center-left, very high (moved closer to tree, reduced gap behind)
   ];
 
   // Ensure count never exceeds 12 (chunking should handle this, but enforce it here)
@@ -679,12 +674,10 @@ export default function TreeModel({
   // Notify parent when model is fully loaded (including stars)
   useEffect(() => {
     if (isModelLoaded && onLoad) {
-      // Additional delay to ensure everything is rendered (stars, etc.)
-      // Increased delay to ensure tree is fully visible before hiding loading overlay
-      const timer = setTimeout(() => {
+      // Wait for next frame to ensure stars are rendered to canvas
+      requestAnimationFrame(() => {
         onLoad()
-      }, 800)
-      return () => clearTimeout(timer)
+      })
     }
   }, [isModelLoaded, onLoad])
 

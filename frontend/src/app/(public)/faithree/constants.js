@@ -8,9 +8,9 @@ export const CHUNK_SIZE = 12; // Number of highlights per tree
 export const START_YEAR = 2010; // Starting year for the year filter
 
 // Loading delays (in milliseconds)
-export const LOADING_DELAY = 300; // Background preload delay
-export const MODEL_LOAD_DELAY = 800; // 3D model load delay
-export const BACKGROUND_PRELOAD_TIMEOUT = 2000; // Fallback timeout for background images
+export const LOADING_DELAY = 0; // Background preload delay (removed - no delay)
+export const MODEL_LOAD_DELAY = 0; // 3D model load delay (removed - no delay)
+export const BACKGROUND_PRELOAD_TIMEOUT = 500; // Fallback timeout for background images (reduced)
 
 // API configuration
 export const API_TIMEOUT = 10000; // API request timeout (10 seconds)

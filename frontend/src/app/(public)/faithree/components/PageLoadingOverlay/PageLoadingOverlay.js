@@ -8,17 +8,15 @@ export default function PageLoadingOverlay({ isLoading }) {
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && isVisible) {
-      // Start fade out animation
-      setIsAnimatingOut(true);
-      // Hide after animation completes
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, 400);
-
-      return () => clearTimeout(timer);
+    if (isLoading) {
+      // Reset state when loading starts (prevents flickering when loading toggles)
+      setIsVisible(true);
+      setIsAnimatingOut(false);
+    } else if (isVisible && !isAnimatingOut) {
+      // Hide immediately when loading stops
+      setIsVisible(false);
     }
-  }, [isLoading, isVisible]);
+  }, [isLoading, isVisible, isAnimatingOut]);
 
   if (!isVisible) return null;
 

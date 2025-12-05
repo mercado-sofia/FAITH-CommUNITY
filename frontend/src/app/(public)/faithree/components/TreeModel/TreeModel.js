@@ -100,8 +100,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       groupRef.current.getWorldPosition(worldPosition)
       // Get mouse position from native DOM event for accurate positioning
       const nativeEvent = e.nativeEvent || e
-      // Pass highlight data, 3D position, and native event to parent
-      onHover(highlight, worldPosition, nativeEvent)
+      // Pass highlight data, starId, 3D position, and native event to parent
+      onHover(highlight, starId, worldPosition, nativeEvent)
     }
   }
 
@@ -349,20 +349,20 @@ function Loading() {
 // Z-depth maintained at 1.4-1.5 for consistent front-facing position
 function generateStarPositions(count) {
   const fixedPositions = [
-    // Primary row - evenly spaced with 0.45 unit gaps, wider spread
-    [-1.5, 2.05, 1.45],    // Star 1 - Far left, high
-    [-1.05, 1.95, 1.4],    // Star 2 - Left, medium (0.45 spacing from Star 1)
-    [-0.6, 2.1, 1.5],      // Star 3 - Left-center, high (0.45 spacing from Star 2)
-    [-0.15, 2.0, 1.45],    // Star 4 - Center-left, medium (0.45 spacing from Star 3)
-    [0.3, 2.05, 1.4],      // Star 5 - Center, high (0.45 spacing from Star 4)
-    [0.75, 1.95, 1.5],     // Star 6 - Center-right, medium (0.45 spacing from Star 5)
-    [1.2, 2.1, 1.45],      // Star 7 - Right, high (0.45 spacing from Star 6)
-    [1.5, 2.0, 1.4],       // Star 8 - Far right, medium (0.3 spacing from Star 7)
+    // Primary row - evenly spaced, moved leftmost stars to right side
+    [-1.05, 1.95, 1.4],    // Star 1 - Left, medium (moved from far left)
+    [-0.65, 1.9, 1.5],     // Star 2 - Left-center, high (moved down more)
+    [-0.15, 1.9, 1.45],    // Star 3 - Center-left, medium (moved down more)
+    [0.3, 2.05, 1.4],      // Star 4 - Center, high (0.45 spacing from Star 3)
+    [0.75, 1.95, 1.5],     // Star 5 - Center-right, medium (0.45 spacing from Star 4)
+    [1.25, 1.85, 1.45],    // Star 6 - Right, high (moved right more)
+    [1.5, 2.0, 1.4],       // Star 7 - Far right, medium (0.25 spacing from Star 6)
+    [0.05, 2.3, 1.45],     // Star 8 - Center, very high (moved right a little)
     // Secondary row - positioned with maximum spacing from primary stars
-    [-1.3, 2.25, 1.5],     // Star 9 - Far left, very high (0.2 spacing from Star 1, 0.25 from Star 2, 0.2 Y difference)
-    [-0.4, 2.2, 1.4],      // Star 10 - Center-left, high (0.2 spacing from Star 3, 0.25 from Star 4, 0.2 Y difference)
-    [0.5, 2.2, 1.5],       // Star 11 - Center-right, high (0.2 spacing from Star 5, 0.25 from Star 6, 0.25 Y difference)
-    [1.3, 2.25, 1.45]      // Star 12 - Far right, very high (0.1 spacing from Star 7, 0.2 from Star 8, but 0.2 Y difference)
+    [-0.7, 2.2, 1.4],      // Star 9 - Center-left, high (moved left more and more)
+    [0.55, 2.3, 1.5],      // Star 10 - Center-right, high (moved up more)
+    [1.15, 2.15, 1.45],    // Star 11 - Far right, very high (moved left and down more)
+    [-0.25, 2.35, 1.5]     // Star 12 - Center-left, very high (moved up a little)
   ];
 
   // Ensure count never exceeds 12 (chunking should handle this, but enforce it here)
@@ -423,6 +423,7 @@ export default function TreeModel({
   // State for hover preview overlay
   const [hoveredStarData, setHoveredStarData] = useState(null)
   const [hoveredStarScreenPos, setHoveredStarScreenPos] = useState(null)
+  const [hoveredStarId, setHoveredStarId] = useState(null)
   // Ref to store projection function
   const project3DTo2DRef = useRef(null)
 
@@ -436,8 +437,8 @@ export default function TreeModel({
     setIsModalOpen(true)
   }, [chunkStartIndex])
 
-  // Handle star hover - receives highlight data, 3D position, and mouse event
-  const handleStarHover = useCallback((highlight, worldPosition, event) => {
+  // Handle star hover - receives highlight data, starId, 3D position, and mouse event
+  const handleStarHover = useCallback((highlight, starId, worldPosition, event) => {
     setIsStarHovered(true)
     
     // Try to use mouse position from native DOM event first (most accurate)
@@ -448,6 +449,7 @@ export default function TreeModel({
         y: event.clientY - 10   // 10px above cursor
       })
       setHoveredStarData(highlight)
+      setHoveredStarId(starId)
     } else if (project3DTo2DRef.current && worldPosition) {
       // Fallback to 3D projection if mouse position not available
       const screenPos = project3DTo2DRef.current(worldPosition)
@@ -458,6 +460,7 @@ export default function TreeModel({
           y: screenPos.y - 10  // 10px above the star (smaller offset for closer positioning)
         })
         setHoveredStarData(highlight)
+        setHoveredStarId(starId)
       }
     }
   }, [])
@@ -466,6 +469,7 @@ export default function TreeModel({
     setIsStarHovered(false)
     setHoveredStarData(null)
     setHoveredStarScreenPos(null)
+    setHoveredStarId(null)
   }, [])
 
   // Callback to receive projection function from CoordinateProjector
@@ -614,6 +618,7 @@ export default function TreeModel({
       {/* Star Preview Overlay */}
       <StarPreviewOverlay
         highlight={hoveredStarData}
+        starId={hoveredStarId}
         position={hoveredStarScreenPos}
         isVisible={!!hoveredStarData && !!hoveredStarScreenPos}
       />

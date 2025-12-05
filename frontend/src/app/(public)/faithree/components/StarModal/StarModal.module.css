@@ -521,7 +521,7 @@
 
 /* Media Gallery */
 .mediaGallery {
-  margin-bottom: 1.5rem;
+  margin: 1.6rem 0 2rem;
 }
 
 .mainImageContainer {
@@ -531,8 +531,7 @@
   border-radius: 12px;
   overflow: hidden;
   background-color: #f3f4f6;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 

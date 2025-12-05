@@ -15,6 +15,7 @@ function Filters({
   onYearChange,
   theme = 'morning',
   isCentered = false, // New prop for centered mode
+  useFlowPosition = false, // New prop to use relative positioning instead of fixed
 }) {
   // In centered mode, org filter should be expanded by default
   const [orgExpanded, setOrgExpanded] = useState(isCentered);
@@ -73,7 +74,7 @@ function Filters({
   };
 
   return (
-    <div className={`${styles.filtersWrapper} ${isCentered ? styles.centeredWrapper : ''}`}>
+    <div className={`${styles.filtersWrapper} ${isCentered ? styles.centeredWrapper : ''} ${isCentered && useFlowPosition ? styles.flowPosition : ''}`}>
       {/* Organization Filter - Separate Container */}
       {organizations.length > 0 && (
         <div className={`${styles.filterContainer} ${isCentered ? styles.organizationFilter : styles.organizationFilterSidebar} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isCentered ? styles.centeredFilter : ''}`}>

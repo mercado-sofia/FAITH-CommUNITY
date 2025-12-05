@@ -19,12 +19,12 @@ function GlowingParticles({ starColor }) {
     
     for (let i = 0; i < particleCount; i++) {
       const angle = (i / particleCount) * Math.PI * 2
-      const radius = 0.15 + Math.random() * 0.1
+      const radius = 0.12 + Math.random() * 0.06  // Reduced radius to prevent interference
       
       // Initial position in a circle around the star
       pos[i * 3] = Math.cos(angle) * radius
       pos[i * 3 + 1] = Math.sin(angle) * radius
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 0.1
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 0.08
     }
     
     return pos
@@ -40,20 +40,25 @@ function GlowingParticles({ starColor }) {
     const time = state.clock.getElapsedTime()
     
     // Animate particles in a gentle floating/orbiting motion
+    // Reduced radius to prevent particles from extending too far
     for (let i = 0; i < particleCount; i++) {
       const angle = (i / particleCount) * Math.PI * 2 + time * 0.5
-      const radius = 0.15 + Math.sin(time + i) * 0.05
+      const radius = 0.12 + Math.sin(time + i) * 0.04  // Reduced max radius
       
       positions[i * 3] = Math.cos(angle) * radius
       positions[i * 3 + 1] = Math.sin(angle) * radius
-      positions[i * 3 + 2] = Math.sin(time * 0.8 + i) * 0.1
+      positions[i * 3 + 2] = Math.sin(time * 0.8 + i) * 0.08
     }
     
     geometry.attributes.position.needsUpdate = true
   })
   
+  // Disable raycasting to prevent particles from capturing pointer events
+  // Empty raycast function prevents particles from intercepting pointer events
+  const noRaycast = useCallback(() => {}, [])
+  
   return (
-    <points ref={particlesRef}>
+    <points ref={particlesRef} raycast={noRaycast}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
@@ -63,7 +68,7 @@ function GlowingParticles({ starColor }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.03}
+        size={0.025}
         color={starColor}
         transparent
         opacity={0.8}

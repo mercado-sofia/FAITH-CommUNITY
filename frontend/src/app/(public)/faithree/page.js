@@ -31,8 +31,6 @@ function FAITHreePage() {
   
   // Track if model has been loaded at least once (to avoid unnecessary loading states)
   const hasModelLoadedRef = useRef(false);
-  // Track previous filter values to detect actual filter changes
-  const prevFiltersRef = useRef({ organization: null, year: null });
 
   // Data fetching
   const { allOrganizations, featuredHighlights } = useFaithreeData();
@@ -51,12 +49,8 @@ function FAITHreePage() {
 
   // Theme management
   const handleThemeChange = useCallback((newTheme, oldTheme) => {
-    // When theme changes, reset loading state to show overlay during model reload
-    if (selectedOrganization !== null && filteredHighlights.length > 0) {
-      setIsModelLoading(true);
-      hasModelLoadedRef.current = false; // Reset since model needs to reload with new theme
-    }
-  }, [selectedOrganization, filteredHighlights.length]);
+    // Theme changes don't trigger loading overlay - model doesn't need to reload
+  }, []);
 
   const theme = useTheme(isInitialView, filteredHighlights.length, handleThemeChange);
 
@@ -100,12 +94,11 @@ function FAITHreePage() {
     };
   }, []);
 
-  // Reset loading when filters actually change - NOT when navigating between trees
+  // Handle transition from welcome screen - don't trigger loading on filter changes
   useEffect(() => {
     // If no organization is selected, don't show loading
     if (selectedOrganization === null) {
       setIsModelLoading(false);
-      prevFiltersRef.current = { organization: null, year: null };
       return;
     }
     
@@ -117,32 +110,12 @@ function FAITHreePage() {
       return;
     }
     
-    // Check if filters actually changed (not just navigating between trees)
-    const filtersChanged = 
-      prevFiltersRef.current.organization !== selectedOrganization ||
-      prevFiltersRef.current.year !== selectedYear;
-    
-    // Only set loading if:
-    // 1. Model hasn't loaded yet (first time), OR
-    // 2. Filters actually changed (organization or year changed)
-    if (!showWelcome && !isTransitioningFromWelcome) {
-      if (!hasModelLoadedRef.current || filtersChanged) {
-        // Set loading to true only when filters change or first load
-        setIsModelLoading(true);
-      }
-    }
-    
-    // Update previous filter values
-    prevFiltersRef.current = {
-      organization: selectedOrganization,
-      year: selectedYear
-    };
-    
     // If no highlights, set loading to false immediately (no tree to render)
     if (filteredHighlights.length === 0) {
       setIsModelLoading(false);
     }
-  }, [selectedOrganization, selectedYear, isTransitioningFromWelcome, showWelcome]);
+    // Note: Filter changes no longer trigger loading overlay - only initial load does
+  }, [selectedOrganization, selectedYear, isTransitioningFromWelcome, showWelcome, filteredHighlights.length]);
 
   // Handle tree load - TreeModel waits for actual render completion via requestAnimationFrame
   const handleTreeLoad = useCallback(() => {

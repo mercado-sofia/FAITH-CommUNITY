@@ -243,20 +243,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
               {highlight.title || 'Featured Highlight'}
             </h2>
 
-            {/* Description Section */}
-            {highlight.description && (
-              <div className={styles.modalSection}>
-                <div className={styles.descriptionContainer}>
-                  <div 
-                    className={styles.descriptionText}
-                    dangerouslySetInnerHTML={{ 
-                      __html: DOMPurify.sanitize(highlight.description) 
-                    }} 
-                  />
-                </div>
-              </div>
-            )}
-
             {/* Media Gallery */}
             {highlight.media && highlight.media.length > 0 && (
               <div className={styles.modalSection}>
@@ -361,11 +347,26 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
               </div>
             )}
 
+            {/* Description Section - Below Media */}
+            {highlight.description && (
+              <div className={styles.modalSection}>
+                <div className={styles.descriptionLabel}>Hear our amazing story:</div>
+                <div className={styles.descriptionContainer}>
+                  <div 
+                    className={styles.descriptionText}
+                    dangerouslySetInnerHTML={{ 
+                      __html: DOMPurify.sanitize(highlight.description) 
+                    }} 
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Program Title - Below Media Area */}
             {highlight.program_title && (
               <div className={styles.modalSection}>
                 <div className={styles.programTitleContainer}>
-                  <p className={styles.programTitleText}>{highlight.program_title}</p>
+                  <p className={styles.programTitleText}>Program: {highlight.program_title}</p>
                 </div>
               </div>
             )}

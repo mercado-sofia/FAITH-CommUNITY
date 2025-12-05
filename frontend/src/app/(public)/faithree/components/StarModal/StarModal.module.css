@@ -26,7 +26,7 @@
 .starModalContainer {
   position: relative;
   width: 100%;
-  max-width: 750px;
+  max-width: 850px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -354,8 +354,8 @@
 .modalInner {
   position: relative;
   z-index: 2;
-  padding: 1.75rem 2rem 2.25rem 2rem; /* Small increase to top (1.75rem), medium increase to bottom (2.25rem) */
-  padding-right: calc(2rem + 12px); /* Add space for scrollbar (10px width + 2px margin) */
+  padding: 1.75rem 2.5rem 2.25rem 2.5rem; /* Small increase to top (1.75rem), medium increase to bottom (2.25rem), increased side padding */
+  padding-right: calc(2.5rem + 12px); /* Add space for scrollbar (10px width + 2px margin) */
   max-height: calc(90vh - 140px); /* Account for star circle (80px) + padding-top (50px) + title + close button + margins */
   overflow-y: auto;
   overflow-x: hidden;
@@ -486,6 +486,17 @@
   font-family: var(--font-poppins), 'Poppins', sans-serif;
 }
 
+/* Description Label */
+.descriptionLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  color: #059669;
+  margin: 0 auto 0.6rem auto;
+  max-width: 90%;
+  text-align: left;
+}
+
 /* Description Container */
 .descriptionContainer {
   background: white;
@@ -503,7 +514,7 @@
   margin: 0;
   font-size: 0.9rem;
   font-family: var(--font-poppins), 'Poppins', sans-serif;
-  text-align: center;
+  text-align: left;
   text-transform: none; /* Preserve original casing from data */
   font-variant: normal;
 }
@@ -516,7 +527,7 @@
 .mainImageContainer {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 340px;
   border-radius: 12px;
   overflow: hidden;
   background-color: #f3f4f6;
@@ -868,12 +879,12 @@
 /* Responsive Design - Medium screens */
 @media (max-width: 1024px) {
   .starModalContainer {
-    max-width: 700px;
+    max-width: 800px;
   }
   
   .modalInner {
-    padding: 1.5rem 1.75rem;
-    padding-right: calc(1.75rem + 12px);
+    padding: 1.5rem 2rem;
+    padding-right: calc(2rem + 12px);
   }
 }
 
@@ -906,8 +917,8 @@
   }
 
   .modalInner {
-    padding: 1.375rem 1.5rem 1.625rem 1.5rem; /* Small increase to top, medium increase to bottom */
-    padding-right: calc(1.5rem + 12px);
+    padding: 1.375rem 1.75rem 1.625rem 1.75rem; /* Small increase to top, medium increase to bottom, increased side padding */
+    padding-right: calc(1.75rem + 12px);
     max-height: calc(90vh - 130px);
   }
 
@@ -917,7 +928,7 @@
   }
 
   .mainImageContainer {
-    height: 220px;
+    height: 260px;
   }
   
   .navArrowLeft,
@@ -943,6 +954,12 @@
   .imageCounter {
     font-size: 0.8rem;
     padding: 0.4rem 0.85rem;
+  }
+  
+  .descriptionLabel {
+    font-size: 0.85rem;
+    margin-bottom: 0.625rem;
+    max-width: 95%;
   }
   
   .descriptionContainer {
@@ -1006,8 +1023,8 @@
   }
 
   .modalInner {
-    padding: 1.125rem 1.25rem 1.375rem 1.25rem; /* Small increase to top, medium increase to bottom */
-    padding-right: calc(1.25rem + 12px);
+    padding: 1.125rem 1.5rem 1.375rem 1.5rem; /* Small increase to top, medium increase to bottom, increased side padding */
+    padding-right: calc(1.5rem + 12px);
     max-height: calc(95vh - 120px);
   }
 
@@ -1017,7 +1034,7 @@
   }
 
   .mainImageContainer {
-    height: 180px;
+    height: 210px;
   }
   
   .navArrowLeft,
@@ -1063,6 +1080,12 @@
   .descriptionText {
     font-size: 0.8rem;
     line-height: 1.5;
+  }
+  
+  .programLabel {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    max-width: 98%;
   }
   
   .programTitleContainer {
@@ -1135,6 +1158,12 @@
     font-size: 1rem;
   }
   
+  .descriptionLabel {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    max-width: 98%;
+  }
+  
   .descriptionContainer {
     padding: 0.75rem;
   }
@@ -1143,8 +1172,14 @@
     font-size: 0.75rem;
   }
   
+  .programLabel {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    max-width: 98%;
+  }
+  
   .mainImageContainer {
-    height: 150px;
+    height: 180px;
   }
   
   .closeButton {
@@ -1170,7 +1205,7 @@
   }
   
   .mainImageContainer {
-    height: 180px;
+    height: 210px;
   }
 }
 
@@ -1190,7 +1225,7 @@
   }
   
   .mainImageContainer {
-    height: 150px;
+    height: 180px;
   }
   
   .starCircle {

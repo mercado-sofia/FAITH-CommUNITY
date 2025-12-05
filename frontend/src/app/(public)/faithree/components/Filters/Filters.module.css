@@ -12,12 +12,12 @@
 /* Centered wrapper for initial view */
 .filtersWrapper.centeredWrapper {
   position: fixed;
-  top: 60%;
+  top: 59%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1000;
-  max-width: 700px;
-  width: 90%;
+  max-width: 800px;
+  width: 85%;
   max-height: 90vh;
   overflow-y: auto;
   overflow-x: hidden;
@@ -27,6 +27,14 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(76, 175, 80, 0.3) transparent;
+  /* Ensure proper centering */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* Center content inside wrapper */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 @keyframes centeredFilterFadeIn {
@@ -142,11 +150,12 @@
 .filterHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0.75rem 1rem;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s ease;
+  position: relative;
 }
 
 .filterHeader:hover {
@@ -169,6 +178,15 @@
   text-transform: uppercase;
   letter-spacing: 0.75px;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: center;
+  flex: 1;
+  position: relative;
+}
+
+/* Position chevron icon absolutely so it doesn't affect centering */
+.filterHeader .expandIcon {
+  position: absolute;
+  right: 1rem;
 }
 
 /* Centered filter title - match theme color */
@@ -216,6 +234,19 @@
   padding: 0;
 }
 
+/* Organization filter in centered mode - wider width and no max-height (full height for initial view) */
+.filterContainer.centeredFilter.organizationFilter {
+  width: 100%;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.filterContainer.centeredFilter.organizationFilter .filterContent {
+  max-height: none;
+  overflow-y: visible;
+}
+
 /* Year filter content needs overflow visible for dropdown */
 .yearFilter .filterContent {
   overflow: visible;
@@ -236,8 +267,72 @@
 /* ============================================
    ORGANIZATION FILTER
    ============================================ */
-.organizationFilter {
+.organizationFilter,
+.organizationFilterSidebar {
   width: 100%;
+  max-width: 300px;
+}
+
+/* Organization filter content - scrollable with max height */
+.organizationFilter .filterContent,
+.organizationFilterSidebar .filterContent {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Custom scrollbar for Firefox - Morning theme (green) */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(46, 125, 50, 0.7) rgba(76, 175, 80, 0.15);
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) - Morning theme (green) */
+.organizationFilter .filterContent::-webkit-scrollbar,
+.organizationFilterSidebar .filterContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.organizationFilter .filterContent::-webkit-scrollbar-track,
+.organizationFilterSidebar .filterContent::-webkit-scrollbar-track {
+  background: rgba(76, 175, 80, 0.15);
+  border-radius: 4px;
+  margin: 4px 0;
+}
+
+.organizationFilter .filterContent::-webkit-scrollbar-thumb,
+.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb {
+  background: rgba(46, 125, 50, 0.7);
+  border-radius: 4px;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+  min-height: 30px;
+}
+
+.organizationFilter .filterContent::-webkit-scrollbar-thumb:hover,
+.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(46, 125, 50, 0.85);
+}
+
+/* Rainy theme scrollbar - white color */
+.filterRainy.organizationFilter .filterContent,
+.filterRainy.organizationFilterSidebar .filterContent {
+  /* Custom scrollbar for Firefox - Rainy theme (white) */
+  scrollbar-color: rgba(255, 255, 255, 0.7) rgba(255, 255, 255, 0.15);
+}
+
+.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-track,
+.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-thumb,
+.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-thumb:hover,
+.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* ============================================
@@ -260,7 +355,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.875rem;
   background: rgba(27, 69, 57, 0.15);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -319,7 +414,7 @@
   border: 2px solid rgba(0, 153, 119, 0.4);
   color: #009977;
   font-size: 1rem;
-  padding: 0.625rem 1.25rem;
+  padding: 0.625rem 1.125rem;
 }
 
 .filterContainer.centeredFilter .filterChip:hover {
@@ -415,8 +510,17 @@
    ============================================ */
 .yearFilter {
   width: 100%;
-  max-width: 180px;
-  overflow: visible; /* Allow dropdown options to extend outside */
+  max-width: 300px;
+  overflow: visible;
+  border: none;
+  padding: 0.75rem 0;
+}
+
+/* Remove border for rainy theme year filter */
+.filterRainy.yearFilter {
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* ============================================
@@ -424,7 +528,8 @@
    ============================================ */
 .yearDropdownWrapper {
   position: relative;
-  width: 100%;
+  width: auto;
+  flex-shrink: 0;
   z-index: 1000; /* High z-index to appear above impact level container and ensure dropdown is visible */
 }
 
@@ -446,6 +551,8 @@
     0 3px 10px rgba(0, 0, 0, 0.08),
     0 1px 4px rgba(76, 175, 80, 0.1);
   min-height: 36px;
+  min-width: 120px;
+  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
@@ -474,9 +581,9 @@
 .yearDropdownOptions {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
   right: 0;
-  width: 100%;
+  width: auto;
+  min-width: 120px;
   background: white;
   border-radius: 12px;
   box-shadow: 
@@ -646,7 +753,7 @@
 /* Rainy Theme - Year Dropdown */
 .filterRainy .yearDropdownHeader {
   background: linear-gradient(135deg, rgba(30, 52, 73, 0.98) 0%, rgba(20, 84, 126, 0.9) 100%);
-  border: 2px solid rgba(135, 206, 250, 0.25);
+  border: none;
   color: #E0F6FF;
   box-shadow: 
     0 3px 10px rgba(0, 0, 0, 0.2),
@@ -655,7 +762,7 @@
 
 .filterRainy .yearDropdownHeader:hover {
   background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.98) 100%);
-  border-color: rgba(135, 206, 250, 0.4);
+  border: none;
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.25),
     0 2px 6px rgba(20, 84, 126, 0.25);
@@ -725,7 +832,7 @@
 @media (max-width: 768px) {
   /* Centered wrapper adjustments for mobile */
   .filtersWrapper.centeredWrapper {
-    top: 50%;
+    top: 55%;
     left: 50%;
     transform: translate(-50%, -50%);
     max-width: 95%;
@@ -793,7 +900,7 @@
   }
 
   .filterChip {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.875rem;
     font-size: 0.875rem; /* 14px */
     min-height: 36px; /* Better touch target */
     min-width: 50px;
@@ -802,7 +909,7 @@
   }
 
   .filterContainer.centeredFilter .filterChip {
-    padding: 0.625rem 1.25rem;
+    padding: 0.625rem 1.125rem;
     font-size: 0.9375rem;
     min-height: 38px;
   }
@@ -872,7 +979,7 @@
 @media (max-width: 480px) {
   /* Centered wrapper adjustments for small mobile */
   .filtersWrapper.centeredWrapper {
-    top: 50%;
+    top: 55%;
     left: 50%;
     transform: translate(-50%, -50%);
     max-width: 98%;
@@ -940,7 +1047,7 @@
   }
 
   .filterChip {
-    padding: 0.5rem 0.9rem;
+    padding: 0.5rem 0.8rem;
     font-size: 0.8125rem; /* 13px */
     min-height: 36px; /* Maintain good touch target */
     min-width: 48px;
@@ -949,7 +1056,7 @@
   }
 
   .filterContainer.centeredFilter .filterChip {
-    padding: 0.5625rem 1.125rem;
+    padding: 0.5625rem 1rem;
     font-size: 0.875rem;
     min-height: 36px;
   }
@@ -1028,13 +1135,13 @@
   }
 
   .filterContainer.centeredFilter .filterChip {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.875rem;
     font-size: 0.8125rem;
     min-height: 34px;
   }
 
   .filterChip {
-    padding: 0.45rem 0.85rem;
+    padding: 0.45rem 0.8rem;
     font-size: 0.75rem;
     min-height: 34px;
     min-width: 44px;
@@ -1058,7 +1165,7 @@
    ============================================ */
 @media (max-width: 768px) and (orientation: landscape) {
   .filtersWrapper.centeredWrapper {
-    top: 50%;
+    top: 55%;
     max-width: 90%;
     width: auto;
     max-height: 85vh;
@@ -1082,7 +1189,7 @@
   }
 
   .filterContainer.centeredFilter .filterChip {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.875rem;
     font-size: 0.875rem;
     min-height: 34px;
   }

@@ -6,14 +6,15 @@
   width: 100%;
   height: calc(100vh - 75px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 20;
-  background-image: url('/assets/backgrounds/welcomebg.png');
+  background-image: url('/assets/backgrounds/welcome-faithree/bg1.svg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   animation: fadeIn 0.6s ease-out;
 }
 
@@ -33,7 +34,7 @@
   width: 100%;
   max-width: none;
   text-align: center;
-  padding: 1rem 2rem 2rem 2rem;
+  padding: 2rem 2rem 2rem 2rem;
   animation: slideUpFadeIn 0.8s ease-out 0.2s both;
 }
 
@@ -48,68 +49,38 @@
   }
 }
 
-/* Icon Container */
-.iconContainer {
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: center;
-  animation: scaleIn 0.6s ease-out 0.4s both;
+
+/* Text SVG 1 (txt1.svg) */
+.textSvg1 {
+  width: auto;
+  height: auto;
+  max-width: 45%;
+  max-height: 240px;
+  margin: 0 auto -1.5rem auto;
+  display: block;
+  animation: slideDownFromTop 1s ease-out 0.3s both;
 }
 
-@keyframes scaleIn {
+/* When fading out, override the initial animation */
+.textSvg1.fadeOut {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+/* Text SVG 2 (txt2.svg) */
+.textSvg2 {
+  width: auto;
+  height: auto;
+  max-width: 70%;
+  max-height: 280px;
+  margin: 0 auto 4rem auto;
+  display: block;
+  animation: fadeIn 0.8s ease-out 0.2s both;
+}
+
+@keyframes slideDownFromTop {
   from {
     opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.treeIcon {
-  width: 120px;
-  height: 120px;
-  color: #1A685B;
-  animation: gentlePulse 3s ease-in-out infinite;
-}
-
-@keyframes gentlePulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.treeTop,
-.treeMiddle,
-.treeTrunk {
-  transition: fill 0.3s ease;
-}
-
-
-/* Heading */
-.heading {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #1A685B;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.2;
-  text-shadow: 0 2px 10px rgba(26, 104, 91, 0.2);
-  animation: fadeInUp 0.8s ease-out 0.6s both;
-}
-
-.welcomeRainy .heading {
-  color: #E0F6FF;
-  text-shadow: 0 2px 10px rgba(224, 246, 255, 0.3);
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-100px);
   }
   to {
     opacity: 1;
@@ -117,22 +88,19 @@
   }
 }
 
-.subheading {
-  display: block;
-  font-size: 1.3rem;
-  font-weight: 400;
-  color: #3A9A8B;
-  margin-top: 0.5rem;
-  opacity: 0.9;
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
-.welcomeRainy .subheading {
-  color: #87CEEB;
-}
 
 /* Message Container */
 .messageContainer {
-  margin: 4rem 0 3.5rem 0;
+  margin: 1rem 0 2rem 0;
   animation: fadeInUp 0.8s ease-out 0.8s both;
   display: flex;
   flex-direction: row;
@@ -143,6 +111,17 @@
   margin-right: auto;
   justify-content: center;
   align-items: stretch;
+}
+
+/* Organization Container */
+.organizationContainer {
+  margin: 4rem auto 0 auto;
+  width: 100%;
+  max-width: 1100px;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Message Card */
@@ -334,7 +313,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     inset 0 -1px 0 rgba(26, 104, 91, 0.1);
   animation: fadeInUp 0.8s ease-out 1s both;
-  margin-top: 1rem;
+  margin-top: 0.65rem;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -381,22 +360,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.arrowIcon {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
-}
-
-.continueButton:hover .arrowIcon {
-  transform: translateX(4px);
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .welcomeContainer {
     top: 70px;
     height: calc(100vh - 70px);
-    background-image: url('/assets/backgrounds/mobilewelcomebg.png');
+    background-image: url('/assets/backgrounds/welcome-faithree/bg1_mobile.svg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -412,19 +382,32 @@
     max-width: 100%;
   }
 
-  .heading {
-    font-size: 2rem;
+
+  .textSvg1,
+  .textSvg2 {
+    max-width: 75%;
+    max-height: 180px;
   }
 
-  .subheading {
-    font-size: 1.1rem;
+  .textSvg1 {
+    margin: 0 auto -8rem auto;
+  }
+
+  .textSvg2 {
+    margin-bottom: 3.5rem;
   }
 
   .messageContainer {
     flex-direction: column;
     max-width: none;
-    margin: 2.5rem 0 2rem 0;
+    margin: 0 0 1.5rem 0;
     gap: 1rem;
+  }
+
+  .organizationContainer {
+    max-width: 100%;
+    padding: 0 1rem;
+    margin-top: 3.5rem;
   }
 
   .messageCard {
@@ -448,10 +431,6 @@
     text-align: left;
   }
 
-  .treeIcon {
-    width: 100px;
-    height: 100px;
-  }
 
   .continueButton {
     padding: 1rem 2rem;
@@ -461,7 +440,7 @@
 
 @media (max-width: 480px) {
   .welcomeContainer {
-    background-image: url('/assets/backgrounds/mobilewelcomebg.png');
+    background-image: url('/assets/backgrounds/welcome-faithree/bg1_mobile.svg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -477,19 +456,32 @@
     max-width: 100%;
   }
 
-  .heading {
-    font-size: 1.75rem;
+
+  .textSvg1,
+  .textSvg2 {
+    max-width: 75%;
+    max-height: 150px;
   }
 
-  .subheading {
-    font-size: 1rem;
+  .textSvg1 {
+    margin: 0 auto 1rem auto;
+  }
+
+  .textSvg2 {
+    margin-bottom: 3rem;
   }
 
   .messageContainer {
     flex-direction: column;
     max-width: 100%;
-    margin: 2rem 0 1.5rem 0;
+    margin: 0 0 1rem 0;
     gap: 0.875rem;
+  }
+
+  .organizationContainer {
+    max-width: 100%;
+    padding: 0 0.75rem;
+    margin-top: 3rem;
   }
 
   .messageCard {
@@ -513,10 +505,6 @@
     text-align: left;
   }
 
-  .treeIcon {
-    width: 80px;
-    height: 80px;
-  }
 
   .continueButton {
     padding: 0.9rem 1.5rem;
@@ -528,16 +516,11 @@
 @media (prefers-reduced-motion: reduce) {
   .welcomeContainer,
   .content,
-  .iconContainer,
-  .heading,
   .messageContainer,
   .continueButton,
-  .treeIcon {
+  .textSvg1,
+  .textSvg2 {
     animation: none !important;
-  }
-
-  .treeIcon {
-    animation: none;
   }
 
   .continueButton:hover {

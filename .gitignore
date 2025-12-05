@@ -92,4 +92,7 @@ docs/temp/
 
 # assets (but allow frontend/public/assets)
 assets/
+!frontend/
+!frontend/public/
 !frontend/public/assets/
+!frontend/public/assets/**

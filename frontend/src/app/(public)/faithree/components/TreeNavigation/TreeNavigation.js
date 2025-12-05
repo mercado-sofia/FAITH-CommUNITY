@@ -18,7 +18,6 @@ function TreeNavigation({
   
   // Calculate remaining highlights
   const currentTreeStart = currentIndex * CHUNK_SIZE;
-  const previousTreesHighlights = Math.max(0, currentTreeStart); // Highlights in previous trees
   const nextTreeHighlights = canGoNext ? Math.min(CHUNK_SIZE, totalHighlights - (currentTreeStart + CHUNK_SIZE)) : 0;
 
   // Don't show navigation if there's only one tree or no trees

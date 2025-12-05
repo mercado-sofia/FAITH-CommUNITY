@@ -531,7 +531,8 @@
   border-radius: 12px;
   overflow: hidden;
   background-color: #f3f4f6;
-  margin-bottom: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
@@ -929,6 +930,8 @@
 
   .mainImageContainer {
     height: 260px;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
   }
   
   .navArrowLeft,
@@ -1035,6 +1038,8 @@
 
   .mainImageContainer {
     height: 210px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
   }
   
   .navArrowLeft,
@@ -1206,6 +1211,8 @@
   
   .mainImageContainer {
     height: 210px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
   }
 }
 

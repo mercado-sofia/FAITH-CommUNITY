@@ -1,6 +1,200 @@
 /* Navigation Wrapper - Simple flex container without background */
 .navigationWrapper {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Tree Indicator Text */
+.treeIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.125rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(248, 255, 248, 0.2) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  border: 1.5px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(76, 175, 80, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  max-width: 300px;
+  position: relative;
+  overflow: hidden;
+}
+
+.treeIndicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.treeIndicatorRainy {
+  background: linear-gradient(135deg, rgba(20, 84, 126, 0.25) 0%, rgba(30, 52, 73, 0.2) 100%);
+  border: 1.5px solid rgba(135, 206, 250, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(20, 84, 126, 0.15),
+    inset 0 1px 0 rgba(135, 206, 250, 0.2);
+}
+
+.treeIndicatorRainy::before {
+  background: linear-gradient(90deg, transparent, rgba(135, 206, 250, 0.15), transparent);
+}
+
+/* Previous tree indicator - same green styling as next */
+.treeIndicatorPrevious {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(248, 255, 248, 0.2) 100%);
+  border: 1.5px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(76, 175, 80, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.treeIndicatorPrevious::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.treeIndicatorRainy.treeIndicatorPrevious {
+  background: linear-gradient(135deg, rgba(20, 84, 126, 0.25) 0%, rgba(30, 52, 73, 0.2) 100%);
+  border: 1.5px solid rgba(135, 206, 250, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(20, 84, 126, 0.15),
+    inset 0 1px 0 rgba(135, 206, 250, 0.2);
+}
+
+.treeIndicatorRainy.treeIndicatorPrevious::before {
+  background: linear-gradient(90deg, transparent, rgba(135, 206, 250, 0.15), transparent);
+}
+
+.indicatorContent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.indicatorIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #4caf50;
+  animation: starPulse 2s ease-in-out infinite;
+}
+
+.treeIndicatorRainy .indicatorIcon {
+  color: #87CEEB;
+}
+
+/* Previous indicator icon styling - same green as next */
+.treeIndicatorPrevious .indicatorIcon {
+  color: #4caf50;
+  animation: clockPulse 2.5s ease-in-out infinite;
+}
+
+.treeIndicatorRainy.treeIndicatorPrevious .indicatorIcon {
+  color: #87CEEB;
+}
+
+@keyframes starPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes clockPulse {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) rotate(5deg);
+  }
+}
+
+.indicatorTextWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.indicatorTextMain {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 700;
+  color: #1b5e20;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(76, 175, 80, 0.1);
+}
+
+.treeIndicatorRainy .indicatorTextMain {
+  color: #B3E5FC;
+  text-shadow: 0 1px 2px rgba(20, 84, 126, 0.2);
+}
+
+/* Previous indicator text styling - same green as next */
+.treeIndicatorPrevious .indicatorTextMain {
+  color: #1b5e20;
+  text-shadow: 0 1px 2px rgba(76, 175, 80, 0.1);
+}
+
+.treeIndicatorRainy.treeIndicatorPrevious .indicatorTextMain {
+  color: #B3E5FC;
+  text-shadow: 0 1px 2px rgba(20, 84, 126, 0.2);
+}
+
+.indicatorTextSub {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  color: #388e3c;
+  letter-spacing: 0.2px;
+  opacity: 0.95;
+  line-height: 1.4;
+  margin-top: 0.15rem;
+}
+
+.treeIndicatorRainy .indicatorTextSub {
+  color: #64B5F6;
+  opacity: 1;
+}
+
+/* Previous indicator sub text styling - same green as next */
+.treeIndicatorPrevious .indicatorTextSub {
+  color: #388e3c;
+  opacity: 0.95;
+}
+
+.treeIndicatorRainy.treeIndicatorPrevious .indicatorTextSub {
+  color: #64B5F6;
+  opacity: 1;
+}
+
+/* Navigation Buttons Container */
+.navButtonsContainer {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
@@ -85,24 +279,37 @@
   height: 24px;
   flex-shrink: 0;
   color: inherit;
-  transition: transform 0.2s ease;
-}
-
-.navButton:hover:not(.navButtonDisabled) .navButtonIcon {
-  transform: scale(1.1);
-}
-
-.navButtonPrevious:hover:not(.navButtonDisabled) .navButtonIcon {
-  transform: translateX(-2px) scale(1.1);
-}
-
-.navButtonNext:hover:not(.navButtonDisabled) .navButtonIcon {
-  transform: translateX(2px) scale(1.1);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .navigationWrapper {
+    gap: 0.65rem;
+  }
+
+  .treeIndicator {
+    padding: 0.75rem 1rem;
+    max-width: 280px;
+  }
+
+  .indicatorContent {
+    gap: 0.65rem;
+  }
+
+  .indicatorIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .indicatorTextMain {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .indicatorTextSub {
+    font-size: 0.7rem; /* 11px */
+  }
+
+  .navButtonsContainer {
     gap: 0.85rem;
   }
 
@@ -120,6 +327,32 @@
 
 @media (max-width: 480px) {
   .navigationWrapper {
+    gap: 0.6rem;
+  }
+
+  .treeIndicator {
+    padding: 0.7rem 0.9rem;
+    max-width: 260px;
+  }
+
+  .indicatorContent {
+    gap: 0.6rem;
+  }
+
+  .indicatorIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .indicatorTextMain {
+    font-size: 0.75rem; /* 12px */
+  }
+
+  .indicatorTextSub {
+    font-size: 0.65rem; /* 10px */
+  }
+
+  .navButtonsContainer {
     gap: 0.75rem;
   }
 
@@ -137,19 +370,23 @@
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
+  .treeIndicator::before {
+    animation: none;
+  }
+
+  .indicatorIcon {
+    animation: none;
+  }
+
+  .treeIndicatorPrevious .indicatorIcon {
+    animation: none;
+  }
+
   .navButton {
     transition: none;
   }
 
   .navButton:hover:not(.navButtonDisabled) {
-    transform: none;
-  }
-
-  .navButtonIcon {
-    transition: none;
-  }
-
-  .navButton:hover:not(.navButtonDisabled) .navButtonIcon {
     transform: none;
   }
 }

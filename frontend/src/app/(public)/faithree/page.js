@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import styles from './faithree.module.css';
-import { TreeModel, PageLoadingOverlay, WelcomeSection, Filters, ImpactLevelShowcase, TreeCarousel, TreeNavigation } from './components';
+import { TreeModel, PageLoadingOverlay, WelcomeSection, Filters, ImpactLevelShowcase, TreeNavigation } from './components';
 import { useFaithreeData } from '@/hooks/(public)/useFaithreeData';
 import { useFiltering } from '@/hooks/(public)/useFiltering';
 import { useTheme } from '@/hooks/(public)/useTheme';
@@ -403,20 +403,15 @@ function FAITHreePage() {
           </div>
         )}
 
-        {/* Right Sidebar - Tree Carousel and Navigation */}
+        {/* Right Sidebar - Navigation */}
         <div className={styles.rightSidebar}>
-          <TreeCarousel
-            highlightChunks={highlightChunks}
-            currentTreeIndex={currentTreeIndex}
-            onTreeSelect={handleTreeSelect}
-            theme={theme}
-          />
           <TreeNavigation
             currentIndex={currentTreeIndex}
             totalTrees={highlightChunks.length}
             onPrevious={handlePreviousTree}
             onNext={handleNextTree}
             theme={theme}
+            totalHighlights={filteredHighlights.length}
           />
         </div>
         </div>

@@ -8,6 +8,72 @@ import StarModal from '../StarModal/StarModal'
 import StarPreviewOverlay from '../StarPreviewOverlay/StarPreviewOverlay'
 import styles from './TreeModel.module.css'
 
+// Glowing particles component for high impact stars
+function GlowingParticles({ starColor }) {
+  const particlesRef = useRef()
+  const particleCount = 10
+  
+  // Initialize particle positions
+  const initialPositions = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3)
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2
+      const radius = 0.15 + Math.random() * 0.1
+      
+      // Initial position in a circle around the star
+      pos[i * 3] = Math.cos(angle) * radius
+      pos[i * 3 + 1] = Math.sin(angle) * radius
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 0.1
+    }
+    
+    return pos
+  }, [])
+  
+  useFrame((state) => {
+    if (!particlesRef.current || !particlesRef.current.geometry) return
+    
+    const geometry = particlesRef.current.geometry
+    if (!geometry.attributes.position) return
+    
+    const positions = geometry.attributes.position.array
+    const time = state.clock.getElapsedTime()
+    
+    // Animate particles in a gentle floating/orbiting motion
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2 + time * 0.5
+      const radius = 0.15 + Math.sin(time + i) * 0.05
+      
+      positions[i * 3] = Math.cos(angle) * radius
+      positions[i * 3 + 1] = Math.sin(angle) * radius
+      positions[i * 3 + 2] = Math.sin(time * 0.8 + i) * 0.1
+    }
+    
+    geometry.attributes.position.needsUpdate = true
+  })
+  
+  return (
+    <points ref={particlesRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particleCount}
+          array={initialPositions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.03}
+        color={starColor}
+        transparent
+        opacity={0.8}
+        sizeAttenuation={true}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
+
 // Star component - creates a glowing star shape (static like fruit on tree)
 function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.5], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average', highlight }) {
   const meshRef = useRef()
@@ -15,7 +81,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   const [hovered, setHovered] = useState(false)
   
   // Calculate star size based on impact level
-  const sizeMultiplier = impactLevel === 'high' ? 1.4 : impactLevel === 'average' ? 1.2 : 1.0
+  // Small: 0.8, Average: 1.0, High: 1.4
+  const sizeMultiplier = impactLevel === 'high' ? 1.4 : impactLevel === 'average' ? 1.0 : 0.8
   
   // Create star geometry with size based on impact level
   const starShape = useMemo(() => {
@@ -52,8 +119,10 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   }), [sizeMultiplier])
 
   // Color and emissive based on impact level
-  const starColor = impactLevel === 'high' ? '#FFD700' : impactLevel === 'average' ? '#FFE135' : '#FFD700'
-  const baseEmissiveIntensity = impactLevel === 'high' ? 0.8 : impactLevel === 'average' ? 0.6 : 0.5
+  // Small: darker yellow (#D4AF37), Average: normal yellow (#FFE135), High: bright gold (#FFD700)
+  const starColor = impactLevel === 'high' ? '#FFD700' : impactLevel === 'average' ? '#FFE135' : '#D4AF37'
+  // Small: 0.3, Average: 0.5, High: 0.9
+  const baseEmissiveIntensity = impactLevel === 'high' ? 0.9 : impactLevel === 'average' ? 0.5 : 0.3
   
   // Calculate base position (static - no animation)
   const basePosition = useMemo(() => [
@@ -133,12 +202,17 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
           roughness={0.2}
         />
       </mesh>
-      {/* Add a point light to make the star glow - enhanced on hover and based on impact level */}
-      <pointLight
-        color={starColor}
-        intensity={hovered ? (impactLevel === 'high' ? 1.0 : impactLevel === 'average' ? 0.7 : 0.5) : (impactLevel === 'high' ? 0.6 : impactLevel === 'average' ? 0.4 : 0.3)}
-        distance={hovered ? (impactLevel === 'high' ? 4 : 3) : (impactLevel === 'high' ? 3 : 2)}
-      />
+      {/* Point light and particles only for high impact stars */}
+      {impactLevel === 'high' && (
+        <>
+          <pointLight
+            color={starColor}
+            intensity={hovered ? 1.0 : 0.6}
+            distance={hovered ? 4 : 3}
+          />
+          <GlowingParticles starColor={starColor} />
+        </>
+      )}
     </group>
   )
 }
@@ -351,18 +425,18 @@ function generateStarPositions(count) {
   const fixedPositions = [
     // Primary row - evenly spaced, moved leftmost stars to right side
     [-1.05, 1.95, 1.4],    // Star 1 - Left, medium (moved from far left)
-    [-0.65, 1.9, 1.5],     // Star 2 - Left-center, high (moved down more)
+    [-0.7, 1.8, 1.5],      // Star 2 - Left-center, high (moved right a little)
     [-0.15, 1.9, 1.45],    // Star 3 - Center-left, medium (moved down more)
     [0.3, 2.05, 1.4],      // Star 4 - Center, high (0.45 spacing from Star 3)
-    [0.75, 1.95, 1.5],     // Star 5 - Center-right, medium (0.45 spacing from Star 4)
+    [0.75, 1.85, 1.5],     // Star 5 - Center-right, medium (moved down more)
     [1.25, 1.85, 1.45],    // Star 6 - Right, high (moved right more)
     [1.5, 2.0, 1.4],       // Star 7 - Far right, medium (0.25 spacing from Star 6)
     [0.05, 2.3, 1.45],     // Star 8 - Center, very high (moved right a little)
     // Secondary row - positioned with maximum spacing from primary stars
-    [-0.7, 2.2, 1.4],      // Star 9 - Center-left, high (moved left more and more)
-    [0.55, 2.3, 1.5],      // Star 10 - Center-right, high (moved up more)
+    [-0.7, 2.15, 1.4],     // Star 9 - Center-left, high (moved down more)
+    [0.75, 2.25, 1.5],     // Star 10 - Center-right, high (moved left a little)
     [1.15, 2.15, 1.45],    // Star 11 - Far right, very high (moved left and down more)
-    [-0.25, 2.35, 1.5]     // Star 12 - Center-left, very high (moved up a little)
+    [-0.35, 2.35, 1.5]     // Star 12 - Center-left, very high (moved left more)
   ];
 
   // Ensure count never exceeds 12 (chunking should handle this, but enforce it here)

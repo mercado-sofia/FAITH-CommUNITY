@@ -90,5 +90,6 @@ Thumbs.db
 # Project specific
 docs/temp/
 
-# assets
+# assets (but allow frontend/public/assets)
 assets/
+!frontend/public/assets/

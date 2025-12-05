@@ -284,37 +284,33 @@
 
 .filterChip:hover {
   background: rgba(27, 69, 57, 0.25);
-  border-color: rgba(76, 175, 80, 0.4);
-  transform: translateY(-2px);
+  border-color: #2e7d32;
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.1),
     0 2px 6px rgba(76, 175, 80, 0.15);
 }
 
 .filterChip:active {
-  transform: translateY(0);
   box-shadow: 
     0 2px 6px rgba(0, 0, 0, 0.08),
     0 1px 3px rgba(76, 175, 80, 0.12);
 }
 
 .filterChip.active {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  background: white;
   border-color: #4caf50;
-  color: white;
+  color: #1b5e20;
   box-shadow: 
     0 5px 14px rgba(76, 175, 80, 0.25),
-    0 2px 6px rgba(76, 175, 80, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 2px 6px rgba(76, 175, 80, 0.2);
 }
 
 .filterChip.active:hover {
-  background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
+  background: white;
   border-color: #66bb6a;
   box-shadow: 
     0 7px 18px rgba(76, 175, 80, 0.3),
-    0 3px 8px rgba(76, 175, 80, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 3px 8px rgba(76, 175, 80, 0.25);
 }
 
 /* Centered filter chips - match theme color */
@@ -328,17 +324,17 @@
 
 .filterContainer.centeredFilter .filterChip:hover {
   background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(0, 153, 119, 0.6);
+  border-color: #007a5e;
 }
 
 .filterContainer.centeredFilter .filterChip.active {
-  background: linear-gradient(135deg, #009977 0%, #00B894 100%);
+  background: white;
   border-color: #009977;
-  color: white;
+  color: #009977;
 }
 
 .filterContainer.centeredFilter .filterChip.active:hover {
-  background: linear-gradient(135deg, #00B894 0%, #00D4AA 100%);
+  background: white;
   border-color: #00B894;
 }
 
@@ -354,29 +350,27 @@
 
 .filterRainy .filterChip:hover {
   background: rgba(27, 69, 57, 0.25);
-  border-color: rgba(135, 206, 250, 0.4);
+  border-color: #5ba3d4;
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.25),
     0 2px 6px rgba(20, 84, 126, 0.25);
 }
 
 .filterRainy .filterChip.active {
-  background: linear-gradient(135deg, #14547e 0%, #194970 100%);
+  background: white;
   border-color: #14547e;
-  color: #E0F6FF;
+  color: #1b5e20;
   box-shadow: 
     0 5px 14px rgba(20, 84, 126, 0.35),
-    0 2px 6px rgba(20, 84, 126, 0.3),
-    inset 0 1px 0 rgba(135, 206, 250, 0.25);
+    0 2px 6px rgba(20, 84, 126, 0.3);
 }
 
 .filterRainy .filterChip.active:hover {
-  background: linear-gradient(135deg, #194970 0%, #1e3449 100%);
+  background: white;
   border-color: #194970;
   box-shadow: 
     0 7px 18px rgba(20, 84, 126, 0.4),
-    0 3px 8px rgba(20, 84, 126, 0.35),
-    inset 0 1px 0 rgba(135, 206, 250, 0.25);
+    0 3px 8px rgba(20, 84, 126, 0.35);
 }
 
 /* Organization Logo */
@@ -599,7 +593,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 3px solid #66bb6a;
+  border: 3px solid #71cd38;
   background: transparent;
   box-sizing: border-box;
 }
@@ -614,7 +608,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #66bb6a;
+  background: #71cd38;
 }
 
 .filterRainy .yearFilter input[type="radio"] {
@@ -622,12 +616,12 @@
 }
 
 .filterRainy .yearFilter input[type="radio"]::before {
-  border-color: #4CAF50;
+  border-color: #71cd38;
   background: transparent;
 }
 
 .filterRainy .yearFilter input[type="radio"]:checked::after {
-  background: #4CAF50;
+  background: #71cd38;
 }
 
 .yearFilter label[for="showAllYears"],

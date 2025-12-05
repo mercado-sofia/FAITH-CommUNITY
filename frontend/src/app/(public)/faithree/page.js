@@ -100,7 +100,7 @@ function FAITHreePage() {
     };
   }, []);
 
-  // Reset loading when filtered highlights change - ONLY if filters actually changed
+  // Reset loading when filters actually change - NOT when navigating between trees
   useEffect(() => {
     // If no organization is selected, don't show loading
     if (selectedOrganization === null) {
@@ -142,7 +142,7 @@ function FAITHreePage() {
     if (filteredHighlights.length === 0) {
       setIsModelLoading(false);
     }
-  }, [filteredHighlights, selectedOrganization, selectedYear, isTransitioningFromWelcome, showWelcome]);
+  }, [selectedOrganization, selectedYear, isTransitioningFromWelcome, showWelcome]);
 
   // Handle tree load - TreeModel waits for actual render completion via requestAnimationFrame
   const handleTreeLoad = useCallback(() => {
@@ -159,11 +159,10 @@ function FAITHreePage() {
     // Set a maximum timeout for loading (10 seconds)
     const maxLoadingTimeout = 10000;
     const timeoutId = setTimeout(() => {
-      // Only clear if we're not on welcome screen and have an organization selected
-      if (!showWelcome && selectedOrganization !== null) {
-        console.warn('Tree model loading timeout - clearing loading state');
-        setIsModelLoading(false);
-      }
+        // Only clear if we're not on welcome screen and have an organization selected
+        if (!showWelcome && selectedOrganization !== null) {
+          setIsModelLoading(false);
+        }
     }, maxLoadingTimeout);
 
     return () => clearTimeout(timeoutId);

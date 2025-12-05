@@ -580,7 +580,6 @@ export default function TreeModel({
   // State for hover preview overlay
   const [hoveredStarData, setHoveredStarData] = useState(null)
   const [hoveredStarScreenPos, setHoveredStarScreenPos] = useState(null)
-  const [hoveredStarId, setHoveredStarId] = useState(null)
   // Ref to store projection function
   const project3DTo2DRef = useRef(null)
 
@@ -606,7 +605,6 @@ export default function TreeModel({
         y: event.clientY - 10   // 10px above cursor
       })
       setHoveredStarData(highlight)
-      setHoveredStarId(starId)
     } else if (project3DTo2DRef.current && worldPosition) {
       // Fallback to 3D projection if mouse position not available
       const screenPos = project3DTo2DRef.current(worldPosition)
@@ -617,7 +615,6 @@ export default function TreeModel({
           y: screenPos.y - 10  // 10px above the star (smaller offset for closer positioning)
         })
         setHoveredStarData(highlight)
-        setHoveredStarId(starId)
       }
     }
   }, [])
@@ -626,7 +623,6 @@ export default function TreeModel({
     setIsStarHovered(false)
     setHoveredStarData(null)
     setHoveredStarScreenPos(null)
-    setHoveredStarId(null)
   }, [])
 
   // Callback to receive projection function from CoordinateProjector
@@ -773,8 +769,6 @@ export default function TreeModel({
       {/* Star Preview Overlay */}
       <StarPreviewOverlay
         highlight={hoveredStarData}
-        starId={hoveredStarId}
-        position={hoveredStarScreenPos}
         isVisible={!!hoveredStarData && !!hoveredStarScreenPos}
       />
       

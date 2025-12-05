@@ -9,7 +9,7 @@
   align-items: flex-start;
   justify-content: center;
   z-index: 20;
-  background-image: url('/assets/backgrounds/welcome-faithree/bg1.svg');
+  background-image: url('/assets/backgrounds/welcome-faithree/bg.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -34,7 +34,7 @@
   width: 100%;
   max-width: none;
   text-align: center;
-  padding: 1.8rem 2rem 2rem 2rem;
+  padding: 1.85rem 2rem 2rem 2rem;
   animation: slideUpFadeIn 0.8s ease-out 0.2s both;
 }
 
@@ -53,9 +53,9 @@
 .textSvg1 {
   width: auto;
   height: auto;
-  max-width: 36%;
-  max-height: 192px;
-  margin: 0 auto -1rem auto;
+  max-width: min(42%, 660px);
+  max-height: 200px;
+  margin: 0 auto -0.5rem auto;
   display: block;
   animation: slideDownFromTop 1s ease-out 0.3s both;
 }
@@ -64,7 +64,7 @@
   width: 100%;
   height: auto;
   max-width: 100%;
-  max-height: 192px;
+  max-height: 200px;
   object-fit: contain;
 }
 
@@ -77,7 +77,7 @@
 .textSvg2 {
   width: auto;
   height: auto;
-  max-width: 56%;
+  max-width: min(56%, 800px);
   max-height: 224px;
   margin: 0 auto 4rem auto;
   display: block;
@@ -152,7 +152,7 @@
   animation: fadeInFromBottom 0.8s ease-out 0.5s both;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 /* Message Card */
@@ -402,7 +402,7 @@
   .welcomeContainer {
     top: 70px;
     height: calc(100vh - 70px);
-    background-image: url('/assets/backgrounds/welcome-faithree/bg1_mobile.svg');
+    background-image: url('/assets/backgrounds/welcome-faithree/bg-mobile.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -421,7 +421,7 @@
 
   .textSvg1,
   .textSvg2 {
-    max-width: 75%;
+    max-width: min(75%, 475px);
     max-height: 144px;
   }
 
@@ -476,7 +476,7 @@
 
 @media (max-width: 480px) {
   .welcomeContainer {
-    background-image: url('/assets/backgrounds/welcome-faithree/bg1_mobile.svg');
+    background-image: url('/assets/backgrounds/welcome-faithree/bg-mobile.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -495,7 +495,7 @@
 
   .textSvg1,
   .textSvg2 {
-    max-width: 75%;
+    max-width: min(75%, 396px);
     max-height: 120px;
   }
 

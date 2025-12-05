@@ -59,19 +59,6 @@
   width: 100%;
 }
 
-.starNumber {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background: rgba(255, 215, 0, 0.15);
-  color: #b8860b;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 11px;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
 /* Logo Container in Tab */
 .logoContainer {
   flex-shrink: 0;
@@ -166,7 +153,7 @@
   color: #ca8a04;
 }
 
-.impactLow {
+.impactSmall {
   color: #92400e;
 }
 

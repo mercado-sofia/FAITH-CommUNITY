@@ -6,8 +6,8 @@ import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uplo
 import { UnavailableImagePlaceholder } from '@/components'
 import styles from './StarPreviewOverlay.module.css'
 
-export default function StarPreviewOverlay({ highlight, starId, position, isVisible }) {
-  // Overlay is fixed at bottom center
+export default function StarPreviewOverlay({ highlight, isVisible }) {
+  // Overlay position is fixed via CSS (left: 1000px, top: 130px)
 
   if (!highlight || !isVisible || typeof document === 'undefined' || !document.body) {
     return null

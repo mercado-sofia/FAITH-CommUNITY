@@ -46,8 +46,8 @@ function WelcomeSection({
             <Image 
               src="/assets/backgrounds/welcome-faithree/txt1.svg" 
               alt="FAITHree" 
-              width={640}
-              height={192}
+              width={660}
+              height={200}
               priority
             />
           </div>

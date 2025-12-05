@@ -18,8 +18,8 @@ function GlowingParticles({ starColor }) {
   const getStarPathPosition = (progress) => {
     const spikes = 5
     const step = (Math.PI * 2) / spikes
-    const baseOuterRadius = 0.15
-    const baseInnerRadius = 0.08
+    const baseOuterRadius = 0.20  // Increased from 0.15 for more space
+    const baseInnerRadius = 0.12  // Increased from 0.08 for more space
     
     // Normalize progress to 0-1 range (10 segments for 10 points)
     const normalizedProgress = progress % 1
@@ -31,13 +31,24 @@ function GlowingParticles({ starColor }) {
     const spikeIndex = Math.floor(segmentIndex / 2)
     
     // Calculate angle - outer points at spikeIndex * step, inner points at spikeIndex * step + step/2
-    const startAngle = spikeIndex * step + (isOuter ? 0 : step * 0.5)
-    const endAngle = isOuter 
-      ? (spikeIndex * step + step * 0.5)  // Outer to inner
-      : ((spikeIndex + 1) % spikes) * step  // Inner to next outer
+    let startAngle = spikeIndex * step + (isOuter ? 0 : step * 0.5)
+    let endAngle
+    if (isOuter) {
+      // Outer to inner: same spike, just add step/2
+      endAngle = spikeIndex * step + step * 0.5
+    } else {
+      // Inner to next outer: next spike (wrapping around)
+      const nextSpikeIndex = (spikeIndex + 1) % spikes
+      endAngle = nextSpikeIndex * step
+    }
+    
+    // Handle angle wrap-around for proper interpolation
+    let angleDiff = endAngle - startAngle
+    if (angleDiff > Math.PI) angleDiff -= Math.PI * 2
+    if (angleDiff < -Math.PI) angleDiff += Math.PI * 2
     
     // Interpolate between start and end angles
-    const angle = startAngle + (endAngle - startAngle) * segmentProgress
+    const angle = startAngle + angleDiff * segmentProgress
     
     // Interpolate radius between outer and inner
     const startRadius = isOuter ? baseOuterRadius : baseInnerRadius
@@ -77,12 +88,13 @@ function GlowingParticles({ starColor }) {
     const time = state.clock.getElapsedTime()
     
     // Animate particles along star shape path
-    // Each particle moves along the star's outline at different speeds
+    // All particles move at the same pace and direction, just offset from each other
+    const baseTimeProgress = (time * 0.1) % 1  // Same speed for all particles
+    
     for (let i = 0; i < particleCount; i++) {
-      // Each particle starts at a different position and moves along the path
-      const baseProgress = i / particleCount
-      const timeProgress = (time * 0.2) % 1  // Slow rotation around star
-      const progress = (baseProgress + timeProgress) % 1
+      // Each particle has a fixed offset, but moves at the same speed
+      const offset = i / particleCount
+      const progress = (offset + baseTimeProgress) % 1
       
       const point = getStarPathPosition(progress)
       
@@ -128,8 +140,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   const [hovered, setHovered] = useState(false)
   
   // Calculate star size based on impact level
-  // Small: 0.8, Average: 1.0, High: 1.4
-  const sizeMultiplier = impactLevel === 'high' ? 1.4 : impactLevel === 'average' ? 1.0 : 0.8
+  // Small: 0.75, Average: 1.0, High: 1.4
+  const sizeMultiplier = impactLevel === 'high' ? 1.4 : impactLevel === 'average' ? 1.0 : 0.6
   
   // Create star geometry with size based on impact level
   const starShape = useMemo(() => {
@@ -189,7 +201,7 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   const animatedScale = useRef(1)
 
   // Make star face the camera and animate scale
-  useFrame(() => {
+  useFrame((state) => {
     if (groupRef.current) {
       const cameraPos = new THREE.Vector3(...cameraPosition)
       // Reset rotation first
@@ -207,6 +219,24 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       
       // Apply animated scale
       groupRef.current.scale.setScalar(animatedScale.current)
+
+      // Wiggle effect for high impact stars only
+      if (impactLevel === 'high') {
+        const time = state.clock.getElapsedTime()
+        // Subtle rotation wiggle (back and forth rotation)
+        const wiggleRotation = Math.sin(time * 3) * 0.08 // Reduced rotation wiggle
+        const wiggleRotationX = Math.cos(time * 2.5) * 0.05 // Reduced X wiggle
+        const wiggleRotationY = Math.sin(time * 2.8) * 0.05 // Reduced Y wiggle
+        
+        // Apply wiggle rotation
+        const wiggleQuatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), wiggleRotationX)
+        const wiggleQuatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), wiggleRotationY)
+        const wiggleQuatZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), wiggleRotation)
+        
+        groupRef.current.quaternion.multiply(wiggleQuatX)
+        groupRef.current.quaternion.multiply(wiggleQuatY)
+        groupRef.current.quaternion.multiply(wiggleQuatZ)
+      }
     }
   })
 
@@ -259,16 +289,17 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
           roughness={0.2}
         />
       </mesh>
-      {/* Point light and particles only for high impact stars */}
+      {/* Point light for all stars on hover, particles only for high impact stars */}
+      {hovered && (
+        <pointLight
+          color={starColor}
+          intensity={impactLevel === 'high' ? 1.0 : impactLevel === 'average' ? 0.7 : 0.5}
+          distance={impactLevel === 'high' ? 4 : impactLevel === 'average' ? 3 : 2.5}
+        />
+      )}
+      {/* Particles only for high impact stars */}
       {impactLevel === 'high' && (
-        <>
-          <pointLight
-            color={starColor}
-            intensity={hovered ? 1.0 : 0.6}
-            distance={hovered ? 4 : 3}
-          />
-          <GlowingParticles starColor={starColor} />
-        </>
+        <GlowingParticles starColor={starColor} />
       )}
     </group>
   )

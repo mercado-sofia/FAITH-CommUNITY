@@ -40,7 +40,5 @@ export const STAR_MIN_OPACITY = 0.3;
 export const STAR_MAX_OPACITY = 1.0;
 
 // Background image paths
-export const SELECT_BACKGROUND_PATH = '/assets/backgrounds/selectbg.svg';
-export const TREE_BACKGROUND_PATH = '/assets/backgrounds/treebg.svg';
-export const SELECT_BACKGROUND_PATH_MOBILE = '/assets/backgrounds/selectbg_mobile.svg';
-export const TREE_BACKGROUND_PATH_MOBILE = '/assets/backgrounds/treebg_mobile.svg';
+export const TREE_BACKGROUND_PATH = '/assets/backgrounds/welcome-faithree/treebg.svg';
+export const TREE_BACKGROUND_PATH_MOBILE = '/assets/backgrounds/welcome-faithree/treebg_mobile.svg';

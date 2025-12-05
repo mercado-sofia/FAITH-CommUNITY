@@ -10,15 +10,6 @@
   overflow: visible;
 }
 
-/* Transitioning state */
-.faithreeContainer.transitioning {
-  pointer-events: none;
-}
-
-.faithreeContainer.transitioning .ecoBackground {
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
-}
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -57,24 +48,15 @@
   transition: background-image 0.5s ease;
 }
 
-/* Background for organization selection (initial view) */
-.ecoBackgroundSelect::before {
-  background-image: url('/assets/backgrounds/selectbg.svg');
-}
-
 /* Background after organization is selected */
 .ecoBackgroundTree::before {
-  background-image: url('/assets/backgrounds/treebg.svg');
+  background-image: url('/assets/backgrounds/welcome-faithree/treebg.svg');
 }
 
 /* Mobile backgrounds - use mobile SVG versions on smaller screens */
 @media (max-width: 768px) {
-  .ecoBackgroundSelect::before {
-    background-image: url('/assets/backgrounds/selectbg_mobile.svg');
-  }
-  
   .ecoBackgroundTree::before {
-    background-image: url('/assets/backgrounds/treebg_mobile.svg');
+    background-image: url('/assets/backgrounds/welcome-faithree/treebg_mobile.svg');
   }
 }
 
@@ -118,33 +100,6 @@
   background: #FFFFFF;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-}
-
-/* Forest-like Mountains for Rainy Mode */
-.forestMountains {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 50%;
-  z-index: 2;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.mountainShape {
-  position: absolute;
-  opacity: 0.8;
-  filter: blur(1px);
-  transform-origin: bottom center;
-}
-
-.forestShape {
-  position: absolute;
-  opacity: 0.85;
-  filter: blur(0.5px);
-  z-index: 3;
-  transform-origin: bottom center;
 }
 
 /* Rolling hills - SVG curved landscape */
@@ -937,59 +892,6 @@
   }
 }
 
-/* Organization Required Message */
-.orgRequiredMessage {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;
-  height: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-  pointer-events: auto;
-  padding: 2rem;
-}
-
-.orgRequiredText {
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.6;
-  max-width: 600px;
-  padding: 2rem 3rem;
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-/* Morning theme styling */
-.orgRequiredMessageMorning .orgRequiredText {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-  color: #2e7d32;
-  border: 2px solid rgba(76, 175, 80, 0.3);
-}
-
-/* Rainy theme styling */
-.orgRequiredMessageRainy .orgRequiredText {
-  background: linear-gradient(135deg, rgba(224, 246, 255, 0.95) 0%, rgba(224, 246, 255, 0.85) 100%);
-  color: #1565c0;
-  border: 2px solid rgba(33, 150, 243, 0.3);
-}
-
-/* Responsive design for message */
-@media (max-width: 768px) {
-  .orgRequiredText {
-    font-size: 1.25rem;
-    padding: 1.5rem 2rem;
-    max-width: 90%;
-  }
-}
 
 
 

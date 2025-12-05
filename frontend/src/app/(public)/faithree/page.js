@@ -12,9 +12,7 @@ import {
   LOADING_DELAY,
   MODEL_LOAD_DELAY,
   BACKGROUND_PRELOAD_TIMEOUT,
-  SELECT_BACKGROUND_PATH,
   TREE_BACKGROUND_PATH,
-  SELECT_BACKGROUND_PATH_MOBILE,
   TREE_BACKGROUND_PATH_MOBILE,
   CHUNK_SIZE,
   RAIN_DROP_HEIGHT_BASE,
@@ -124,23 +122,20 @@ function FAITHreePage() {
     }, MODEL_LOAD_DELAY);
   }, []);
 
-  // Handle continue from welcome section - preload background SVG
+  // Handle continue from welcome section - called when organization is selected (mode 2 completion)
+  // Preload tree background SVG and hide welcome section
   const handleContinue = useCallback(() => {
     setIsBackgroundLoading(true);
     
-    // Preload both desktop and mobile versions of select and tree background SVGs
-    const selectBgImage = new Image();
+    // Preload both desktop and mobile versions of tree background SVGs
     const treeBgImage = new Image();
-    const selectBgImageMobile = new Image();
     const treeBgImageMobile = new Image();
     
-    let selectLoaded = false;
     let treeLoaded = false;
-    let selectMobileLoaded = false;
     let treeMobileLoaded = false;
     
     const checkAllLoaded = () => {
-      if (selectLoaded && treeLoaded && selectMobileLoaded && treeMobileLoaded) {
+      if (treeLoaded && treeMobileLoaded) {
         // Small delay to ensure smooth transition
         setTimeout(() => {
           setIsBackgroundLoading(false);
@@ -149,30 +144,12 @@ function FAITHreePage() {
       }
     };
     
-    selectBgImage.onload = () => {
-      selectLoaded = true;
-      checkAllLoaded();
-    };
-    selectBgImage.onerror = () => {
-      selectLoaded = true; // Mark as loaded even on error to not block
-      checkAllLoaded();
-    };
-    
     treeBgImage.onload = () => {
       treeLoaded = true;
       checkAllLoaded();
     };
     treeBgImage.onerror = () => {
       treeLoaded = true; // Mark as loaded even on error to not block
-      checkAllLoaded();
-    };
-    
-    selectBgImageMobile.onload = () => {
-      selectMobileLoaded = true;
-      checkAllLoaded();
-    };
-    selectBgImageMobile.onerror = () => {
-      selectMobileLoaded = true; // Mark as loaded even on error to not block
       checkAllLoaded();
     };
     
@@ -185,15 +162,13 @@ function FAITHreePage() {
       checkAllLoaded();
     };
     
-    // Load all background images (desktop and mobile versions)
-    selectBgImage.src = SELECT_BACKGROUND_PATH;
+    // Load tree background images (desktop and mobile versions)
     treeBgImage.src = TREE_BACKGROUND_PATH;
-    selectBgImageMobile.src = SELECT_BACKGROUND_PATH_MOBILE;
     treeBgImageMobile.src = TREE_BACKGROUND_PATH_MOBILE;
     
     // Fallback timeout in case images don't load
     setTimeout(() => {
-      if (!selectLoaded || !treeLoaded || !selectMobileLoaded || !treeMobileLoaded) {
+      if (!treeLoaded || !treeMobileLoaded) {
         setIsBackgroundLoading(false);
         setShowWelcome(false);
       }
@@ -237,6 +212,9 @@ function FAITHreePage() {
       {showWelcome && (
         <WelcomeSection 
           onContinue={handleContinue}
+          organizations={allOrganizations}
+          selectedOrganization={selectedOrganization}
+          onOrganizationSelect={handleOrganizationChange}
         />
       )}
 
@@ -253,7 +231,8 @@ function FAITHreePage() {
           aria-label="FAITHree interactive environment"
         >
         {/* Eco-themed background */}
-        <div className={`${styles.ecoBackground} ${isInitialView ? styles.ecoBackgroundSelect : styles.ecoBackgroundTree}`}>
+        {/* Note: isInitialView is always false here since organization is selected in WelcomeSection */}
+        <div className={`${styles.ecoBackground} ${styles.ecoBackgroundTree}`}>
           {/* Sky with clouds */}
           <div 
             className={`${styles.sky} ${styles[`sky${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
@@ -368,21 +347,6 @@ function FAITHreePage() {
               ) : null}
             </div>
           </div>
-        )}
-
-        {/* Centered Organization Filter - Initial View */}
-        {isInitialView && (
-          <Filters
-            organizations={allOrganizations}
-            years={uniqueYears}
-            selectedOrganization={selectedOrganization}
-            selectedYear={selectedYear}
-            showAllYears={showAllYears}
-            onOrganizationChange={handleOrganizationChange}
-            onYearChange={handleFilterYearChange}
-            theme={theme}
-            isCentered={true}
-          />
         )}
 
         {/* Left Sidebar - Filters and Impact Level Showcase */}

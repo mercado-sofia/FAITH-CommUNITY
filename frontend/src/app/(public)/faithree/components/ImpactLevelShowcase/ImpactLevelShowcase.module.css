@@ -40,7 +40,7 @@
 .showcaseHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(76, 175, 80, 0.1);
 }
@@ -55,6 +55,7 @@
   color: #1b5e20;
   text-transform: uppercase;
   letter-spacing: 0.75px;
+  text-align: center;
 }
 
 .showcaseRainy .showcaseTitle {
@@ -109,33 +110,53 @@
   font-size: 2rem;
   line-height: 1;
   transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Small Impact Star - Normal */
+/* Small Impact Star - Smaller size (0.6x), muted brown-orange color (#c29326) */
 .starSmall {
-  font-size: 1.5rem;
-  filter: brightness(1);
+  font-size: 1.2rem;
+  filter: 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
+    sepia(30%) saturate(150%) hue-rotate(15deg) brightness(0.85);
+  /* Adjusts yellow emoji to brown-orange tone */
 }
 
-/* Average Impact Star - Bigger and Brighter */
+/* Average Impact Star - Medium size (1.0x), yellow-orange color (#ffd520) */
 .starAverage {
-  font-size: 1.75rem;
-  filter: brightness(1.3);
+  font-size: 1.5rem;
+  filter: 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
+    sepia(20%) saturate(120%) hue-rotate(-5deg) brightness(1.1);
+  /* Adjusts to yellow-orange tone */
 }
 
-/* High Impact Star - Biggest and Glowing */
+/* High Impact Star - Largest size (1.4x), gold color (#ffcf00), with glow effect */
 .starHigh {
-  font-size: 2rem;
-  filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 16px rgba(255, 215, 0, 0.6));
+  font-size: 1.8rem;
+  filter: 
+    drop-shadow(0 0 8px rgba(255, 207, 0, 0.8)) 
+    drop-shadow(0 0 16px rgba(255, 207, 0, 0.6)) 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
+    sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.2);
+  /* Adjusts to gold tone with glow */
   animation: starGlow 2s ease-in-out infinite;
 }
 
 @keyframes starGlow {
   0%, 100% {
-    filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 16px rgba(255, 215, 0, 0.6));
+    filter: 
+      drop-shadow(0 0 8px rgba(255, 207, 0, 0.8)) 
+      drop-shadow(0 0 16px rgba(255, 207, 0, 0.6)) 
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
+      sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.2);
   }
   50% {
-    filter: brightness(1.7) drop-shadow(0 0 12px rgba(255, 215, 0, 1)) drop-shadow(0 0 24px rgba(255, 215, 0, 0.8));
+    filter: 
+      drop-shadow(0 0 12px rgba(255, 207, 0, 1)) 
+      drop-shadow(0 0 24px rgba(255, 207, 0, 0.8)) 
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
+      sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.4);
   }
 }
 

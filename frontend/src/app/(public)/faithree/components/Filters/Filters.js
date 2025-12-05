@@ -76,7 +76,7 @@ function Filters({
     <div className={`${styles.filtersWrapper} ${isCentered ? styles.centeredWrapper : ''}`}>
       {/* Organization Filter - Separate Container */}
       {organizations.length > 0 && (
-        <div className={`${styles.filterContainer} ${styles.organizationFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isCentered ? styles.centeredFilter : ''}`}>
+        <div className={`${styles.filterContainer} ${isCentered ? styles.organizationFilter : styles.organizationFilterSidebar} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isCentered ? styles.centeredFilter : ''}`}>
           {isCentered && (
             <div className={styles.centeredMessage}>
               <p 
@@ -139,82 +139,77 @@ function Filters({
       {/* Year Filter - Radio Buttons with Conditional Dropdown */}
       {/* Hide year filter in centered mode */}
       {!isCentered && years.length > 0 && (
-        <div className={`${styles.filterContainer} ${styles.yearFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-          <div className={styles.filterContent}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <label style={{ fontSize: '0.875rem', color: theme === 'rainy' ? '#E0F6FF' : '#1b5e20', marginBottom: '0.75rem', display: 'block', fontWeight: 700, fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', textTransform: 'uppercase', letterSpacing: '0.75px' }}>
-                Year
+        <div className={`${styles.yearFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {/* Show All Years Radio */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="radio"
+                id="showAllYears"
+                name="yearFilterMode"
+                checked={showAllYears}
+                onChange={() => handleYearFilterModeChange('all')}
+              />
+              <label 
+                htmlFor="showAllYears"
+                style={{ color: theme === 'rainy' ? 'white' : undefined }}
+              >
+                Show All Years
               </label>
+            </div>
 
-              {/* Radio Button Options */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {/* Show All Years Radio */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="radio"
-                    id="showAllYears"
-                    name="yearFilterMode"
-                    checked={showAllYears}
-                    onChange={() => handleYearFilterModeChange('all')}
-                  />
-                  <label 
-                    htmlFor="showAllYears"
-                    style={{ color: theme === 'rainy' ? 'white' : undefined }}
-                  >
-                    Show All Years
-                  </label>
-                </div>
-
-                {/* Pick a Year Radio */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="radio"
-                    id="pickAYear"
-                    name="yearFilterMode"
-                    checked={!showAllYears}
-                    onChange={() => handleYearFilterModeChange('pick')}
-                  />
-                  <label 
-                    htmlFor="pickAYear"
-                    style={{ color: theme === 'rainy' ? 'white' : undefined }}
-                  >
-                    Pick a Year
-                  </label>
-                </div>
+            {/* Pick a Year Radio with Dropdown on the right */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="radio"
+                  id="pickAYear"
+                  name="yearFilterMode"
+                  checked={!showAllYears}
+                  onChange={() => handleYearFilterModeChange('pick')}
+                />
+                <label 
+                  htmlFor="pickAYear"
+                  style={{ color: theme === 'rainy' ? 'white' : undefined }}
+                >
+                  Pick a Year
+                </label>
               </div>
-
-              {/* Year Dropdown - Only show when "Pick a Year" is selected */}
-              {!showAllYears && (
-                <div className={styles.yearDropdownWrapper} ref={yearDropdownRef} style={{ marginTop: '0.5rem' }}>
-                  <div
-                    className={styles.yearDropdownHeader}
-                    onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span>{yearDisplayText}</span>
-                    <FaChevronRight 
-                      className={`${styles.dropdownIcon} ${yearDropdownOpen ? styles.dropdownIconOpen : ''}`} 
-                    />
-                  </div>
-
-                  {yearDropdownOpen && (
-                    <div 
-                      className={styles.yearDropdownOptions}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {sortedYears.map((year) => (
-                        <div
-                          key={year}
-                          className={`${styles.yearOption} ${selectedYear === year ? styles.yearOptionActive : ''}`}
-                          onClick={() => handleYearChange(year)}
-                        >
-                          {year}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              
+              {/* Year Dropdown - Always render to maintain consistent spacing, but hide when "Show All Years" is selected */}
+              <div 
+                className={styles.yearDropdownWrapper} 
+                ref={yearDropdownRef}
+                style={{ visibility: !showAllYears ? 'visible' : 'hidden' }}
+              >
+                <div
+                  className={styles.yearDropdownHeader}
+                  onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span>{yearDisplayText}</span>
+                  <FaChevronRight 
+                    className={`${styles.dropdownIcon} ${yearDropdownOpen ? styles.dropdownIconOpen : ''}`} 
+                  />
                 </div>
-              )}
+
+                {yearDropdownOpen && (
+                  <div 
+                    className={styles.yearDropdownOptions}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {sortedYears.map((year) => (
+                      <div
+                        key={year}
+                        className={`${styles.yearOption} ${selectedYear === year ? styles.yearOptionActive : ''}`}
+                        onClick={() => handleYearChange(year)}
+                      >
+                        {year}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

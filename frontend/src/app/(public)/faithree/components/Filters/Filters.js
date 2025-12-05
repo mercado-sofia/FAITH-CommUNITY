@@ -157,7 +157,10 @@ function Filters({
                     checked={showAllYears}
                     onChange={() => handleYearFilterModeChange('all')}
                   />
-                  <label htmlFor="showAllYears">
+                  <label 
+                    htmlFor="showAllYears"
+                    style={{ color: theme === 'rainy' ? 'white' : undefined }}
+                  >
                     Show All Years
                   </label>
                 </div>
@@ -171,7 +174,10 @@ function Filters({
                     checked={!showAllYears}
                     onChange={() => handleYearFilterModeChange('pick')}
                   />
-                  <label htmlFor="pickAYear">
+                  <label 
+                    htmlFor="pickAYear"
+                    style={{ color: theme === 'rainy' ? 'white' : undefined }}
+                  >
                     Pick a Year
                   </label>
                 </div>

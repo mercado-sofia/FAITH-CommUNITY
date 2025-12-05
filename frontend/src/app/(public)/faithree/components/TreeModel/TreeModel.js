@@ -13,17 +13,54 @@ function GlowingParticles({ starColor }) {
   const particlesRef = useRef()
   const particleCount = 10
   
+  // Helper function to get position along star shape path
+  // Star has 10 points total (5 outer + 5 inner), forming a path
+  const getStarPathPosition = (progress) => {
+    const spikes = 5
+    const step = (Math.PI * 2) / spikes
+    const baseOuterRadius = 0.15
+    const baseInnerRadius = 0.08
+    
+    // Normalize progress to 0-1 range (10 segments for 10 points)
+    const normalizedProgress = progress % 1
+    const segmentIndex = Math.floor(normalizedProgress * 10) % 10
+    const segmentProgress = (normalizedProgress * 10) % 1
+    
+    // Determine if we're on an outer or inner segment
+    const isOuter = segmentIndex % 2 === 0
+    const spikeIndex = Math.floor(segmentIndex / 2)
+    
+    // Calculate angle - outer points at spikeIndex * step, inner points at spikeIndex * step + step/2
+    const startAngle = spikeIndex * step + (isOuter ? 0 : step * 0.5)
+    const endAngle = isOuter 
+      ? (spikeIndex * step + step * 0.5)  // Outer to inner
+      : ((spikeIndex + 1) % spikes) * step  // Inner to next outer
+    
+    // Interpolate between start and end angles
+    const angle = startAngle + (endAngle - startAngle) * segmentProgress
+    
+    // Interpolate radius between outer and inner
+    const startRadius = isOuter ? baseOuterRadius : baseInnerRadius
+    const endRadius = isOuter ? baseInnerRadius : baseOuterRadius
+    const radius = startRadius + (endRadius - startRadius) * segmentProgress
+    
+    return {
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius
+    }
+  }
+  
   // Initialize particle positions
   const initialPositions = useMemo(() => {
     const pos = new Float32Array(particleCount * 3)
     
     for (let i = 0; i < particleCount; i++) {
-      const angle = (i / particleCount) * Math.PI * 2
-      const radius = 0.12 + Math.random() * 0.06  // Reduced radius to prevent interference
+      // Distribute particles evenly along the star path
+      const progress = i / particleCount
+      const point = getStarPathPosition(progress)
       
-      // Initial position in a circle around the star
-      pos[i * 3] = Math.cos(angle) * radius
-      pos[i * 3 + 1] = Math.sin(angle) * radius
+      pos[i * 3] = point.x
+      pos[i * 3 + 1] = point.y
       pos[i * 3 + 2] = (Math.random() - 0.5) * 0.08
     }
     
@@ -39,14 +76,19 @@ function GlowingParticles({ starColor }) {
     const positions = geometry.attributes.position.array
     const time = state.clock.getElapsedTime()
     
-    // Animate particles in a gentle floating/orbiting motion
-    // Reduced radius to prevent particles from extending too far
+    // Animate particles along star shape path
+    // Each particle moves along the star's outline at different speeds
     for (let i = 0; i < particleCount; i++) {
-      const angle = (i / particleCount) * Math.PI * 2 + time * 0.5
-      const radius = 0.12 + Math.sin(time + i) * 0.04  // Reduced max radius
+      // Each particle starts at a different position and moves along the path
+      const baseProgress = i / particleCount
+      const timeProgress = (time * 0.2) % 1  // Slow rotation around star
+      const progress = (baseProgress + timeProgress) % 1
       
-      positions[i * 3] = Math.cos(angle) * radius
-      positions[i * 3 + 1] = Math.sin(angle) * radius
+      const point = getStarPathPosition(progress)
+      
+      // Add slight floating motion in Z
+      positions[i * 3] = point.x
+      positions[i * 3 + 1] = point.y
       positions[i * 3 + 2] = Math.sin(time * 0.8 + i) * 0.08
     }
     
@@ -124,8 +166,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   }), [sizeMultiplier])
 
   // Color and emissive based on impact level
-  // Small: darker yellow (#D4AF37), Average: normal yellow (#FFE135), High: bright gold (#FFD700)
-  const starColor = impactLevel === 'high' ? '#FFD700' : impactLevel === 'average' ? '#FFE135' : '#D4AF37'
+  // Small: muted brown-orange (#c29326), Average: yellow-orange (#ffd520), High: gold (#ffcf00)
+  const starColor = impactLevel === 'high' ? '#ffcf00' : impactLevel === 'average' ? '#ffd520' : '#c29326'
   // Small: 0.3, Average: 0.5, High: 0.9
   const baseEmissiveIntensity = impactLevel === 'high' ? 0.9 : impactLevel === 'average' ? 0.5 : 0.3
   
@@ -143,7 +185,10 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
     treePosition[2] + cameraOffset[2]
   ], [treePosition, cameraOffset])
 
-  // Make star face the camera
+  // Animated scale for smooth zoom effect
+  const animatedScale = useRef(1)
+
+  // Make star face the camera and animate scale
   useFrame(() => {
     if (groupRef.current) {
       const cameraPos = new THREE.Vector3(...cameraPosition)
@@ -155,6 +200,13 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       // so that positive Z (front face) points at camera
       const flipRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
       groupRef.current.quaternion.multiply(flipRotation)
+
+      // Smoothly animate scale for hover zoom effect
+      const targetScale = hovered ? 1.15 : 1.0
+      animatedScale.current += (targetScale - animatedScale.current) * 0.25 // Faster interpolation
+      
+      // Apply animated scale
+      groupRef.current.scale.setScalar(animatedScale.current)
     }
   })
 
@@ -202,7 +254,7 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
         <meshStandardMaterial
           color={starColor}
           emissive={starColor}
-          emissiveIntensity={hovered ? baseEmissiveIntensity * 1.5 : baseEmissiveIntensity}
+          emissiveIntensity={baseEmissiveIntensity}
           metalness={0.3}
           roughness={0.2}
         />
@@ -429,11 +481,11 @@ function Loading() {
 function generateStarPositions(count) {
   const fixedPositions = [
     // Primary row - evenly spaced, moved leftmost stars to right side
-    [-1.05, 1.95, 1.4],    // Star 1 - Left, medium (moved from far left)
+    [0.75, 1.85, 1.5],     // Star 1 - Center-right, medium (moved down more)
     [-0.7, 1.8, 1.5],      // Star 2 - Left-center, high (moved right a little)
     [-0.15, 1.9, 1.45],    // Star 3 - Center-left, medium (moved down more)
     [0.3, 2.05, 1.4],      // Star 4 - Center, high (0.45 spacing from Star 3)
-    [0.75, 1.85, 1.5],     // Star 5 - Center-right, medium (moved down more)
+    [-1.05, 1.95, 1.4],    // Star 5 - Left, medium (moved from far left)
     [1.25, 1.85, 1.45],    // Star 6 - Right, high (moved right more)
     [1.5, 2.0, 1.4],       // Star 7 - Far right, medium (0.25 spacing from Star 6)
     [0.05, 2.3, 1.45],     // Star 8 - Center, very high (moved right a little)

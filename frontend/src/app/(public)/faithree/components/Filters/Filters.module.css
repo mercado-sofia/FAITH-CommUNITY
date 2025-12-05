@@ -297,7 +297,7 @@
 }
 
 .filterChip.active {
-  background: white;
+  background: rgba(255, 255, 255, 0.5);
   border-color: #2e7d32;
   color: #1b5e20;
   box-shadow: 
@@ -306,7 +306,7 @@
 }
 
 .filterChip.active:hover {
-  background: white;
+  background: rgba(255, 255, 255, 0.5);
   border-color: #66bb6a;
   box-shadow: 
     0 7px 18px rgba(76, 175, 80, 0.3),
@@ -357,16 +357,16 @@
 }
 
 .filterRainy .filterChip.active {
-  background: white;
+  background: rgba(20, 84, 126, 0.3);
   border-color: #5ba3d4;
-  color: #1b5e20;
+  color: #E0F6FF;
   box-shadow: 
     0 5px 14px rgba(20, 84, 126, 0.35),
     0 2px 6px rgba(20, 84, 126, 0.3);
 }
 
 .filterRainy .filterChip.active:hover {
-  background: white;
+  background: rgba(20, 84, 126, 0.3);
   border-color: #194970;
   box-shadow: 
     0 7px 18px rgba(20, 84, 126, 0.4),
@@ -609,17 +609,20 @@
   background: #1b5e20;
 }
 
+.filterRainy.yearFilter input[type="radio"],
 .filterRainy .yearFilter input[type="radio"] {
   background: transparent;
 }
 
+.filterRainy.yearFilter input[type="radio"]::before,
 .filterRainy .yearFilter input[type="radio"]::before {
-  border-color: #1b5e20;
+  border-color: white !important;
   background: transparent;
 }
 
+.filterRainy.yearFilter input[type="radio"]:checked::after,
 .filterRainy .yearFilter input[type="radio"]:checked::after {
-  background: #1b5e20;
+  background: white !important;
 }
 
 .yearFilter label[for="showAllYears"],
@@ -633,9 +636,11 @@
   margin: 0;
 }
 
+.filterRainy.yearFilter label[for="showAllYears"],
 .filterRainy .yearFilter label[for="showAllYears"],
+.filterRainy.yearFilter label[for="pickAYear"],
 .filterRainy .yearFilter label[for="pickAYear"] {
-  color: #E0F6FF;
+  color: white !important;
 }
 
 /* Rainy Theme - Year Dropdown */

@@ -6,7 +6,7 @@ import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uplo
 import { UnavailableImagePlaceholder } from '@/components'
 import styles from './StarPreviewOverlay.module.css'
 
-export default function StarPreviewOverlay({ highlight, position, isVisible }) {
+export default function StarPreviewOverlay({ highlight, starId, position, isVisible }) {
   // Overlay is fixed in top right corner
 
   if (!highlight || !isVisible || typeof document === 'undefined' || !document.body) {
@@ -24,6 +24,11 @@ export default function StarPreviewOverlay({ highlight, position, isVisible }) {
       className={`${styles.overlay} ${isVisible ? styles.visible : ''}`}
     >
       <div className={styles.content}>
+        {/* Preview Label with Star Number */}
+        <div className={styles.previewLabel}>
+          Preview {starId && <span className={styles.starNumber}>Star {starId}</span>}
+        </div>
+        
         {/* Organization Logo and Name */}
         <div className={styles.orgSection}>
           {hasValidLogo ? (

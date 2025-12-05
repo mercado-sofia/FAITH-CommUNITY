@@ -156,9 +156,6 @@ function Filters({
                     name="yearFilterMode"
                     checked={showAllYears}
                     onChange={() => handleYearFilterModeChange('all')}
-                    style={{
-                      accentColor: theme === 'rainy' ? '#4CAF50' : '#66bb6a'
-                    }}
                   />
                   <label htmlFor="showAllYears">
                     Show All Years
@@ -173,9 +170,6 @@ function Filters({
                     name="yearFilterMode"
                     checked={!showAllYears}
                     onChange={() => handleYearFilterModeChange('pick')}
-                    style={{
-                      accentColor: theme === 'rainy' ? '#4CAF50' : '#66bb6a'
-                    }}
                   />
                   <label htmlFor="pickAYear">
                     Pick a Year

@@ -182,9 +182,14 @@
 
 .expandIcon {
   font-size: 0.875rem; /* 14px */
-  color: #66bb6a;
+  color: #1b5e20;
   transition: transform 0.3s ease;
   transform: rotate(0deg);
+}
+
+/* Centered filter expand icon - match theme color */
+.filterContainer.centeredFilter .expandIcon {
+  color: #009977;
 }
 
 .filterRainy .expandIcon {
@@ -570,16 +575,59 @@
    YEAR FILTER RADIO BUTTONS
    ============================================ */
 .yearFilter input[type="radio"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  accent-color: #66bb6a;
   margin: 0;
   flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+
+/* Custom radio button - outer ring and inner circle */
+.yearFilter input[type="radio"]::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid #66bb6a;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* Custom radio button - inner filled circle when checked */
+.yearFilter input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #66bb6a;
 }
 
 .filterRainy .yearFilter input[type="radio"] {
-  accent-color: #4CAF50;
+  background: transparent;
+}
+
+.filterRainy .yearFilter input[type="radio"]::before {
+  border-color: #4CAF50;
+  background: transparent;
+}
+
+.filterRainy .yearFilter input[type="radio"]:checked::after {
+  background: #4CAF50;
 }
 
 .yearFilter label[for="showAllYears"],
@@ -794,12 +842,23 @@
 
   /* Improve radio button touch target on mobile */
   .yearFilter input[type="radio"] {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
-    min-height: 20px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
     cursor: pointer;
     touch-action: manipulation;
+  }
+
+  .yearFilter input[type="radio"]::before {
+    width: 22px;
+    height: 22px;
+    border-width: 3.5px;
+  }
+
+  .yearFilter input[type="radio"]:checked::after {
+    width: 11px;
+    height: 11px;
   }
 
   .yearFilter label[for="showAllYears"],
@@ -930,10 +989,21 @@
 
   /* Improve radio button touch target on small mobile */
   .yearFilter input[type="radio"] {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
-    min-height: 20px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+  }
+
+  .yearFilter input[type="radio"]::before {
+    width: 22px;
+    height: 22px;
+    border-width: 3.5px;
+  }
+
+  .yearFilter input[type="radio"]:checked::after {
+    width: 11px;
+    height: 11px;
   }
 
   .yearFilter label[for="showAllYears"] {

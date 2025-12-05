@@ -216,17 +216,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
       <div className={`${styles.starModalContainer} ${isVisible ? styles.visible : ''}`}>
         {/* Circular Star Element - Positioned 50% above modal */}
         <div className={styles.starCircle}>
-          <svg 
-            className={styles.starIcon}
-            viewBox="0 0 24 24" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" 
-              fill="currentColor"
-            />
-          </svg>
         </div>
 
         {/* Modal Content Box */}

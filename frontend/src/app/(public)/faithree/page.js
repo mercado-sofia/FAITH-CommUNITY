@@ -49,8 +49,12 @@ function FAITHreePage() {
 
   // Theme management
   const handleThemeChange = useCallback((newTheme, oldTheme) => {
-    // Theme changes don't trigger loading overlay - model doesn't need to reload
-  }, []);
+    // When theme changes, show loading overlay since the 3D tree model needs to reload
+    if (selectedOrganization !== null && filteredHighlights.length > 0 && oldTheme) {
+      setIsModelLoading(true);
+      hasModelLoadedRef.current = false; // Reset since model needs to reload with new theme
+    }
+  }, [selectedOrganization, filteredHighlights.length]);
 
   const theme = useTheme(isInitialView, filteredHighlights.length, handleThemeChange);
 

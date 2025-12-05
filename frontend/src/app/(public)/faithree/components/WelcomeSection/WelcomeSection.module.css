@@ -36,6 +36,11 @@
   text-align: center;
   padding: 1.85rem 2rem 2rem 2rem;
   animation: slideUpFadeIn 0.8s ease-out 0.2s both;
+  /* Ensure content flows naturally and doesn't center vertically */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 @keyframes slideUpFadeIn {
@@ -79,9 +84,12 @@
   height: auto;
   max-width: min(56%, 800px);
   max-height: 224px;
-  margin: 0 auto 4rem auto;
+  margin: 0 auto 2rem auto;
+  margin-bottom: 2rem; /* 2rem gap between txt2 and container */
   display: block;
   animation: fadeIn 0.8s ease-out 0.2s both;
+  /* Prevent margin collapse */
+  flex-shrink: 0;
 }
 
 .textSvg2 img {
@@ -146,13 +154,22 @@
 
 /* Organization Container */
 .organizationContainer {
-  margin: 5rem auto 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: auto;
+  margin-right: auto;
   width: 100%;
   max-width: 1100px;
   animation: fadeInFromBottom 0.8s ease-out 0.5s both;
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  /* Ensure container grows downward, not upward */
+  align-self: flex-start;
+  flex-shrink: 0;
+  /* Prevent margin collapse */
+  padding-top: 0;
+  min-height: 0;
 }
 
 /* Message Card */
@@ -430,7 +447,7 @@
   }
 
   .textSvg2 {
-    margin-bottom: 3.5rem;
+    margin-bottom: 2rem;
   }
 
   .messageContainer {
@@ -443,7 +460,7 @@
   .organizationContainer {
     max-width: 100%;
     padding: 0 1rem;
-    margin-top: 4rem;
+    margin-top: 0;
   }
 
   .messageCard {
@@ -504,7 +521,7 @@
   }
 
   .textSvg2 {
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
   .messageContainer {
@@ -517,7 +534,7 @@
   .organizationContainer {
     max-width: 100%;
     padding: 0 0.75rem;
-    margin-top: 3.5rem;
+    margin-top: 0;
   }
 
   .messageCard {

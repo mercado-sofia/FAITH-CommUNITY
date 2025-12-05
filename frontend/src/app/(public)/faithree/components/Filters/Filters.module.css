@@ -37,6 +37,18 @@
   align-items: center;
 }
 
+/* Variant for centered wrapper that flows naturally (for WelcomeSection) */
+.filtersWrapper.centeredWrapper.flowPosition {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  max-height: none;
+}
+
 @keyframes centeredFilterFadeIn {
   from {
     opacity: 0;

@@ -131,6 +131,7 @@ function WelcomeSection({
             onYearChange={() => {}}
             theme="morning"
             isCentered={true}
+            useFlowPosition={true}
           />
         </div>
       </div>

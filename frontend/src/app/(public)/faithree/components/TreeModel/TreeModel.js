@@ -1,15 +1,17 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import StarModal from '../StarModal/StarModal'
+import StarPreviewOverlay from '../StarPreviewOverlay/StarPreviewOverlay'
 import styles from './TreeModel.module.css'
 
 // Star component - creates a glowing star shape (static like fruit on tree)
-function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average' }) {
+function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.5], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average', highlight }) {
   const meshRef = useRef()
+  const groupRef = useRef()
   const [hovered, setHovered] = useState(false)
   
   // Calculate star size based on impact level
@@ -18,8 +20,8 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
   // Create star geometry with size based on impact level
   const starShape = useMemo(() => {
     const shape = new THREE.Shape()
-    const baseOuterRadius = 0.13
-    const baseInnerRadius = 0.07
+    const baseOuterRadius = 0.10  // Reduced from 0.13 for smaller stars
+    const baseInnerRadius = 0.055  // Reduced from 0.07 for smaller stars
     const outerRadius = baseOuterRadius * sizeMultiplier
     const innerRadius = baseInnerRadius * sizeMultiplier
     const spikes = 5
@@ -60,6 +62,28 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
     treePosition[2] + position[2]
   ], [treePosition, position])
 
+  // Calculate camera position relative to tree
+  const cameraPosition = useMemo(() => [
+    treePosition[0] + cameraOffset[0],
+    treePosition[1] + cameraOffset[1],
+    treePosition[2] + cameraOffset[2]
+  ], [treePosition, cameraOffset])
+
+  // Make star face the camera
+  useFrame(() => {
+    if (groupRef.current) {
+      const cameraPos = new THREE.Vector3(...cameraPosition)
+      // Reset rotation first
+      groupRef.current.quaternion.identity()
+      // Use lookAt to orient the star toward the camera
+      groupRef.current.lookAt(cameraPos)
+      // lookAt makes negative Z point at target, so rotate 180° around Y to flip it
+      // so that positive Z (front face) points at camera
+      const flipRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+      groupRef.current.quaternion.multiply(flipRotation)
+    }
+  })
+
   const handleClick = (e) => {
     e.stopPropagation()
     if (onStarClick) {
@@ -70,8 +94,14 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
   const handlePointerOver = (e) => {
     e.stopPropagation()
     setHovered(true)
-    if (onHover) {
-      onHover()
+    if (onHover && highlight && groupRef.current) {
+      // Get world position of the star
+      const worldPosition = new THREE.Vector3()
+      groupRef.current.getWorldPosition(worldPosition)
+      // Get mouse position from native DOM event for accurate positioning
+      const nativeEvent = e.nativeEvent || e
+      // Pass highlight data, 3D position, and native event to parent
+      onHover(highlight, worldPosition, nativeEvent)
     }
   }
 
@@ -85,6 +115,7 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
 
   return (
     <group
+      ref={groupRef}
       position={basePosition}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
@@ -92,7 +123,6 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
     >
       <mesh 
         ref={meshRef}
-        rotation={[0, 0, 0]}
       >
         <extrudeGeometry args={[starShape, extrudeSettings]} />
         <meshStandardMaterial
@@ -259,6 +289,47 @@ function StaticControls({
   )
 }
 
+// Component to project 3D coordinates to 2D screen coordinates
+function CoordinateProjector({ onProject }) {
+  const { camera, size } = useThree()
+  const canvasRef = useRef()
+
+  useEffect(() => {
+    // Get canvas element
+    const canvas = document.querySelector('canvas')
+    if (!canvas) return
+
+    canvasRef.current = canvas
+
+    // Function to project 3D to 2D
+    const project3DTo2D = (worldPosition) => {
+      if (!camera || !canvas) return null
+
+      // Project 3D world position to normalized device coordinates (NDC)
+      const vector = worldPosition.clone()
+      vector.project(camera)
+
+      // Convert NDC to screen pixel coordinates (within canvas)
+      const x = (vector.x * 0.5 + 0.5) * size.width
+      const y = (vector.y * -0.5 + 0.5) * size.height
+
+      // Get canvas position relative to viewport
+      const rect = canvas.getBoundingClientRect()
+      const screenX = rect.left + x
+      const screenY = rect.top + y
+
+      return { x: screenX, y: screenY }
+    }
+
+    // Expose projection function to parent
+    if (onProject) {
+      onProject(project3DTo2D)
+    }
+  }, [camera, size, onProject])
+
+  return null
+}
+
 // Loading fallback
 function Loading() {
   return (
@@ -267,6 +338,36 @@ function Loading() {
       <meshStandardMaterial color="#4CAF50" />
     </mesh>
   )
+}
+
+// Generate star positions - maximum 12 stars per tree
+// Returns only fixed positions, never more than 12
+// Two-row staggered layout: 8 stars in primary row, 4 stars in secondary row
+// Primary row: 0.45 unit spacing, Y: 1.95-2.1, spread from -1.5 to 1.5
+// Secondary row: positioned with 0.3+ spacing from primary stars, Y: 2.2-2.25
+// Raised vertical position for better visibility on tree canopy
+// Z-depth maintained at 1.4-1.5 for consistent front-facing position
+function generateStarPositions(count) {
+  const fixedPositions = [
+    // Primary row - evenly spaced with 0.45 unit gaps, wider spread
+    [-1.5, 2.05, 1.45],    // Star 1 - Far left, high
+    [-1.05, 1.95, 1.4],    // Star 2 - Left, medium (0.45 spacing from Star 1)
+    [-0.6, 2.1, 1.5],      // Star 3 - Left-center, high (0.45 spacing from Star 2)
+    [-0.15, 2.0, 1.45],    // Star 4 - Center-left, medium (0.45 spacing from Star 3)
+    [0.3, 2.05, 1.4],      // Star 5 - Center, high (0.45 spacing from Star 4)
+    [0.75, 1.95, 1.5],     // Star 6 - Center-right, medium (0.45 spacing from Star 5)
+    [1.2, 2.1, 1.45],      // Star 7 - Right, high (0.45 spacing from Star 6)
+    [1.5, 2.0, 1.4],       // Star 8 - Far right, medium (0.3 spacing from Star 7)
+    // Secondary row - positioned with maximum spacing from primary stars
+    [-1.3, 2.25, 1.5],     // Star 9 - Far left, very high (0.2 spacing from Star 1, 0.25 from Star 2, 0.2 Y difference)
+    [-0.4, 2.2, 1.4],      // Star 10 - Center-left, high (0.2 spacing from Star 3, 0.25 from Star 4, 0.2 Y difference)
+    [0.5, 2.2, 1.5],       // Star 11 - Center-right, high (0.2 spacing from Star 5, 0.25 from Star 6, 0.25 Y difference)
+    [1.3, 2.25, 1.45]      // Star 12 - Far right, very high (0.1 spacing from Star 7, 0.2 from Star 8, but 0.2 Y difference)
+  ];
+
+  // Ensure count never exceeds 12 (chunking should handle this, but enforce it here)
+  const maxCount = Math.min(count, 12);
+  return fixedPositions.slice(0, maxCount);
 }
 
 // Main component
@@ -280,12 +381,12 @@ export default function TreeModel({
   // Adjusted to shift view right (tree on left, right edge cropped) - matching 2nd picture
   // Camera positioned to the right (positive X) while maintaining same Y elevation
   cameraOffset = [2.5, 2.2, 7.5],
-  // Chunk of featured highlights for this tree (max 12)
+  // All featured highlights for this tree (no limit)
   chunkHighlights = [],
-  // Offset for this chunk (0 for first tree, 12 for second, etc.)
-  chunkOffset = 0,
   // All featured highlights (needed for StarModal to find the correct highlight)
   allFeaturedHighlights = [],
+  // Starting index of this chunk in allFeaturedHighlights (for StarModal to find correct highlight)
+  chunkStartIndex = 0,
   // Callback when model is loaded
   onLoad = null
 }) {
@@ -319,23 +420,57 @@ export default function TreeModel({
   const [isStarHovered, setIsStarHovered] = useState(false)
   // State to track if model is loaded
   const [isModelLoaded, setIsModelLoaded] = useState(false)
+  // State for hover preview overlay
+  const [hoveredStarData, setHoveredStarData] = useState(null)
+  const [hoveredStarScreenPos, setHoveredStarScreenPos] = useState(null)
+  // Ref to store projection function
+  const project3DTo2DRef = useRef(null)
 
-  // Handle star click - convert local starId (1-12) to global index
-  const handleStarClick = useCallback((localStarId) => {
-    // Convert local starId (1-12) to global index: chunkOffset + (localStarId - 1)
-    // Then add 1 because StarModal expects starId (1-based index)
-    const globalIndex = chunkOffset + (localStarId - 1)
-    setSelectedStarId(globalIndex + 1)
+  // Handle star click - starId is now the index in chunkHighlights array (1-based)
+  const handleStarClick = useCallback((starId) => {
+    // starId is 1-based index in the chunkHighlights array
+    // Convert to global index for StarModal: chunkStartIndex + (starId - 1) + 1
+    // The +1 at the end makes it 1-based for StarModal
+    const globalStarId = chunkStartIndex + starId
+    setSelectedStarId(globalStarId)
     setIsModalOpen(true)
-  }, [chunkOffset])
+  }, [chunkStartIndex])
 
-  // Handle star hover state for cursor change
-  const handleStarHover = useCallback(() => {
+  // Handle star hover - receives highlight data, 3D position, and mouse event
+  const handleStarHover = useCallback((highlight, worldPosition, event) => {
     setIsStarHovered(true)
+    
+    // Try to use mouse position from native DOM event first (most accurate)
+    if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
+      // Use mouse position directly with small offset to position near cursor
+      setHoveredStarScreenPos({
+        x: event.clientX + 15, // 15px to the right of cursor
+        y: event.clientY - 10   // 10px above cursor
+      })
+      setHoveredStarData(highlight)
+    } else if (project3DTo2DRef.current && worldPosition) {
+      // Fallback to 3D projection if mouse position not available
+      const screenPos = project3DTo2DRef.current(worldPosition)
+      if (screenPos) {
+        // Add small offset to position overlay near the star (slightly above and to the right)
+        setHoveredStarScreenPos({
+          x: screenPos.x + 15, // 15px to the right of the star
+          y: screenPos.y - 10  // 10px above the star (smaller offset for closer positioning)
+        })
+        setHoveredStarData(highlight)
+      }
+    }
   }, [])
 
   const handleStarHoverOut = useCallback(() => {
     setIsStarHovered(false)
+    setHoveredStarData(null)
+    setHoveredStarScreenPos(null)
+  }, [])
+
+  // Callback to receive projection function from CoordinateProjector
+  const handleProjectFunction = useCallback((projectFn) => {
+    project3DTo2DRef.current = projectFn
   }, [])
 
   // Handle modal close
@@ -379,9 +514,10 @@ export default function TreeModel({
   useEffect(() => {
     if (isModelLoaded && onLoad) {
       // Additional delay to ensure everything is rendered (stars, etc.)
+      // Increased delay to ensure tree is fully visible before hiding loading overlay
       const timer = setTimeout(() => {
         onLoad()
-      }, 500)
+      }, 800)
       return () => clearTimeout(timer)
     }
   }, [isModelLoaded, onLoad])
@@ -429,47 +565,36 @@ export default function TreeModel({
             />
             
             {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
-            {/* Only render stars 1 to chunkHighlights.length (max 12 per tree) */}
-            {/* Positions are relative to tree position, all in front (positive Z values) */}
-            {/* Star positions array - indexed by starId - 1 (0-11) */}
+            {/* Maximum 12 stars per tree - additional stars appear on new trees */}
             {(() => {
-              const starPositions = [
-                [-1.4, 2.0, 0.8],   // Star 1
-                [0.8, 1.75, 0.8],    // Star 2
-                [0.2, 1.8, 1.0],     // Star 3
-                [-0.2, 2, 1.0],      // Star 4
-                [-1.1, 1.7, 0.8],    // Star 5
-                [0.6, 2.1, 0.8],     // Star 6
-                [-0.5, 1.7, 0.9],    // Star 7
-                [-0.7, 2.1, 0.85],   // Star 8
-                [1.0, 1.9, 0.85],    // Star 9
-                [-1.3, 1.9, 0.9],    // Star 10
-                [0.4, 1.65, 0.9],    // Star 11
-                [-0.9, 1.85, 0.95]   // Star 12
-              ]
+              // Ensure we never render more than 12 stars (chunking should handle this)
+              const maxStars = Math.min(chunkHighlights.length, 12);
+              const highlightsToRender = chunkHighlights.slice(0, maxStars);
               
-              // Render stars only for chunk highlights (1 to chunkHighlights.length, max 12 per tree)
-              const starsToRender = starPositions.map((position, index) => {
-                const localStarId = index + 1 // 1-12 (local to this tree)
-                // Only render if there's a corresponding highlight in this chunk
-                if (localStarId <= chunkHighlights.length) {
-                  const highlight = chunkHighlights[localStarId - 1]
-                  const impactLevel = highlight?.impact_level || 'average'
-                  return (
-                    <Star 
-                      key={localStarId}
-                      position={position} 
-                      treePosition={treePosition}
-                      starId={localStarId}
-                      onStarClick={handleStarClick}
-                      onHover={handleStarHover}
-                      onHoverOut={handleStarHoverOut}
-                      impactLevel={impactLevel}
-                    />
-                  )
-                }
-                return null
-              }).filter(Boolean); // Remove null entries
+              // Generate positions for up to 12 stars
+              const starPositions = generateStarPositions(maxStars);
+              
+              // Render stars for highlights (max 12)
+              const starsToRender = highlightsToRender.map((highlight, index) => {
+                const starId = index + 1; // 1-based index
+                const position = starPositions[index];
+                const impactLevel = highlight?.impact_level || 'average';
+                
+                return (
+                  <Star 
+                    key={starId}
+                    position={position} 
+                    treePosition={treePosition}
+                    cameraOffset={cameraOffset}
+                    starId={starId}
+                    onStarClick={handleStarClick}
+                    onHover={handleStarHover}
+                    onHoverOut={handleStarHoverOut}
+                    impactLevel={impactLevel}
+                    highlight={highlight}
+                  />
+                );
+              });
               
               return starsToRender;
             })()}
@@ -479,9 +604,19 @@ export default function TreeModel({
               treePosition={treePosition} 
               cameraOffset={cameraOffset}
             />
+            
+            {/* Coordinate projector - handles 3D to 2D conversion */}
+            <CoordinateProjector onProject={handleProjectFunction} />
           </Suspense>
         </Canvas>
       </div>
+      
+      {/* Star Preview Overlay */}
+      <StarPreviewOverlay
+        highlight={hoveredStarData}
+        position={hoveredStarScreenPos}
+        isVisible={!!hoveredStarData && !!hoveredStarScreenPos}
+      />
       
       {/* Star Modal */}
       <StarModal 

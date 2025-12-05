@@ -19,26 +19,24 @@ function TreeNavigation({
   const canGoNext = currentIndex < totalTrees - 1
 
   return (
-    <div className={`${styles.navigationContainer} ${styles[`navigation${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
+    <div className={styles.navigationWrapper}>
       <button
-        className={`${styles.navButton} ${styles.navButtonPrevious} ${!canGoPrevious ? styles.navButtonDisabled : ''}`}
+        className={`${styles.navButton} ${styles.navButtonPrevious} ${styles[`navButton${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${!canGoPrevious ? styles.navButtonDisabled : ''}`}
         onClick={onPrevious}
         disabled={!canGoPrevious}
         aria-label="Previous tree"
         title="Previous tree"
       >
-        <span className={styles.navButtonText}>Previous</span>
         <FiChevronLeft className={styles.navButtonIcon} aria-hidden="true" />
       </button>
 
       <button
-        className={`${styles.navButton} ${styles.navButtonNext} ${!canGoNext ? styles.navButtonDisabled : ''}`}
+        className={`${styles.navButton} ${styles.navButtonNext} ${styles[`navButton${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${!canGoNext ? styles.navButtonDisabled : ''}`}
         onClick={onNext}
         disabled={!canGoNext}
         aria-label="Next tree"
         title="Next tree"
       >
-        <span className={styles.navButtonText}>Next</span>
         <FiChevronRight className={styles.navButtonIcon} aria-hidden="true" />
       </button>
     </div>
@@ -46,4 +44,3 @@ function TreeNavigation({
 }
 
 export default TreeNavigation
-

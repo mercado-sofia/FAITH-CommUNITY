@@ -50,13 +50,13 @@
 
 /* Background after organization is selected */
 .ecoBackgroundTree::before {
-  background-image: url('/assets/backgrounds/welcome-faithree/treebg.svg');
+  background-image: url('/assets/backgrounds/welcome-faithree/treebg.png');
 }
 
-/* Mobile backgrounds - use mobile SVG versions on smaller screens */
+/* Mobile backgrounds - use mobile PNG versions on smaller screens */
 @media (max-width: 768px) {
   .ecoBackgroundTree::before {
-    background-image: url('/assets/backgrounds/welcome-faithree/treebg_mobile.svg');
+    background-image: url('/assets/backgrounds/welcome-faithree/treebg-mobile.png');
   }
 }
 

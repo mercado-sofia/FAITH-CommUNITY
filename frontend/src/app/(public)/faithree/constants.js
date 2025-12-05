@@ -8,8 +8,6 @@ export const CHUNK_SIZE = 12; // Number of highlights per tree
 export const START_YEAR = 2010; // Starting year for the year filter
 
 // Loading delays (in milliseconds)
-export const LOADING_DELAY = 0; // Background preload delay (removed - no delay)
-export const MODEL_LOAD_DELAY = 0; // 3D model load delay (removed - no delay)
 export const BACKGROUND_PRELOAD_TIMEOUT = 500; // Fallback timeout for background images (reduced)
 
 // API configuration
@@ -40,5 +38,5 @@ export const STAR_MIN_OPACITY = 0.3;
 export const STAR_MAX_OPACITY = 1.0;
 
 // Background image paths
-export const TREE_BACKGROUND_PATH = '/assets/backgrounds/welcome-faithree/treebg.svg';
-export const TREE_BACKGROUND_PATH_MOBILE = '/assets/backgrounds/welcome-faithree/treebg_mobile.svg';
+export const TREE_BACKGROUND_PATH = '/assets/backgrounds/welcome-faithree/treebg.png';
+export const TREE_BACKGROUND_PATH_MOBILE = '/assets/backgrounds/welcome-faithree/treebg-mobile.png';

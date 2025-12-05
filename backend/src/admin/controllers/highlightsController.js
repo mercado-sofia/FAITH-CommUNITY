@@ -752,7 +752,8 @@ export const getApprovedHighlights = async (req, res) => {
         h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo${programIdSelect}${programTitleSelect}${yearSelect}
+        o.logo as organization_logo,
+        o.org_color as organization_color${programIdSelect}${programTitleSelect}${yearSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
       LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
@@ -835,7 +836,8 @@ export const getFeaturedHighlights = async (req, res) => {
         h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo${programIdSelect}${programTitleSelect}${yearSelect}
+        o.logo as organization_logo,
+        o.org_color as organization_color${programIdSelect}${programTitleSelect}${yearSelect}
       FROM featured_highlights fh
       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
       LEFT JOIN organizations o ON h.organization_id = o.id

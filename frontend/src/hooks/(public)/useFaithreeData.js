@@ -78,9 +78,13 @@ export function useFaithreeData() {
         const data = await response.json();
         const highlights = data.highlights || [];
         
-        // API already returns highlights in order (by display_order)
+        // Reverse highlights array to show most recent first
+        // API returns highlights ordered by display_order ASC (oldest first)
+        // We reverse to show newest (highest display_order) first
+        const reversedHighlights = [...highlights].reverse();
+        
         // No limit - can feature unlimited highlights
-        setFeaturedHighlights(highlights);
+        setFeaturedHighlights(reversedHighlights);
       } catch (error) {
         // Set empty array on error - stars won't show but page will still load
         setFeaturedHighlights([]);

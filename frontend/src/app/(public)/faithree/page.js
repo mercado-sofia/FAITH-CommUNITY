@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import styles from './faithree.module.css';
 import { TreeModel, PageLoadingOverlay, WelcomeSection, Filters, ImpactLevelShowcase, TreeNavigation } from './components';
 import { useFaithreeData } from '@/hooks/(public)/useFaithreeData';
@@ -9,8 +9,6 @@ import { useTheme } from '@/hooks/(public)/useTheme';
 import { useTreeNavigation } from '@/hooks/(public)/useTreeNavigation';
 import { generateRainDrops, generateStars } from '@/utils/(public)/backgroundEffects';
 import {
-  LOADING_DELAY,
-  MODEL_LOAD_DELAY,
   BACKGROUND_PRELOAD_TIMEOUT,
   TREE_BACKGROUND_PATH,
   TREE_BACKGROUND_PATH_MOBILE,
@@ -26,10 +24,15 @@ const prefersReducedMotion = typeof window !== 'undefined'
 
 function FAITHreePage() {
   // UI State
-  const [showWelcome, setShowWelcome] = useState(true); // Show welcome section initially
-  const [isInitialView, setIsInitialView] = useState(true); // Track if no organization has been selected yet
-  const [isModelLoading, setIsModelLoading] = useState(true); // Track 3D model loading
-  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false); // Track background SVG loading
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [isInitialView, setIsInitialView] = useState(true);
+  const [isModelLoading, setIsModelLoading] = useState(false); // Track 3D model and background loading
+  const [isTransitioningFromWelcome, setIsTransitioningFromWelcome] = useState(false); // Track transition from welcome screen
+  
+  // Track if model has been loaded at least once (to avoid unnecessary loading states)
+  const hasModelLoadedRef = useRef(false);
+  // Track previous filter values to detect actual filter changes
+  const prevFiltersRef = useRef({ organization: null, year: null });
 
   // Data fetching
   const { allOrganizations, featuredHighlights } = useFaithreeData();
@@ -51,6 +54,7 @@ function FAITHreePage() {
     // When theme changes, reset loading state to show overlay during model reload
     if (selectedOrganization !== null && filteredHighlights.length > 0) {
       setIsModelLoading(true);
+      hasModelLoadedRef.current = false; // Reset since model needs to reload with new theme
     }
   }, [selectedOrganization, filteredHighlights.length]);
 
@@ -75,6 +79,7 @@ function FAITHreePage() {
     return generateStars(prefersReducedMotion);
   }, []);
 
+
   // Prevent page scrolling since everything is full-screen and fixed
   useEffect(() => {
     if (typeof document === 'undefined' || !document.body) {
@@ -95,83 +100,96 @@ function FAITHreePage() {
     };
   }, []);
 
-  // Reset loading when filtered highlights change
+  // Reset loading when filtered highlights change - ONLY if filters actually changed
   useEffect(() => {
     // If no organization is selected, don't show loading
     if (selectedOrganization === null) {
       setIsModelLoading(false);
+      prevFiltersRef.current = { organization: null, year: null };
       return;
     }
     
-    // Set loading to true immediately when filters change
-    // This ensures the overlay is shown before the TreeModel starts rendering
-    setIsModelLoading(true);
+    // If we're transitioning from welcome screen, don't set loading to true here
+    // Loading is already set to true in handleContinue to ensure smooth transition
+    if (isTransitioningFromWelcome) {
+      setIsTransitioningFromWelcome(false);
+      // Don't modify isModelLoading here - it's already set to true in handleContinue
+      return;
+    }
+    
+    // Check if filters actually changed (not just navigating between trees)
+    const filtersChanged = 
+      prevFiltersRef.current.organization !== selectedOrganization ||
+      prevFiltersRef.current.year !== selectedYear;
+    
+    // Only set loading if:
+    // 1. Model hasn't loaded yet (first time), OR
+    // 2. Filters actually changed (organization or year changed)
+    if (!showWelcome && !isTransitioningFromWelcome) {
+      if (!hasModelLoadedRef.current || filtersChanged) {
+        // Set loading to true only when filters change or first load
+        setIsModelLoading(true);
+      }
+    }
+    
+    // Update previous filter values
+    prevFiltersRef.current = {
+      organization: selectedOrganization,
+      year: selectedYear
+    };
     
     // If no highlights, set loading to false immediately (no tree to render)
     if (filteredHighlights.length === 0) {
       setIsModelLoading(false);
     }
-  }, [filteredHighlights, selectedOrganization]);
+  }, [filteredHighlights, selectedOrganization, selectedYear, isTransitioningFromWelcome, showWelcome]);
 
-  // Handle tree load - add small delay to ensure tree is fully rendered
+  // Handle tree load - TreeModel waits for actual render completion via requestAnimationFrame
   const handleTreeLoad = useCallback(() => {
-    // Add a delay to ensure the tree model is fully rendered and visible
-    // This prevents the black cube from showing before the tree is ready
-    setTimeout(() => {
-      setIsModelLoading(false);
-    }, MODEL_LOAD_DELAY);
+    // TreeModel uses requestAnimationFrame to ensure canvas has rendered before calling this
+    setIsModelLoading(false);
+    hasModelLoadedRef.current = true; // Mark model as loaded
   }, []);
+
+  // Fallback: Clear loading state if tree model doesn't load within reasonable time
+  // This prevents the loading overlay from getting stuck
+  useEffect(() => {
+    if (!isModelLoading) return;
+    
+    // Set a maximum timeout for loading (10 seconds)
+    const maxLoadingTimeout = 10000;
+    const timeoutId = setTimeout(() => {
+      // Only clear if we're not on welcome screen and have an organization selected
+      if (!showWelcome && selectedOrganization !== null) {
+        console.warn('Tree model loading timeout - clearing loading state');
+        setIsModelLoading(false);
+      }
+    }, maxLoadingTimeout);
+
+    return () => clearTimeout(timeoutId);
+  }, [isModelLoading, showWelcome, selectedOrganization]);
 
   // Handle continue from welcome section - called when organization is selected (mode 2 completion)
   // Preload tree background SVG and hide welcome section
   const handleContinue = useCallback(() => {
-    setIsBackgroundLoading(true);
+    setIsTransitioningFromWelcome(true);
+    // Set loading to true immediately to show overlay during model loading
+    setIsModelLoading(true);
     
-    // Preload both desktop and mobile versions of tree background SVGs
+    // Show page immediately - don't wait for background images
+    setShowWelcome(false);
+    
+    // Preload both desktop and mobile versions of tree background SVGs (non-blocking)
     const treeBgImage = new Image();
     const treeBgImageMobile = new Image();
-    
-    let treeLoaded = false;
-    let treeMobileLoaded = false;
-    
-    const checkAllLoaded = () => {
-      if (treeLoaded && treeMobileLoaded) {
-        // Small delay to ensure smooth transition
-        setTimeout(() => {
-          setIsBackgroundLoading(false);
-          setShowWelcome(false);
-        }, LOADING_DELAY);
-      }
-    };
-    
-    treeBgImage.onload = () => {
-      treeLoaded = true;
-      checkAllLoaded();
-    };
-    treeBgImage.onerror = () => {
-      treeLoaded = true; // Mark as loaded even on error to not block
-      checkAllLoaded();
-    };
-    
-    treeBgImageMobile.onload = () => {
-      treeMobileLoaded = true;
-      checkAllLoaded();
-    };
-    treeBgImageMobile.onerror = () => {
-      treeMobileLoaded = true; // Mark as loaded even on error to not block
-      checkAllLoaded();
-    };
     
     // Load tree background images (desktop and mobile versions)
     treeBgImage.src = TREE_BACKGROUND_PATH;
     treeBgImageMobile.src = TREE_BACKGROUND_PATH_MOBILE;
     
-    // Fallback timeout in case images don't load
+    // Fallback timeout in case images don't load (reduced timeout for fallback only)
     setTimeout(() => {
-      if (!treeLoaded || !treeMobileLoaded) {
-        setIsBackgroundLoading(false);
-        setShowWelcome(false);
-      }
+      // Images will load in background, no need to block
     }, BACKGROUND_PRELOAD_TIMEOUT);
   }, []);
 
@@ -184,26 +202,20 @@ function FAITHreePage() {
     }
   }, [isInitialView, handleFilterOrganizationChange]);
 
-  // Handle tree navigation with loading state
+  // Handle tree navigation - NO loading state (just updates stars, model stays the same)
   const handleTreeSelect = useCallback((treeIndex) => {
-    const shouldShowLoading = handleNavTreeSelect(treeIndex);
-    if (shouldShowLoading) {
-      setIsModelLoading(true);
-    }
+    handleNavTreeSelect(treeIndex);
+    // Don't show loading - tree model doesn't need to reload, only stars update
   }, [handleNavTreeSelect]);
 
   const handlePreviousTree = useCallback(() => {
-    const shouldShowLoading = handleNavPreviousTree();
-    if (shouldShowLoading) {
-      setIsModelLoading(true);
-    }
+    handleNavPreviousTree();
+    // Don't show loading - tree model doesn't need to reload, only stars update
   }, [handleNavPreviousTree]);
 
   const handleNextTree = useCallback(() => {
-    const shouldShowLoading = handleNavNextTree();
-    if (shouldShowLoading) {
-      setIsModelLoading(true);
-    }
+    handleNavNextTree();
+    // Don't show loading - tree model doesn't need to reload, only stars update
   }, [handleNavNextTree]);
 
   return (
@@ -218,14 +230,12 @@ function FAITHreePage() {
         />
       )}
 
-      {/* Background Loading Overlay - Shows while SVG background is loading after continue */}
-      {isBackgroundLoading && <PageLoadingOverlay isLoading={true} />}
-
-      {/* Page Loading Overlay - Shows while 3D models are loading (only when organization is selected) */}
-      {!showWelcome && !isBackgroundLoading && selectedOrganization !== null && <PageLoadingOverlay isLoading={isModelLoading} />}
+      {/* Page Loading Overlay - Shows while background and 3D models are loading (only when organization is selected) */}
+      {/* Note: Overlay can show during transition from welcome screen to prevent flickering */}
+      {selectedOrganization !== null && <PageLoadingOverlay isLoading={isModelLoading} />}
       
       {/* Full-screen FAITHree Environment */}
-      {!showWelcome && !isBackgroundLoading && (
+      {!showWelcome && (
         <div 
           className={styles.faithreeContainer}
           aria-label="FAITHree interactive environment"
@@ -334,7 +344,7 @@ function FAITHreePage() {
                 <div className={styles.tree3D}>
                   <TreeModel 
                     theme={theme} 
-                    treePosition={[0, -1.8, 0]} 
+                    treePosition={[2.0, -1.8, 0]} 
                     chunkHighlights={currentTreeHighlights}
                     allFeaturedHighlights={filteredHighlights}
                     chunkStartIndex={currentTreeIndex * CHUNK_SIZE}

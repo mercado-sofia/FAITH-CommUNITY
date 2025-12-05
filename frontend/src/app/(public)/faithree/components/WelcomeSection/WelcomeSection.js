@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { LuMousePointerClick } from "react-icons/lu";
 import Filters from '../Filters/Filters';
 import styles from './WelcomeSection.module.css';
@@ -41,13 +42,17 @@ function WelcomeSection({
       <div className={styles.welcomeContainer}>
         {/* Main content */}
         <div className={styles.content}>
-          <img 
-            src="/assets/backgrounds/welcome-faithree/txt1.svg" 
-            alt="FAITHree" 
-            className={`${styles.textSvg1} ${isFadingOut ? styles.fadeOut : ''}`}
-          />
+          <div className={`${styles.textSvg1} ${isFadingOut ? styles.fadeOut : ''}`}>
+            <Image 
+              src="/assets/backgrounds/welcome-faithree/txt1.svg" 
+              alt="FAITHree" 
+              width={640}
+              height={192}
+              priority
+            />
+          </div>
           
-          <div className={styles.messageContainer}>
+          <div className={`${styles.messageContainer} ${isFadingOut ? styles.fadeOut : ''}`}>
             {/* Introduction Message */}
             <div className={`${styles.messageCard} ${styles.messageCardDark}`}>
               <div className={`${styles.messageIcon} ${styles.messageIconDark}`}>
@@ -89,7 +94,7 @@ function WelcomeSection({
           </div>
 
           <button
-            className={styles.continueButton}
+            className={`${styles.continueButton} ${isFadingOut ? styles.fadeOut : ''}`}
             onClick={handleWelcomeContinue}
             aria-label="Continue to organization selection"
           >
@@ -105,11 +110,15 @@ function WelcomeSection({
     <div className={styles.welcomeContainer}>
       {/* Main content */}
       <div className={styles.content}>
-        <img 
-          src="/assets/backgrounds/welcome-faithree/txt2.svg" 
-          alt="FAITHree" 
-          className={styles.textSvg2}
-        />
+        <div className={styles.textSvg2}>
+          <Image 
+            src="/assets/backgrounds/welcome-faithree/txt2.svg" 
+            alt="FAITHree" 
+            width={800}
+            height={224}
+            priority
+          />
+        </div>
         
         <div className={styles.organizationContainer}>
           <Filters

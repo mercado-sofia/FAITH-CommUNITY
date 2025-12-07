@@ -178,8 +178,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
   }), [sizeMultiplier])
 
   // Color and emissive based on impact level
-  // Small: muted brown-orange (#c29326), Average: yellow-orange (#ffd520), High: gold (#ffcf00)
-  const starColor = impactLevel === 'high' ? '#ffcf00' : impactLevel === 'average' ? '#ffd520' : '#c29326'
+  // Small: darker yellowish-orange (#ff9500), Average: medium yellowish-orange (#ffb347), High: bright yellowish-orange (#ffaa00)
+  const starColor = impactLevel === 'high' ? '#ffaa00' : impactLevel === 'average' ? '#ffb347' : '#ff9500'
   // Small: 0.3, Average: 0.5, High: 0.9
   const baseEmissiveIntensity = impactLevel === 'high' ? 0.9 : impactLevel === 'average' ? 0.5 : 0.3
   
@@ -570,6 +570,33 @@ export default function TreeModel({
   // State to track current tree position (updates in real-time)
   const [treePosition, setTreePosition] = useState(initialTreePosition)
 
+  // Detect mobile screen size for responsive camera positioning
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Adjust camera offset for mobile - zoom out more to show full tree
+  const adjustedCameraOffset = useMemo(() => {
+    if (isMobile) {
+      // On mobile: reduce Z to zoom in more and make tree appear bigger while maintaining visibility
+      return [3.5, cameraOffset[1], 9.5] // Even further reduced Z (9.5) to make tree bigger, still wide enough to prevent cutoff
+    }
+    return cameraOffset
+  }, [isMobile, cameraOffset])
+
+  // Adjust camera FOV for mobile - wider field of view to show more of the tree
+  const cameraFov = useMemo(() => {
+    return isMobile ? 80 : 66 // Even further reduced FOV (80) to make tree bigger while still preventing side cutoff
+  }, [isMobile])
+
   // State for star modal
   const [selectedStarId, setSelectedStarId] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -678,14 +705,18 @@ export default function TreeModel({
   }, [isModelLoaded, onLoad])
 
   // Calculate initial camera position - use saved position if available
+  // Memoize to update when mobile state or camera offset changes
   const savedCamPos = getSavedCameraPosition()
-  const initialCameraPosition = savedCamPos
-    ? [savedCamPos.x, savedCamPos.y, savedCamPos.z]
-    : [
-        treePosition[0] + cameraOffset[0],
-        treePosition[1] + cameraOffset[1],
-        treePosition[2] + cameraOffset[2]
-      ]
+  const initialCameraPosition = useMemo(() => {
+    if (savedCamPos) {
+      return [savedCamPos.x, savedCamPos.y, savedCamPos.z]
+    }
+    return [
+      treePosition[0] + adjustedCameraOffset[0],
+      treePosition[1] + adjustedCameraOffset[1],
+      treePosition[2] + adjustedCameraOffset[2]
+    ]
+  }, [savedCamPos, treePosition, adjustedCameraOffset])
 
   return (
     <>
@@ -693,11 +724,16 @@ export default function TreeModel({
         <Canvas
           camera={{ 
             position: initialCameraPosition, 
-            fov: 66,
+            fov: cameraFov,
             rotation: [0, 0, 0]
           }}
           gl={{ antialias: true }}
-          style={{ background: 'transparent', cursor: isStarHovered ? 'pointer' : 'default' }}
+          style={{ 
+            background: 'transparent', 
+            cursor: isStarHovered ? 'pointer' : 'default',
+            width: '100%',
+            height: '100%'
+          }}
         >
           <Suspense fallback={<Loading />}>
             {/* Lighting */}
@@ -740,7 +776,7 @@ export default function TreeModel({
                     key={starId}
                     position={position} 
                     treePosition={treePosition}
-                    cameraOffset={cameraOffset}
+                    cameraOffset={adjustedCameraOffset}
                     starId={starId}
                     onStarClick={handleStarClick}
                     onHover={handleStarHover}
@@ -757,7 +793,7 @@ export default function TreeModel({
             {/* Static controls - tree stays fixed, no rotation */}
             <StaticControls 
               treePosition={treePosition} 
-              cameraOffset={cameraOffset}
+              cameraOffset={adjustedCameraOffset}
             />
             
             {/* Coordinate projector - handles 3D to 2D conversion */}

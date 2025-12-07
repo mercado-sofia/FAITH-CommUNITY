@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaChevronRight } from 'react-icons/fa';
+import { FaChevronRight, FaFilter, FaTimes } from 'react-icons/fa';
 import styles from './Filters.module.css';
 
 function Filters({
@@ -14,21 +14,29 @@ function Filters({
   onOrganizationChange,
   onYearChange,
   theme = 'morning',
-  isCentered = false, // New prop for centered mode
-  useFlowPosition = false, // New prop to use relative positioning instead of fixed
+  hideMobileToggle = false, // When true, hides toggle button and drawer (for desktop sidebar)
 }) {
-  // In centered mode, org filter should be expanded by default
-  const [orgExpanded, setOrgExpanded] = useState(isCentered);
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
+  const orgDropdownRef = useRef(null);
   const yearDropdownRef = useRef(null);
+  const drawerRef = useRef(null);
 
-  // Update orgExpanded when isCentered changes
+  // Close organization dropdown when clicking outside
   useEffect(() => {
-    if (isCentered) {
-      setOrgExpanded(true);
+    const handleClickOutside = (event) => {
+      if (orgDropdownRef.current && !orgDropdownRef.current.contains(event.target)) {
+        setOrgDropdownOpen(false);
+      }
+    };
+
+    if (orgDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isCentered]);
+  }, [orgDropdownOpen]);
 
   // Close year dropdown when clicking outside
   useEffect(() => {
@@ -44,178 +52,229 @@ function Filters({
     }
   }, [yearDropdownOpen]);
 
+  // Toggle drawer function
+  const toggleDrawer = () => {
+    setIsDrawerOpen(!isDrawerOpen);
+  };
+
+  // Close drawer function
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+  };
+
+  // Close drawer on ESC key press
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isDrawerOpen) {
+        closeDrawer();
+      }
+    };
+
+    if (isDrawerOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isDrawerOpen]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (isDrawerOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isDrawerOpen]);
+
+  // Get display text for organization dropdown
+  const selectedOrg = organizations.find(org => org.id === selectedOrganization);
+  const orgDisplayText = selectedOrg ? selectedOrg.acronym : 'Select Organization';
+
   // Get display text for year dropdown
-  const yearDisplayText = selectedYear ? selectedYear.toString() : 'Select Year';
+  const yearDisplayText = showAllYears ? 'All Years' : (selectedYear ? selectedYear.toString() : 'Select Year');
 
   // Sort years descending (newest first)
   const sortedYears = [...years].sort((a, b) => b - a);
 
-  // Determine font sizes based on number of organizations
-  // Few orgs (<= 6): larger fonts, Many orgs (> 6): smaller fonts
-  const orgCount = organizations.length;
-  const isFewOrgs = orgCount <= 6;
-  const messageFontSize = isFewOrgs ? '1.25rem' : '1rem';
-  const chipFontSize = isFewOrgs ? '1.125rem' : '0.875rem';
-  const chipPadding = isFewOrgs ? '0.75rem 1.5rem' : '0.625rem 1.25rem';
+  // Handle organization selection
+  const handleOrganizationChange = (orgId) => {
+    onOrganizationChange(orgId);
+    setOrgDropdownOpen(false);
+  };
 
   // Handle year selection
-  const handleYearChange = (year) => {
-    onYearChange({ year, showAllYears });
+  const handleYearChange = (value) => {
+    if (value === 'all') {
+      onYearChange({ year: null, showAllYears: true });
+    } else {
+      onYearChange({ year: value, showAllYears: false });
+    }
     setYearDropdownOpen(false);
   };
 
-  // Handle year filter mode change (radio button selection)
-  const handleYearFilterModeChange = (mode) => {
-    if (mode === 'all') {
-      onYearChange({ year: null, showAllYears: true });
-    } else {
-      onYearChange({ year: selectedYear, showAllYears: false });
-    }
-  };
-
-  return (
-    <div className={`${styles.filtersWrapper} ${isCentered ? styles.centeredWrapper : ''} ${isCentered && useFlowPosition ? styles.flowPosition : ''}`}>
-      {/* Organization Filter - Separate Container */}
+  // Filter controls content (to be reused in both desktop and drawer)
+  const filterControls = (
+    <>
+      {/* Organization Filter - Dropdown Button */}
       {organizations.length > 0 && (
-        <div className={`${styles.filterContainer} ${isCentered ? styles.organizationFilter : styles.organizationFilterSidebar} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isCentered ? styles.centeredFilter : ''}`}>
-          {isCentered && (
-            <div className={styles.centeredMessage}>
-              <p 
-                className={styles.centeredMessageText}
-                style={{ fontSize: messageFontSize }}
-              >
-                Choose an organization to display their tree
-              </p>
-            </div>
-          )}
-          {!isCentered && (
-            <div 
-              className={styles.filterHeader}
-              onClick={() => setOrgExpanded(!orgExpanded)}
+        <div className={`${styles.organizationFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
+          <div 
+            className={styles.orgDropdownWrapper} 
+            ref={orgDropdownRef}
+          >
+            <div
+              className={`${styles.orgDropdownHeader} ${selectedOrganization ? styles.orgDropdownHeaderSelected : ''}`}
+              onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
+              style={{ cursor: 'pointer' }}
             >
-              <span className={styles.filterTitle}>Organization</span>
+              <div className={styles.orgDropdownHeaderContent}>
+                {selectedOrg && selectedOrg.logo && (
+                  <span className={styles.orgDropdownLogo}>
+                    <Image
+                      src={selectedOrg.logo}
+                      alt={selectedOrg.acronym}
+                      width={20}
+                      height={20}
+                      className={styles.orgDropdownLogoImage}
+                    />
+                  </span>
+                )}
+                <span>{orgDisplayText}</span>
+              </div>
               <FaChevronRight 
-                className={`${styles.expandIcon} ${orgExpanded ? styles.expandIconOpen : ''}`} 
+                className={`${styles.dropdownIcon} ${orgDropdownOpen ? styles.dropdownIconOpen : ''}`} 
               />
             </div>
-          )}
-          
-          {orgExpanded && (
-            <div className={styles.filterContent}>
-              <div className={styles.filterChips}>
+
+            {orgDropdownOpen && (
+              <div 
+                className={styles.orgDropdownOptions}
+                onClick={(e) => e.stopPropagation()}
+              >
                 {organizations.map((org) => (
-                  <button
+                  <div
                     key={org.id || `org-${org.acronym}`}
-                    className={`${styles.filterChip} ${selectedOrganization === org.id ? styles.active : ''}`}
-                    onClick={() => onOrganizationChange(org.id)}
-                    aria-label={`Filter by ${org.name}`}
-                    aria-pressed={selectedOrganization === org.id}
-                    style={isCentered ? { fontSize: chipFontSize, padding: chipPadding } : {}}
+                    className={`${styles.orgOption} ${selectedOrganization === org.id ? styles.orgOptionActive : ''}`}
+                    onClick={() => handleOrganizationChange(org.id)}
                   >
                     {org.logo && (
-                      <span className={styles.orgLogo}>
+                      <span className={styles.orgOptionLogo}>
                         <Image
                           src={org.logo}
                           alt={org.acronym}
                           width={20}
                           height={20}
-                          className={styles.orgLogoImage}
+                          className={styles.orgOptionLogoImage}
                         />
                       </span>
                     )}
-                    <span 
-                      className={styles.chipText}
-                      style={isCentered ? { fontSize: chipFontSize } : {}}
-                    >
-                      {org.acronym}
-                    </span>
-                  </button>
+                    <span className={styles.orgOptionText}>{org.acronym}</span>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Year Filter - Radio Buttons with Conditional Dropdown */}
-      {/* Hide year filter in centered mode */}
-      {!isCentered && years.length > 0 && (
-        <div className={`${styles.yearFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {/* Show All Years Radio */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input
-                type="radio"
-                id="showAllYears"
-                name="yearFilterMode"
-                checked={showAllYears}
-                onChange={() => handleYearFilterModeChange('all')}
-              />
-              <label 
-                htmlFor="showAllYears"
-                style={{ color: theme === 'rainy' ? 'white' : undefined }}
-              >
-                Show All Years
-              </label>
-            </div>
-
-            {/* Pick a Year Radio with Dropdown on the right */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="radio"
-                  id="pickAYear"
-                  name="yearFilterMode"
-                  checked={!showAllYears}
-                  onChange={() => handleYearFilterModeChange('pick')}
-                />
-                <label 
-                  htmlFor="pickAYear"
-                  style={{ color: theme === 'rainy' ? 'white' : undefined }}
-                >
-                  Pick a Year
-                </label>
-              </div>
-              
-              {/* Year Dropdown - Always render to maintain consistent spacing, but hide when "Show All Years" is selected */}
-              <div 
-                className={styles.yearDropdownWrapper} 
-                ref={yearDropdownRef}
-                style={{ visibility: !showAllYears ? 'visible' : 'hidden' }}
-              >
-                <div
-                  className={styles.yearDropdownHeader}
-                  onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <span>{yearDisplayText}</span>
-                  <FaChevronRight 
-                    className={`${styles.dropdownIcon} ${yearDropdownOpen ? styles.dropdownIconOpen : ''}`} 
-                  />
-                </div>
-
-                {yearDropdownOpen && (
-                  <div 
-                    className={styles.yearDropdownOptions}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {sortedYears.map((year) => (
-                      <div
-                        key={year}
-                        className={`${styles.yearOption} ${selectedYear === year ? styles.yearOptionActive : ''}`}
-                        onClick={() => handleYearChange(year)}
-                      >
-                        {year}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
-    </div>
+
+      {/* Year Filter - Dropdown */}
+      {years.length > 0 && (
+        <div className={`${styles.yearFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
+          <div 
+            className={styles.yearDropdownWrapper} 
+            ref={yearDropdownRef}
+          >
+            <div
+              className={`${styles.yearDropdownHeader} ${(showAllYears || selectedYear) ? styles.yearDropdownHeaderSelected : ''}`}
+              onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+              style={{ cursor: 'pointer' }}
+            >
+              <span>{yearDisplayText}</span>
+              <FaChevronRight 
+                className={`${styles.dropdownIcon} ${yearDropdownOpen ? styles.dropdownIconOpen : ''}`} 
+              />
+            </div>
+
+            {yearDropdownOpen && (
+              <div 
+                className={styles.yearDropdownOptions}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* All Years option */}
+                <div
+                  className={`${styles.yearOption} ${showAllYears ? styles.yearOptionActive : ''}`}
+                  onClick={() => handleYearChange('all')}
+                >
+                  All Years
+                </div>
+                {/* Year options */}
+                {sortedYears.map((year) => (
+                  <div
+                    key={year}
+                    className={`${styles.yearOption} ${selectedYear === year && !showAllYears ? styles.yearOptionActive : ''}`}
+                    onClick={() => handleYearChange(year)}
+                  >
+                    {year}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {/* Toggle Button - Mobile Only (hidden when hideMobileToggle is true) */}
+      {!hideMobileToggle && (
+        <button
+          className={styles.filterToggleButton}
+          onClick={toggleDrawer}
+          aria-label="Toggle filters"
+        >
+          <FaFilter className={styles.filterToggleIcon} />
+        </button>
+      )}
+
+      {/* Overlay/Backdrop */}
+      {!hideMobileToggle && isDrawerOpen && (
+        <div
+          className={styles.filterDrawerOverlay}
+          onClick={closeDrawer}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer Panel - Mobile Only (hidden when hideMobileToggle is true) */}
+      {!hideMobileToggle && (
+        <div
+          ref={drawerRef}
+          className={`${styles.filterDrawer} ${isDrawerOpen ? styles.filterDrawerOpen : ''}`}
+        >
+          <div className={styles.filterDrawerHeader}>
+            <h2 className={styles.filterDrawerTitle}>Filters</h2>
+            <button
+              className={styles.filterDrawerCloseButton}
+              onClick={closeDrawer}
+              aria-label="Close filters"
+            >
+              <FaTimes className={styles.filterDrawerCloseIcon} />
+            </button>
+          </div>
+          <div className={styles.filterDrawerContent}>
+            {filterControls}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop View - Filters Wrapper (hidden on mobile) */}
+      <div className={styles.filtersWrapper}>
+        {filterControls}
+      </div>
+    </>
   );
 }
 

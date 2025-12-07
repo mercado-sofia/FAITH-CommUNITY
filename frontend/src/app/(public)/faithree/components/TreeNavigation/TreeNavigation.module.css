@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem 1.8rem;
+  padding: 1.5rem 2.25rem; /* Increased padding for larger container */
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(248, 255, 248, 0.2) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -21,7 +21,7 @@
   box-shadow: 
     0 2px 8px rgba(76, 175, 80, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  max-width: 300px;
+  max-width: 380px; /* Increased max-width for desktop */
   position: relative;
   overflow: hidden;
 }
@@ -134,12 +134,21 @@
   }
 }
 
-.indicatorTextWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-}
+  .indicatorTextWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+  }
+
+  /* Mobile: Keep text in column layout (main text on top, count + message below) */
+  @media (max-width: 768px) {
+    .indicatorTextWrapper {
+      flex-direction: column; /* Keep vertical layout on mobile */
+      gap: 0.15rem;
+      align-items: center; /* Center align items */
+    }
+  }
 
 .indicatorTextMain {
   font-size: 0.9375rem; /* 15px */
@@ -148,6 +157,7 @@
   letter-spacing: 0.3px;
   line-height: 1.4;
   text-shadow: 0 1px 2px rgba(76, 175, 80, 0.1);
+  text-align: center; /* Center the text */
 }
 
 .treeIndicatorRainy .indicatorTextMain {
@@ -174,6 +184,7 @@
   opacity: 0.95;
   line-height: 1.4;
   margin-top: 0.15rem;
+  text-align: center; /* Center the text */
 }
 
 .treeIndicatorRainy .indicatorTextSub {
@@ -198,6 +209,24 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
+}
+
+/* Mobile: Separate buttons to left and right */
+@media (max-width: 768px) {
+  .navButtonsContainer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    justify-content: space-between;
+    gap: 0;
+    pointer-events: none; /* Allow clicks to pass through to buttons */
+  }
+
+  .navButtonsContainer > * {
+    pointer-events: auto; /* Re-enable clicks on buttons */
+  }
 }
 
 /* Navigation Button */
@@ -284,16 +313,33 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .navigationWrapper {
-    gap: 0.65rem;
+    flex-direction: row; /* Horizontal layout on mobile */
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: center; /* Center the message container */
+    width: 100%; /* Full width of parent (which is 80% of screen) */
+    position: relative;
   }
 
   .treeIndicator {
-    padding: 1rem 1.5rem;
-    max-width: 280px;
+    padding: 0.75rem 0; /* No horizontal padding */
+    max-width: calc(100% - 140px); /* Reduced width to make container narrower */
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    margin: 0 auto; /* Center the message */
+    position: relative;
+    z-index: 1; /* Below buttons container */
+    pointer-events: auto; /* Allow interaction with message */
+    padding-left: 35px; /* Only button space, no extra padding */
+    padding-right: 35px; /* Only button space, no extra padding */
   }
 
   .indicatorContent {
-    gap: 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .indicatorTextWrapper {
+    gap: 0.15rem;
   }
 
   .indicatorIcon {
@@ -303,14 +349,40 @@
 
   .indicatorTextMain {
     font-size: 0.8125rem; /* 13px */
+    white-space: normal; /* Allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center; /* Center text on mobile */
   }
 
   .indicatorTextSub {
     font-size: 0.7rem; /* 11px */
+    white-space: normal; /* Allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center; /* Center text on mobile */
   }
 
   .navButtonsContainer {
-    gap: 0.85rem;
+    gap: 0;
+    flex-shrink: 0; /* Don't shrink buttons */
+    display: flex;
+    position: absolute;
+    left: 0.5rem; /* Closer to message container */
+    right: 0.5rem; /* Closer to message container */
+    top: 50%;
+    transform: translateY(-50%);
+    justify-content: space-between;
+    align-items: center;
+    width: auto; /* Auto width since we're using left/right positioning */
+    z-index: 2; /* Above message container */
+    pointer-events: none; /* Allow clicks to pass through to buttons */
+  }
+
+  .navButtonsContainer > * {
+    pointer-events: auto; /* Re-enable clicks on buttons */
+    position: relative;
+    z-index: 3; /* Ensure buttons are clickable */
   }
 
   .navButton {
@@ -327,16 +399,55 @@
 
 @media (max-width: 480px) {
   .navigationWrapper {
-    gap: 0.6rem;
+    flex-direction: row; /* Horizontal layout on mobile */
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%; /* Full width of parent (which is 80% of screen) */
+    position: relative;
   }
 
   .treeIndicator {
-    padding: 0.95rem 1.35rem;
-    max-width: 260px;
+    padding: 0.8rem 0; /* No horizontal padding */
+    max-width: calc(100% - 40px); /* Reduced width to make container narrower */
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    margin: 0 auto; /* Center the message */
+    position: relative;
+    z-index: 1; /* Below buttons container */
+    pointer-events: auto; /* Allow interaction with message */
+    padding-left: 10px; 
+    padding-right: 10px;
+  }
+
+  .navButtonsContainer {
+    position: absolute;
+    left: 0.5rem; /* Closer to message container */
+    right: 0.5rem; /* Closer to message container */
+    top: 50%;
+    transform: translateY(-50%);
+    justify-content: space-between;
+    align-items: center;
+    width: auto; /* Auto width since we're using left/right positioning */
+    gap: 0;
+    z-index: 2; /* Above message container */
+    pointer-events: none; /* Allow clicks to pass through to buttons */
+  }
+
+  .navButtonsContainer > * {
+    pointer-events: auto; /* Re-enable clicks on buttons */
+    position: relative;
+    z-index: 3; /* Ensure buttons are clickable */
   }
 
   .indicatorContent {
-    gap: 0.6rem;
+    gap: 0.45rem;
+  }
+
+  .indicatorTextWrapper {
+    gap: 0.1rem;
+    flex-direction: column; /* Keep vertical layout on small mobile */
+    align-items: center; /* Center align items */
   }
 
   .indicatorIcon {
@@ -346,14 +457,39 @@
 
   .indicatorTextMain {
     font-size: 0.75rem; /* 12px */
+    white-space: normal; /* Allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center; /* Center text on smaller mobile */
   }
 
   .indicatorTextSub {
     font-size: 0.65rem; /* 10px */
+    white-space: normal; /* Allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center; /* Center text on smaller mobile */
   }
 
   .navButtonsContainer {
-    gap: 0.75rem;
+    gap: 0;
+    flex-shrink: 0; /* Don't shrink buttons */
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    z-index: 2; /* Above message container */
+    pointer-events: none; /* Allow clicks to pass through to buttons */
+  }
+
+  .navButtonsContainer > * {
+    pointer-events: auto; /* Re-enable clicks on buttons */
+    position: relative;
+    z-index: 3; /* Ensure buttons are clickable */
   }
 
   .navButton {
@@ -390,4 +526,3 @@
     transform: none;
   }
 }
-

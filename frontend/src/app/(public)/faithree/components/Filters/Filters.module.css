@@ -3,115 +3,13 @@
    ============================================ */
 .filtersWrapper {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-direction: row;
+  gap: 0.75rem;
   width: 100%;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  align-items: flex-start;
 }
 
-/* Centered wrapper for initial view */
-.filtersWrapper.centeredWrapper {
-  position: fixed;
-  top: 59%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  max-width: 800px;
-  width: 85%;
-  max-height: 90vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: centeredFilterFadeIn 0.5s ease-out;
-  /* Smooth scrolling on mobile */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(76, 175, 80, 0.3) transparent;
-  /* Ensure proper centering */
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  /* Center content inside wrapper */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Variant for centered wrapper that flows naturally (for WelcomeSection) */
-.filtersWrapper.centeredWrapper.flowPosition {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  max-height: none;
-}
-
-@keyframes centeredFilterFadeIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
-
-/* Centered message */
-.centeredMessage {
-  text-align: center;
-  margin-bottom: 1.25rem;
-  width: 100%;
-}
-
-.centeredMessageText {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #009977;
-  line-height: 1.5;
-  margin: 0;
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* Centered filter container */
-.filterContainer.centeredFilter {
-  background: white;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 4px solid #238172;
-  box-shadow: 
-    0 12px 48px rgba(0, 0, 0, 0.15),
-    0 6px 24px rgba(35, 129, 114, 0.25);
-  padding: 1.5rem;
-  animation: fadeInScale 0.5s ease-out;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: border-color 0.3s ease;
-}
-
-/* Centered filter container hover */
-.filterContainer.centeredFilter:hover {
-  border-color: #238172;
-  box-shadow: 
-    0 12px 48px rgba(0, 0, 0, 0.15),
-    0 6px 24px rgba(35, 129, 114, 0.35),
-    0 0 0 2px rgba(35, 129, 114, 0.2);
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 
 /* ============================================
    FILTER CONTAINER (Base Styles)
@@ -178,10 +76,6 @@
   background-color: rgba(135, 206, 250, 0.1);
 }
 
-/* Centered filter header - no hover effect since cursor is default */
-.filterContainer.centeredFilter .filterHeader:hover {
-  background-color: transparent;
-}
 
 .filterTitle {
   font-size: 0.875rem; /* 14px */
@@ -201,10 +95,6 @@
   right: 1rem;
 }
 
-/* Centered filter title - match theme color */
-.filterContainer.centeredFilter .filterTitle {
-  color: #009977;
-}
 
 .filterRainy .filterTitle {
   color: #E0F6FF;
@@ -217,10 +107,6 @@
   transform: rotate(0deg);
 }
 
-/* Centered filter expand icon - match theme color */
-.filterContainer.centeredFilter .expandIcon {
-  color: #009977;
-}
 
 .filterRainy .expandIcon {
   color: #E0F6FF;
@@ -239,25 +125,6 @@
   width: 100%;
 }
 
-/* Centered filter content - center the chips */
-.filterContainer.centeredFilter .filterContent {
-  display: flex;
-  justify-content: center;
-  padding: 0;
-}
-
-/* Organization filter in centered mode - wider width and no max-height (full height for initial view) */
-.filterContainer.centeredFilter.organizationFilter {
-  width: 100%;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.filterContainer.centeredFilter.organizationFilter .filterContent {
-  max-height: none;
-  overflow-y: visible;
-}
 
 /* Year filter content needs overflow visible for dropdown */
 .yearFilter .filterContent {
@@ -277,74 +144,305 @@
 }
 
 /* ============================================
-   ORGANIZATION FILTER
+   ORGANIZATION FILTER - DROPDOWN
    ============================================ */
-.organizationFilter,
-.organizationFilterSidebar {
-  width: 100%;
-  max-width: 300px;
+.organizationFilter {
+  width: auto; /* Fit content instead of 100% */
+  max-width: none; /* Remove max-width constraint */
+  overflow: visible;
+  position: relative;
+  z-index: 1002; /* Higher than year filter (1000) to ensure dropdown appears above */
+  border: none;
+  padding: 0.5rem 0 0.25rem 0;
 }
 
-/* Organization filter content - scrollable with max height */
-.organizationFilter .filterContent,
-.organizationFilterSidebar .filterContent {
+/* Remove border for rainy theme organization filter */
+.filterRainy.organizationFilter {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Organization Dropdown Wrapper */
+.orgDropdownWrapper {
+  position: relative;
+  width: auto; /* Fit content instead of 100% */
+  flex-shrink: 0;
+  z-index: 20; /* Higher than impact level container (z-index: 1) within left sidebar stacking context */
+}
+
+/* Organization Dropdown Header */
+.orgDropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 999px; /* Pill shape */
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1b5e20;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 3px 10px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(255, 255, 255, 0.2);
+  min-height: 36px;
+  width: fit-content;
+  min-width: auto;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.orgDropdownHeader:hover {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 5px 14px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(255, 255, 255, 0.3);
+}
+
+/* Selected state - same styling */
+.orgDropdownHeaderSelected {
+  border: none !important;
+  color: #1b5e20 !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.orgDropdownHeaderSelected .dropdownIcon {
+  color: #1b5e20 !important;
+}
+
+.orgDropdownHeaderContent {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem; /* Increased gap between logo and text */
+  flex: 1;
+  min-width: 0;
+  color: #1b5e20;
+}
+
+.orgDropdownHeaderContent span {
+  color: #1b5e20;
+}
+
+.orgDropdownLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; /* Increased to match 16px text */
+  height: 20px; /* Increased to match 16px text */
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.orgDropdownLogoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Organization Dropdown Options Container */
+.orgDropdownOptions {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: fit-content; /* Fit content instead of 100% */
+  min-width: auto; /* Remove fixed min-width to allow content-based sizing */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(76, 175, 80, 0.1);
+  z-index: 20; /* Higher than impact level container (z-index: 1) within left sidebar stacking context to ensure it appears above */
   max-height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Custom scrollbar for Firefox - Morning theme (green) */
+  animation: dropdownSlideDown 0.2s ease-out;
+  margin-top: 0.25rem;
+  /* Custom scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: rgba(46, 125, 50, 0.7) rgba(76, 175, 80, 0.15);
-  /* Smooth scrolling */
-  -webkit-overflow-scrolling: touch;
+  scrollbar-color: rgba(76, 175, 80, 0.5) rgba(76, 175, 80, 0.1);
+  /* Ensure border radius is preserved */
+  padding: 4px 0;
 }
 
-/* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) - Morning theme (green) */
-.organizationFilter .filterContent::-webkit-scrollbar,
-.organizationFilterSidebar .filterContent::-webkit-scrollbar {
+/* Webkit scrollbar styling for organization dropdown */
+.orgDropdownOptions::-webkit-scrollbar {
   width: 8px;
 }
 
-.organizationFilter .filterContent::-webkit-scrollbar-track,
-.organizationFilterSidebar .filterContent::-webkit-scrollbar-track {
-  background: rgba(76, 175, 80, 0.15);
-  border-radius: 4px;
+.orgDropdownOptions::-webkit-scrollbar-track {
+  background: transparent;
   margin: 4px 0;
 }
 
-.organizationFilter .filterContent::-webkit-scrollbar-thumb,
-.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb {
-  background: rgba(46, 125, 50, 0.7);
+.orgDropdownOptions::-webkit-scrollbar-thumb {
+  background: rgba(76, 175, 80, 0.5);
   border-radius: 4px;
-  border: 1px solid rgba(46, 125, 50, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.2);
   min-height: 30px;
 }
 
-.organizationFilter .filterContent::-webkit-scrollbar-thumb:hover,
-.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb:hover {
-  background: rgba(46, 125, 50, 0.85);
+.orgDropdownOptions::-webkit-scrollbar-thumb:hover {
+  background: rgba(76, 175, 80, 0.7);
 }
 
-/* Rainy theme scrollbar - white color */
-.filterRainy.organizationFilter .filterContent,
-.filterRainy.organizationFilterSidebar .filterContent {
-  /* Custom scrollbar for Firefox - Rainy theme (white) */
-  scrollbar-color: rgba(255, 255, 255, 0.7) rgba(255, 255, 255, 0.15);
+/* Organization Option */
+.orgOption {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #2e7d32;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
 }
 
-.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-track,
-.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.15);
+/* First and last organization option - ensure border radius on all corners */
+.orgOption:first-child {
+  border-radius: 8px 8px 0 0;
+  margin-top: 0;
 }
 
-.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-thumb,
-.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.orgOption:last-child {
+  border-radius: 0 0 8px 8px;
+  margin-bottom: 0;
 }
 
-.filterRainy.organizationFilter .filterContent::-webkit-scrollbar-thumb:hover,
-.filterRainy.organizationFilterSidebar .filterContent::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.9);
+.orgOption:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.orgOptionActive {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #1b5e20;
+  font-weight: 700;
+}
+
+.orgOptionActive:hover {
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+.orgOptionLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.orgOptionLogoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.orgOptionText {
+  flex: 0 1 auto; /* Allow shrinking but don't force expansion */
+  min-width: 0;
+  overflow: visible; /* Allow content to determine width */
+  text-overflow: clip; /* Don't truncate text */
+  white-space: nowrap;
+}
+
+/* Rainy Theme - Organization Dropdown */
+.filterRainy .orgDropdownHeader {
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.85) 0%, rgba(20, 84, 126, 0.75) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  color: #E0F6FF;
+  box-shadow: 
+    0 3px 10px rgba(0, 0, 0, 0.2),
+    0 1px 4px rgba(20, 84, 126, 0.2);
+}
+
+.filterRainy .orgDropdownHeader:hover {
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.85) 100%);
+  border: none;
+  box-shadow: 
+    0 5px 14px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(20, 84, 126, 0.3);
+}
+
+/* Rainy Theme - Selected state */
+.filterRainy .orgDropdownHeaderSelected {
+  color: #E0F6FF !important;
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.9) 0%, rgba(20, 84, 126, 0.8) 100%) !important;
+  border: none !important;
+}
+
+.filterRainy .orgDropdownHeaderSelected .dropdownIcon {
+  color: #E0F6FF !important;
+}
+
+.filterRainy .orgDropdownHeaderContent {
+  color: #E0F6FF;
+}
+
+.filterRainy .orgDropdownHeaderContent span {
+  color: #E0F6FF;
+}
+
+.filterRainy .orgDropdownOptions {
+  background: rgba(30, 52, 73, 0.98);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(20, 84, 126, 0.2);
+  z-index: 1003; /* Higher than year filter (1000) to ensure it appears above */
+  scrollbar-color: rgba(135, 206, 250, 0.5) rgba(135, 206, 250, 0.1);
+}
+
+/* Rainy theme scrollbar styling */
+.filterRainy .orgDropdownOptions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filterRainy .orgDropdownOptions::-webkit-scrollbar-thumb {
+  background: rgba(135, 206, 250, 0.5);
+  border: 1px solid rgba(135, 206, 250, 0.2);
+}
+
+.filterRainy .orgDropdownOptions::-webkit-scrollbar-thumb:hover {
+  background: rgba(135, 206, 250, 0.7);
+}
+
+.filterRainy .orgOption {
+  color: #E0F6FF;
+}
+
+.filterRainy .orgOption:hover {
+  background-color: rgba(135, 206, 250, 0.15);
+}
+
+.filterRainy .orgOptionActive {
+  background-color: rgba(135, 206, 250, 0.25);
+  color: #87CEEB;
+}
+
+.filterRainy .orgOptionActive:hover {
+  background-color: rgba(135, 206, 250, 0.3);
 }
 
 /* ============================================
@@ -357,10 +455,6 @@
   align-items: flex-start;
 }
 
-/* Centered filter chips - center alignment */
-.filterContainer.centeredFilter .filterChips {
-  justify-content: center;
-}
 
 .filterChip {
   display: inline-flex;
@@ -420,30 +514,6 @@
     0 3px 8px rgba(76, 175, 80, 0.25);
 }
 
-/* Centered filter chips - match theme color */
-.filterContainer.centeredFilter .filterChip {
-  background: rgba(255, 255, 255, 0.4);
-  border: 2px solid rgba(0, 153, 119, 0.4);
-  color: #009977;
-  font-size: 1rem;
-  padding: 0.625rem 1.125rem;
-}
-
-.filterContainer.centeredFilter .filterChip:hover {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: #007a5e;
-}
-
-.filterContainer.centeredFilter .filterChip.active {
-  background: white;
-  border-color: #007a5e;
-  color: #009977;
-}
-
-.filterContainer.centeredFilter .filterChip.active:hover {
-  background: white;
-  border-color: #00B894;
-}
 
 /* Rainy Theme - Filter Chips */
 .filterRainy .filterChip {
@@ -512,10 +582,6 @@
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Centered filter chip text - larger font */
-.filterContainer.centeredFilter .chipText {
-  font-size: 1rem;
-}
 
 /* ============================================
    YEAR FILTER
@@ -540,9 +606,9 @@
    ============================================ */
 .yearDropdownWrapper {
   position: relative;
-  width: auto;
+  width: fit-content;
   flex-shrink: 0;
-  z-index: 1000; /* High z-index to appear above impact level container and ensure dropdown is visible */
+  z-index: 100; /* Much higher than impact level container (z-index: 1) to ensure dropdown appears in front */
 }
 
 .yearDropdownHeader {
@@ -550,10 +616,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
-  background: white;
-  border: 2px solid rgba(76, 175, 80, 0.25);
-  border-radius: 24px;
-  font-size: 0.875rem; /* 14px */
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 999px; /* Pill shape */
+  font-size: 0.9375rem; /* 15px - matching org dropdown */
   font-weight: 600;
   color: #1b5e20;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -561,25 +629,40 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
     0 3px 10px rgba(0, 0, 0, 0.08),
-    0 1px 4px rgba(76, 175, 80, 0.1);
+    0 1px 4px rgba(255, 255, 255, 0.2);
   min-height: 36px;
-  min-width: 120px;
+  width: fit-content;
+  min-width: auto;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
+.yearDropdownHeader span {
+  color: #1b5e20;
+}
+
 .yearDropdownHeader:hover {
-  background: white;
-  border-color: rgba(76, 175, 80, 0.4);
+  background: rgba(255, 255, 255, 0.35);
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.1),
-    0 2px 6px rgba(76, 175, 80, 0.15);
+    0 2px 6px rgba(255, 255, 255, 0.3);
+}
+
+/* Selected state - same styling */
+.yearDropdownHeaderSelected {
+  border: none !important;
+  color: #1b5e20 !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.yearDropdownHeaderSelected .dropdownIcon {
+  color: #1b5e20 !important;
 }
 
 .dropdownIcon {
   font-size: 0.875rem; /* 14px */
-  color: #2e7d32;
+  color: #1b5e20;
   transition: transform 0.3s ease;
   transform: rotate(0deg);
   margin-left: 0.5rem;
@@ -593,16 +676,16 @@
 .yearDropdownOptions {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 0;
-  width: auto;
+  left: 0;
+  width: 100%; /* Match the header width */
   min-width: 120px;
   background: white;
   border-radius: 12px;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.12),
     0 4px 12px rgba(76, 175, 80, 0.1);
-  z-index: 1000; /* Very high z-index to ensure it appears above everything */
-  max-height: 200px;
+  z-index: 100; /* Much higher than impact level container (z-index: 1) to ensure it appears in front */
+  max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
   animation: dropdownSlideDown 0.2s ease-out;
@@ -764,7 +847,9 @@
 
 /* Rainy Theme - Year Dropdown */
 .filterRainy .yearDropdownHeader {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 0.98) 0%, rgba(20, 84, 126, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.85) 0%, rgba(20, 84, 126, 0.75) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: none;
   color: #E0F6FF;
   box-shadow: 
@@ -773,11 +858,26 @@
 }
 
 .filterRainy .yearDropdownHeader:hover {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.85) 100%);
   border: none;
   box-shadow: 
     0 5px 14px rgba(0, 0, 0, 0.25),
-    0 2px 6px rgba(20, 84, 126, 0.25);
+    0 2px 6px rgba(20, 84, 126, 0.3);
+}
+
+.filterRainy .yearDropdownHeader span {
+  color: #E0F6FF;
+}
+
+/* Rainy Theme - Selected state */
+.filterRainy .yearDropdownHeaderSelected {
+  color: #E0F6FF !important;
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.9) 0%, rgba(20, 84, 126, 0.8) 100%) !important;
+  border: none !important;
+}
+
+.filterRainy .yearDropdownHeaderSelected .dropdownIcon {
+  color: #E0F6FF !important;
 }
 
 .filterRainy .dropdownIcon {
@@ -842,19 +942,6 @@
 }
 
 @media (max-width: 768px) {
-  /* Centered wrapper adjustments for mobile */
-  .filtersWrapper.centeredWrapper {
-    top: 55%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 95%;
-    width: calc(100% - 2rem);
-    max-height: 85vh;
-    padding: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
   .filtersWrapper {
     top: 1rem;
     left: 1rem;
@@ -865,21 +952,6 @@
 
   .filterContainer {
     border-radius: 14px;
-  }
-
-  /* Centered filter container mobile adjustments */
-  .filterContainer.centeredFilter {
-    padding: 1.25rem;
-    border-width: 3px;
-  }
-
-  .centeredMessage {
-    margin-bottom: 1rem;
-  }
-
-  .centeredMessageText {
-    font-size: 1rem;
-    line-height: 1.4;
   }
 
   .filterHeader {
@@ -899,15 +971,7 @@
     padding: 0.85rem;
   }
 
-  .filterContainer.centeredFilter .filterContent {
-    padding: 0.75rem 0;
-  }
-
   .filterChips {
-    gap: 0.5rem;
-  }
-
-  .filterContainer.centeredFilter .filterChips {
     gap: 0.5rem;
   }
 
@@ -920,13 +984,54 @@
     touch-action: manipulation; /* Improve touch responsiveness */
   }
 
-  .filterContainer.centeredFilter .filterChip {
-    padding: 0.625rem 1.125rem;
-    font-size: 0.9375rem;
-    min-height: 38px;
+  .organizationFilter {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
   }
 
-  .orgLogo {
+  .orgDropdownWrapper {
+    width: auto;
+    max-width: 250px; /* Maximum width constraint */
+    min-width: auto; /* Fit to content */
+  }
+
+  .orgDropdownHeader {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9375rem; /* 15px */
+    min-height: 36px; /* Better touch target */
+    min-width: auto; /* Fit to content */
+    width: auto; /* Fit to content instead of 100% */
+    border-radius: 18px;
+    border-radius: 18px;
+    touch-action: manipulation;
+  }
+
+  .orgDropdownHeaderContent {
+    gap: 0.5rem; /* Increased gap between logo and text */
+  }
+
+  .orgDropdownLogo {
+    width: 18px; /* Increased to match 15px text */
+    height: 18px; /* Increased to match 15px text */
+  }
+
+  .orgDropdownOptions {
+    max-height: 250px;
+    border-radius: 12px;
+    min-width: 180px;
+    width: 100%;
+  }
+
+  .orgOption {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem; /* 15px */
+    min-height: 44px; /* Better touch target */
+    display: flex;
+    align-items: center;
+  }
+
+  .orgOptionLogo {
     width: 18px;
     height: 18px;
   }
@@ -935,8 +1040,7 @@
     padding: 0.5rem 1rem;
     font-size: 0.875rem; /* 14px */
     min-height: 36px; /* Better touch target */
-    border-radius: 20px;
-    touch-action: manipulation;
+    border-radius: 999px; /* Pill shape */
   }
 
   .dropdownIcon {
@@ -989,19 +1093,6 @@
 }
 
 @media (max-width: 480px) {
-  /* Centered wrapper adjustments for small mobile */
-  .filtersWrapper.centeredWrapper {
-    top: 55%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 98%;
-    width: calc(100% - 1rem);
-    max-height: 85vh;
-    padding: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
   .filtersWrapper {
     top: 0.75rem;
     left: 0.75rem;
@@ -1012,21 +1103,6 @@
 
   .filterContainer {
     border-radius: 12px;
-  }
-
-  /* Centered filter container small mobile adjustments */
-  .filterContainer.centeredFilter {
-    padding: 1rem;
-    border-width: 2.5px;
-  }
-
-  .centeredMessage {
-    margin-bottom: 0.875rem;
-  }
-
-  .centeredMessageText {
-    font-size: 0.9375rem;
-    line-height: 1.4;
   }
 
   .filterHeader {
@@ -1046,15 +1122,7 @@
     padding: 0.75rem;
   }
 
-  .filterContainer.centeredFilter .filterContent {
-    padding: 0.625rem 0;
-  }
-
   .filterChips {
-    gap: 0.4rem;
-  }
-
-  .filterContainer.centeredFilter .filterChips {
     gap: 0.4rem;
   }
 
@@ -1067,13 +1135,53 @@
     touch-action: manipulation;
   }
 
-  .filterContainer.centeredFilter .filterChip {
-    padding: 0.5625rem 1rem;
-    font-size: 0.875rem;
-    min-height: 36px;
+  .organizationFilter {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
   }
 
-  .orgLogo {
+  .orgDropdownWrapper {
+    width: auto;
+    max-width: 220px; /* Maximum width constraint */
+    min-width: auto; /* Fit to content */
+  }
+
+  .orgDropdownHeader {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9375rem; /* 15px */
+    min-height: 36px; /* Maintain good touch target */
+    min-width: auto; /* Fit to content */
+    width: auto; /* Fit to content instead of 100% */
+    border-radius: 16px;
+    border-radius: 999px; /* Pill shape */
+  }
+
+  .orgDropdownHeaderContent {
+    gap: 0.45rem; /* Increased gap between logo and text */
+  }
+
+  .orgDropdownLogo {
+    width: 18px; /* Increased to match 15px text */
+    height: 18px; /* Increased to match 15px text */
+  }
+
+  .orgDropdownOptions {
+    border-radius: 10px;
+    max-height: 220px;
+    min-width: 160px;
+    width: 100%;
+  }
+
+  .orgOption {
+    padding: 0.7rem 0.9rem;
+    font-size: 0.875rem; /* 14px */
+    min-height: 44px; /* Maintain good touch target */
+    display: flex;
+    align-items: center;
+  }
+
+  .orgOptionLogo {
     width: 16px;
     height: 16px;
   }
@@ -1083,7 +1191,7 @@
     font-size: 0.8125rem; /* 13px */
     min-height: 36px; /* Maintain good touch target */
     border-radius: 18px;
-    touch-action: manipulation;
+    border-radius: 999px; /* Pill shape */
   }
 
   .dropdownIcon {
@@ -1133,25 +1241,6 @@
    VERY SMALL SCREENS
    ============================================ */
 @media (max-width: 360px) {
-  .filtersWrapper.centeredWrapper {
-    max-width: 99%;
-    width: calc(100% - 0.5rem);
-  }
-
-  .filterContainer.centeredFilter {
-    padding: 0.875rem;
-  }
-
-  .centeredMessageText {
-    font-size: 0.875rem;
-  }
-
-  .filterContainer.centeredFilter .filterChip {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.8125rem;
-    min-height: 34px;
-  }
-
   .filterChip {
     padding: 0.45rem 0.8rem;
     font-size: 0.75rem;
@@ -1176,35 +1265,7 @@
    LANDSCAPE ORIENTATION ON MOBILE
    ============================================ */
 @media (max-width: 768px) and (orientation: landscape) {
-  .filtersWrapper.centeredWrapper {
-    top: 55%;
-    max-width: 90%;
-    width: auto;
-    max-height: 85vh;
-    overflow-y: auto;
-  }
-
-  .filterContainer.centeredFilter {
-    padding: 1rem;
-  }
-
-  .centeredMessage {
-    margin-bottom: 0.75rem;
-  }
-
-  .centeredMessageText {
-    font-size: 0.9375rem;
-  }
-
-  .filterContainer.centeredFilter .filterChips {
-    gap: 0.4rem;
-  }
-
-  .filterContainer.centeredFilter .filterChip {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.875rem;
-    min-height: 34px;
-  }
+  /* Landscape-specific styles can be added here if needed */
 }
 
 /* ============================================
@@ -1237,6 +1298,310 @@
 
   .expandIcon,
   .dropdownIcon {
+    transition: none;
+  }
+}
+
+/* ============================================
+   FILTER TOGGLE BUTTON - MOBILE ONLY
+   ============================================ */
+.filterToggleButton {
+  display: none; /* Hidden on desktop, shown on mobile via media query */
+  position: fixed;
+  top: 1.5rem; /* Same vertical position as theme toggle */
+  right: calc(1rem + 100px + 0.75rem); /* Position to the left of theme toggle: 1rem (theme toggle right) + ~100px (theme toggle width) + 0.75rem (gap) */
+  z-index: 10001; /* Higher than theme toggle (z-index: 10000) */
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 2px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(76, 175, 80, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filterToggleButton:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 255, 248, 0.95) 100%);
+  border-color: rgba(76, 175, 80, 0.5);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(76, 175, 80, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.filterToggleButton:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+.filterToggleIcon {
+  width: 20px;
+  height: 20px;
+  color: #2e7d32;
+  transition: transform 0.3s ease;
+}
+
+.filterToggleButton:hover .filterToggleIcon {
+  transform: rotate(15deg);
+}
+
+/* ============================================
+   FILTER DRAWER OVERLAY
+   ============================================ */
+.filterDrawerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10001; /* Higher than theme toggle (z-index: 10000) */
+  animation: fadeIn 0.3s ease-out;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   FILTER DRAWER - SIDE PANEL
+   ============================================ */
+.filterDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-width: 85vw;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: 
+    -4px 0 20px rgba(0, 0, 0, 0.15),
+    -2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 10002; /* Higher than overlay (z-index: 10001) */
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.filterDrawerOpen {
+  transform: translateX(0);
+}
+
+/* ============================================
+   FILTER DRAWER HEADER
+   ============================================ */
+.filterDrawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.25rem;
+  border-bottom: 1px solid rgba(76, 175, 80, 0.15);
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.filterDrawerTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #2e7d32;
+  margin: 0;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.filterDrawerCloseButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filterDrawerCloseButton:hover {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.filterDrawerCloseButton:active {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.filterDrawerCloseIcon {
+  width: 18px;
+  height: 18px;
+  color: #2e7d32;
+}
+
+/* ============================================
+   FILTER DRAWER CONTENT
+   ============================================ */
+.filterDrawerContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filterDrawerContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filterDrawerContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filterDrawerContent::-webkit-scrollbar-thumb {
+  background: rgba(76, 175, 80, 0.3);
+  border-radius: 3px;
+}
+
+.filterDrawerContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(76, 175, 80, 0.5);
+}
+
+/* Adjust filter styles inside drawer */
+.filterDrawerContent .filtersWrapper {
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filterDrawerContent .organizationFilter,
+.filterDrawerContent .yearFilter {
+  width: 100%;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE - SHOW TOGGLE BUTTON
+   ============================================ */
+@media (max-width: 768px) {
+  .filterToggleButton {
+    display: flex; /* Show on mobile */
+    right: calc(1rem + 100px + 0.75rem); /* Position to the left of theme toggle button with gap */
+  }
+
+  .filtersWrapper {
+    display: none; /* Hide desktop filters on mobile */
+  }
+
+  .filterDrawer {
+    display: flex; /* Show drawer on mobile */
+  }
+}
+
+/* Desktop - Hide toggle button and drawer */
+@media (min-width: 769px) {
+  .filterToggleButton {
+    display: none !important;
+  }
+
+  .filterDrawer {
+    display: none !important;
+  }
+
+  .filterDrawerOverlay {
+    display: none !important;
+  }
+
+  .filtersWrapper {
+    display: flex; /* Show desktop filters */
+  }
+}
+
+/* ============================================
+   SMALL MOBILE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 480px) {
+  .filterToggleButton {
+    top: 1rem; /* Same vertical position as theme toggle on smaller mobile */
+    right: calc(0.5rem + 90px + 0.5rem); /* Position to the left of theme toggle button (adjusted for smaller screens with gap) */
+    width: 44px;
+    height: 44px;
+  }
+
+  .filterToggleIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .filterDrawer {
+    width: 280px;
+    max-width: 90vw;
+  }
+
+  .filterDrawerHeader {
+    padding: 1.25rem 1rem;
+  }
+
+  .filterDrawerTitle {
+    font-size: 1rem;
+  }
+
+  .filterDrawerContent {
+    padding: 1rem;
+    gap: 0.875rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .filterToggleButton {
+    top: 1rem; /* Same vertical position as theme toggle on very small mobile */
+    right: calc(0.25rem + 85px + 0.5rem); /* Position to the left of theme toggle button (adjusted for very small screens with gap) */
+    width: 40px;
+    height: 40px;
+  }
+
+  .filterToggleIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .filterDrawer {
+    width: 260px;
+    max-width: 95vw;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION - DRAWER
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .filterDrawer {
+    transition: none;
+  }
+
+  .filterDrawerOverlay {
+    animation: none;
+  }
+
+  .filterToggleButton {
+    transition: none;
+  }
+
+  .filterToggleIcon {
     transition: none;
   }
 }

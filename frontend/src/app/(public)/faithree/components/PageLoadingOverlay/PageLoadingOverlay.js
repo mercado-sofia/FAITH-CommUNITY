@@ -5,23 +5,21 @@ import styles from './PageLoadingOverlay.module.css';
 
 export default function PageLoadingOverlay({ isLoading }) {
   const [isVisible, setIsVisible] = useState(true);
-  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
       // Reset state when loading starts (prevents flickering when loading toggles)
       setIsVisible(true);
-      setIsAnimatingOut(false);
-    } else if (isVisible && !isAnimatingOut) {
+    } else {
       // Hide immediately when loading stops
       setIsVisible(false);
     }
-  }, [isLoading, isVisible, isAnimatingOut]);
+  }, [isLoading]);
 
   if (!isVisible) return null;
 
   return (
-    <div className={`${styles.pageLoadingOverlay} ${isAnimatingOut ? styles.fadeOut : ''}`}>
+    <div className={styles.pageLoadingOverlay}>
       <div className={styles.loadingContent}>
         {/* Simple creative loading spinner - circular dots */}
         <div className={styles.loaderContainer}>

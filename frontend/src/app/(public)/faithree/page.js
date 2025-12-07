@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import styles from './faithree.module.css';
 import { TreeModel, PageLoadingOverlay, WelcomeSection, Filters, ImpactLevelShowcase, TreeNavigation } from './components';
 import { useFaithreeData } from '@/hooks/(public)/useFaithreeData';
@@ -28,9 +28,6 @@ function FAITHreePage() {
   const [isInitialView, setIsInitialView] = useState(true);
   const [isModelLoading, setIsModelLoading] = useState(false); // Track 3D model and background loading
   const [isTransitioningFromWelcome, setIsTransitioningFromWelcome] = useState(false); // Track transition from welcome screen
-  
-  // Track if model has been loaded at least once (to avoid unnecessary loading states)
-  const hasModelLoadedRef = useRef(false);
 
   // Data fetching
   const { allOrganizations, featuredHighlights } = useFaithreeData();
@@ -52,7 +49,6 @@ function FAITHreePage() {
     // When theme changes, show loading overlay since the 3D tree model needs to reload
     if (selectedOrganization !== null && filteredHighlights.length > 0 && oldTheme) {
       setIsModelLoading(true);
-      hasModelLoadedRef.current = false; // Reset since model needs to reload with new theme
     }
   }, [selectedOrganization, filteredHighlights.length]);
 
@@ -76,7 +72,6 @@ function FAITHreePage() {
   const stars = useMemo(() => {
     return generateStars(prefersReducedMotion);
   }, []);
-
 
   // Prevent page scrolling since everything is full-screen and fixed
   useEffect(() => {
@@ -125,7 +120,6 @@ function FAITHreePage() {
   const handleTreeLoad = useCallback(() => {
     // TreeModel uses requestAnimationFrame to ensure canvas has rendered before calling this
     setIsModelLoading(false);
-    hasModelLoadedRef.current = true; // Mark model as loaded
   }, []);
 
   // Fallback: Clear loading state if tree model doesn't load within reasonable time
@@ -267,6 +261,24 @@ function FAITHreePage() {
             )}
           </div>
           
+          {/* Rainy Mode Message */}
+          {theme === 'rainy' && (
+            <div className={styles.rainyMessage}>
+              <p>No success stories yet... but the seeds are planted! 🌱</p>
+            </div>
+          )}
+          
+          {/* Sunny Mode Success Message */}
+          {theme !== 'rainy' && filteredHighlights.length > 0 && selectedOrganization && (() => {
+            const selectedOrg = allOrganizations.find(org => org.id === selectedOrganization);
+            const orgName = selectedOrg?.acronym || selectedOrg?.name || 'This organization';
+            return (
+              <div className={styles.sunnyMessage}>
+                <p><strong>{orgName}</strong> made <strong>{filteredHighlights.length}</strong> {filteredHighlights.length === 1 ? 'success story' : 'success stories'} so far and counting!</p>
+              </div>
+            );
+          })()}
+          
           {/* Rolling hills - SVG paths - Hidden in rainy mode */}
           {theme !== 'rainy' && (
             <div className={styles.hills}>
@@ -335,21 +347,51 @@ function FAITHreePage() {
           </div>
         )}
 
-        {/* Left Sidebar - Filters and Impact Level Showcase */}
+        {/* Bottom White Container - 34% height, in front of tree */}
+        {!isInitialView && (
+          <div className={styles.bottomGreenContainer}>
+            {/* Impact Level Showcase - Mobile only, inside bottom container */}
+            <div className={styles.mobileImpactLevelContainer}>
+              <ImpactLevelShowcase theme={theme} />
+            </div>
+          </div>
+        )}
+
+        {/* Filters Component - Rendered outside sidebar so toggle button is always visible on mobile */}
+        {!isInitialView && (
+          <Filters
+            organizations={allOrganizations}
+            years={uniqueYears}
+            selectedOrganization={selectedOrganization}
+            selectedYear={selectedYear}
+            showAllYears={showAllYears}
+            onOrganizationChange={handleOrganizationChange}
+            onYearChange={handleFilterYearChange}
+            theme={theme}
+          />
+        )}
+
+        {/* Left Sidebar - Desktop filters and Impact Level Showcase */}
         {!isInitialView && (
           <div className={styles.leftSidebar}>
-            <Filters
-              organizations={allOrganizations}
-              years={uniqueYears}
-              selectedOrganization={selectedOrganization}
-              selectedYear={selectedYear}
-              showAllYears={showAllYears}
-              onOrganizationChange={handleOrganizationChange}
-              onYearChange={handleFilterYearChange}
-              theme={theme}
-              isCentered={false}
-            />
-            <ImpactLevelShowcase theme={theme} />
+            {/* Desktop filters - hidden on mobile, shown in sidebar */}
+            <div className={styles.desktopFiltersOnly}>
+              <Filters
+                organizations={allOrganizations}
+                years={uniqueYears}
+                selectedOrganization={selectedOrganization}
+                selectedYear={selectedYear}
+                showAllYears={showAllYears}
+                onOrganizationChange={handleOrganizationChange}
+                onYearChange={handleFilterYearChange}
+                theme={theme}
+                hideMobileToggle={true}
+              />
+            </div>
+            {/* Impact Level Showcase - Desktop only */}
+            <div className={styles.desktopImpactLevelContainer}>
+              <ImpactLevelShowcase theme={theme} />
+            </div>
           </div>
         )}
 

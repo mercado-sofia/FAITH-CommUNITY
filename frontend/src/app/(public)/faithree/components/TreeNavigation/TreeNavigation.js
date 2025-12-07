@@ -39,7 +39,7 @@ function TreeNavigation({
                   More highlights await
                 </span>
                 <span className={styles.indicatorTextSub}>
-                  {totalRemainingHighlights} {totalRemainingHighlights === 1 ? 'story' : 'stories'} waiting to be discovered →
+                  Discover {totalRemainingHighlights} {totalRemainingHighlights === 1 ? 'story' : 'stories'} more →
                 </span>
               </div>
             </div>
@@ -50,7 +50,7 @@ function TreeNavigation({
                   More highlights behind you
                 </span>
                 <span className={styles.indicatorTextSub}>
-                  ← Explore previous trees
+                  ← Discover more
                 </span>
               </div>
             </div>

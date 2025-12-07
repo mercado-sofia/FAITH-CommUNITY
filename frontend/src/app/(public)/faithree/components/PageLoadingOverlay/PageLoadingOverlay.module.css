@@ -161,6 +161,11 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .pageLoadingOverlay {
+    top: 70px; /* Start below navbar on mobile (navbar is 70px on mobile) */
+    height: calc(100vh - 70px); /* Full height minus navbar - only covers tree model page */
+  }
+
   .loadingContent {
     gap: 1.25rem;
     padding: 1.5rem;

@@ -198,6 +198,73 @@
   display: none;
 }
 
+/* Rainy Mode Message */
+.rainyMessage {
+  position: absolute;
+  top: 8rem; /* Position below theme toggle */
+  right: 16rem;
+  z-index: 9999; /* Below theme toggle but above other content */
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.85) 0%, rgba(20, 84, 126, 0.75) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(135, 206, 250, 0.3);
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(20, 84, 126, 0.2);
+  animation: fadeInSlideDown 0.6s ease-out;
+  max-width: 280px;
+  pointer-events: auto;
+}
+
+.rainyMessage p {
+  margin: 0;
+  font-size: 1rem; /* 16px */
+  font-weight: 500;
+  color: #E0F6FF;
+  line-height: 1.5;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: left;
+}
+
+@keyframes fadeInSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sunny Mode Success Message */
+.sunnyMessage {
+  position: absolute;
+  top: 8rem; /* Position below theme toggle */
+  right: 21rem;
+  z-index: 9999; /* Below theme toggle but above other content */
+  animation: fadeInSlideDown 0.6s ease-out;
+  max-width: 240px;
+  pointer-events: auto;
+}
+
+.sunnyMessage p {
+  margin: 0;
+  font-size: 1rem; /* 16px */
+  font-weight: 500;
+  color: #1b5e20;
+  line-height: 1.5;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: center;
+}
+
+.sunnyMessage p strong {
+  font-weight: 700;
+  color: #2e7d32;
+}
+
 /* Click Me Button Container - Top Left (Mobile) */
 .instructionToggleContainer {
   display: none; /* Hidden on desktop, shown on mobile */
@@ -779,6 +846,19 @@
   animation: sidebarFadeIn 0.6s ease-out;
 }
 
+/* Desktop filters only - shown in sidebar on desktop */
+.desktopFiltersOnly {
+  display: block;
+  width: 100%;
+}
+
+/* Hide desktop filters on mobile */
+@media (max-width: 768px) {
+  .desktopFiltersOnly {
+    display: none;
+  }
+}
+
 @keyframes sidebarFadeIn {
   from {
     opacity: 0;
@@ -824,6 +904,62 @@
 
 .rightSidebar > * {
   pointer-events: auto;
+}
+
+/* Bottom White Container - Mobile only (32% height), hidden on desktop */
+.bottomGreenContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 0; /* No height on desktop */
+  background: #ffffff; /* White background like the image */
+  border-radius: 30px 30px 0 0; /* Top left and top right corners rounded */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 -2px 8px rgba(0, 0, 0, 0.04); /* Subtle drop shadow like the image */
+  z-index: 6; /* Higher than tree (z-index: 5) to be in front */
+  pointer-events: none; /* Disable interaction on desktop */
+  display: none; /* Hidden on desktop */
+  align-items: center; /* Center content vertically */
+  justify-content: center; /* Center content horizontally */
+  padding: 1rem 1rem 1.5rem 1rem; /* More bottom padding to prevent overlap */
+  box-sizing: border-box;
+}
+
+/* Mobile Impact Level Container - inside bottom container */
+.mobileImpactLevelContainer {
+  display: none; /* Hidden on desktop */
+  padding-top: 0; /* Will be set on mobile */
+}
+
+/* Desktop Impact Level Container - in sidebar */
+.desktopImpactLevelContainer {
+  display: block; /* Visible on desktop */
+}
+
+@media (max-width: 768px) {
+  /* Bottom container - 32% height on mobile only */
+  .bottomGreenContainer {
+    height: 32%; /* 32% height on mobile */
+    display: flex; /* Show on mobile */
+    pointer-events: auto; /* Enable interaction on mobile */
+    padding: 1.5rem 1.5rem 2rem 1rem; /* Increased right padding: top 1.5rem, right 1.5rem, bottom 2rem, left 1rem */
+    align-items: center; /* Center content vertically */
+    justify-content: center; /* Center content horizontally */
+    background: #ffffff; /* White background like the image */
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 -2px 8px rgba(0, 0, 0, 0.04); /* Subtle drop shadow like the image */
+  }
+
+  .mobileImpactLevelContainer {
+    display: block; /* Show on mobile */
+    width: 100%;
+    max-width: 100%;
+    padding-top: 0; /* No extra padding - use container padding only */
+  }
+
+  .desktopImpactLevelContainer {
+    display: none; /* Hide on mobile */
+  }
 }
 
 /* Floating Ground with Tree - Centered */
@@ -918,6 +1054,20 @@
   .faithreeContainer {
     top: 70px; /* Smaller navbar on mobile */
     height: calc(100vh - 70px);
+    overflow: visible; /* Allow tree to extend beyond viewport */
+  }
+
+  /* Allow tree to extend beyond viewport on mobile */
+  .ecoBackground {
+    overflow: visible; /* Change from hidden to visible to prevent clipping */
+  }
+
+  /* Allow trees container to extend beyond viewport on mobile */
+  .treesContainer {
+    width: 120%; /* Wider than viewport to prevent clipping */
+    max-width: none;
+    left: 50%;
+    transform: translateX(-50%); /* Center the wider container */
   }
 
   .leftSidebar {
@@ -926,18 +1076,35 @@
     right: 1rem;
     max-width: none;
     width: calc(100% - 2rem);
+    display: none; /* Hide left sidebar on mobile since filters are in drawer */
+  }
+
+  /* Desktop filters only - hidden on mobile */
+  .desktopFiltersOnly {
+    display: none;
+  }
+
+  /* Organization Filter is now in drawer on mobile - remove fixed positioning */
+  .leftSidebar > *:first-child {
+    display: none; /* Hide filters in sidebar on mobile - they're in drawer now */
+  }
+
+  /* Impact Level Showcase is now in bottom container on mobile - hide from sidebar */
+  .leftSidebar > *:last-child {
+    display: none; /* Hidden on mobile - shown in bottom container instead */
   }
 
   .rightSidebar {
     top: auto;
-    bottom: 1rem;
-    right: 1rem;
-    left: 1rem;
+    bottom: calc(32% + 2.5rem); /* Position at bottom of 68% area (above the 32% container) - lifted up */
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
     max-width: none;
-    width: calc(100% - 2rem);
+    width: 80%; /* 80% width on mobile */
     flex-direction: row;
     gap: 0.75rem;
-    align-items: flex-end;
+    align-items: center;
   }
 
   .rightSidebar > * {
@@ -993,6 +1160,32 @@
     top: 1.5rem;
     right: 1rem;
     z-index: 10000;
+  }
+  
+  /* Rainy Mode Message - Mobile */
+  .rainyMessage {
+    top: 5rem; /* Position below theme toggle on mobile */
+    right: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  .rainyMessage p {
+    font-size: 1rem; /* 16px - same as desktop */
+  }
+  
+  /* Sunny Mode Success Message - Mobile */
+  .sunnyMessage {
+    top: 5rem; /* Position below theme toggle on mobile */
+    left: 50%; /* Center horizontally */
+    right: auto; /* Remove right positioning */
+    transform: translateX(-50%); /* Center the element */
+    max-width: calc(100% - 1rem); /* Wider width - use almost full screen with minimal margins */
+    width: auto; /* Allow content to determine width up to max-width */
+    padding: 0.75rem 1rem; /* Add padding for better text spacing */
+  }
+  
+  .sunnyMessage p {
+    font-size: 1rem; /* 16px - same as desktop */
   }
   
   .themeToggleButton {
@@ -1084,21 +1277,53 @@
   .tree3D {
     min-width: 100%;
     min-height: 1200px;
-    max-width: 100vw;
+    max-width: none; /* Remove viewport constraint to prevent clipping */
     max-height: none;
     width: 100%;
+    /* Allow tree to extend beyond viewport to prevent clipping */
+    margin-left: -10%;
+    margin-right: -10%;
+    padding-left: 10%;
+    padding-right: 10%;
   }
   
   
   .floatingGround {
-    top: 89%; /* Lifted */
+    top: 70%; /* Moved down further for mobile */
+    left: 52%; /* Shifted right on mobile */
+    transform: translate(-50%, -50%) scale(1.3); /* Much bigger for mobile */
+    /* Allow overflow on both sides */
+    width: 120%; /* Wider container to prevent clipping */
+    max-width: none;
   }
 }
 
 @media (max-width: 480px) {
+  /* Organization Filter is now in drawer on mobile - no positioning needed */
+  .leftSidebar > *:first-child {
+    display: none; /* Hide filters in sidebar on mobile - they're in drawer now */
+  }
+
+  /* Impact Level Showcase is now in bottom container on mobile - hide from sidebar */
+  .leftSidebar > *:last-child {
+    display: none; /* Hidden on mobile - shown in bottom container instead */
+  }
+
   .faithreeContainer {
     top: 70px; /* Smaller navbar on mobile */
     height: calc(100vh - 70px);
+  }
+
+  .bottomGreenContainer {
+    padding: 1.25rem 1.25rem 1.75rem 0.75rem; /* Increased right padding: top 1.25rem, right 1.25rem, bottom 1.75rem, left 0.75rem */
+    background: #ffffff; /* White background like the image */
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 -2px 8px rgba(0, 0, 0, 0.04); /* Subtle drop shadow like the image */
+  }
+
+  /* Sunny Mode Success Message - Small Mobile */
+  .sunnyMessage {
+    max-width: calc(100% - 0.75rem); /* Wider width - use almost full screen with minimal margins */
+    padding: 0.75rem 0.875rem; /* Slightly less padding on small screens */
   }
 
   .leftSidebar {
@@ -1107,14 +1332,16 @@
     right: 0.75rem;
     width: calc(100% - 1.5rem);
     gap: 0.75rem;
+    display: none; /* Hide left sidebar on mobile since filters are in drawer */
   }
 
   .rightSidebar {
     top: auto;
-    bottom: 0.75rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    width: calc(100% - 1.5rem);
+    bottom: calc(32% + 2.5rem); /* Position at bottom of 68% area (above the 32% container) - lifted up */
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 75%; /* 75% width on mobile */
     gap: 0.6rem;
   }
   
@@ -1194,13 +1421,23 @@
   .tree3D {
     min-width: 100%;
     min-height: 1100px;
-    max-width: 100vw;
+    max-width: none; /* Remove viewport constraint */
     max-height: none;
     width: 100%;
+    /* Allow tree to extend beyond viewport to prevent clipping */
+    margin-left: -10%;
+    margin-right: -10%;
+    padding-left: 10%;
+    padding-right: 10%;
   }
   
   .floatingGround {
-    top: 89%; /* Lifted */
+    top: 70%; /* Moved down further for mobile */
+    left: 52%; /* Shifted right on mobile */
+    transform: translate(-50%, -50%) scale(1.3); /* Much bigger for mobile */
+    /* Allow overflow on both sides */
+    width: 120%; /* Wider container to prevent clipping */
+    max-width: none;
   }
   
 }
@@ -1212,13 +1449,15 @@
     left: 0.5rem;
     right: 0.5rem;
     width: calc(100% - 1rem);
+    display: none; /* Hide left sidebar on mobile since filters are in drawer */
   }
 
   .rightSidebar {
-    bottom: 0.5rem;
-    right: 0.5rem;
-    left: 0.5rem;
-    width: calc(100% - 1rem);
+    bottom: calc(32% + 2rem); /* Position at bottom of 68% area (above the 32% container) - lifted up */
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%; /* 80% width on mobile */
   }
 
   .tree3D {
@@ -1304,7 +1543,9 @@
   }
   
   .floatingGround {
-    top: 89%; /* Lifted */
+    top: 70%; /* Moved down further for mobile */
+    left: 52%; /* Shifted right on mobile */
+    transform: translate(-50%, -50%) scale(1.3); /* Much bigger for mobile */
   }
 }
 
@@ -1342,7 +1583,9 @@
   
   
   .floatingGround {
-    top: 91%; /* Adjusted to avoid instruction container overlap in landscape */
+    top: 70%; /* Moved down further for mobile */
+    left: 52%; /* Shifted right on mobile */
+    transform: translate(-50%, -50%) scale(1.3); /* Much bigger for mobile */
   }
 }
 
@@ -1384,6 +1627,8 @@
   
   
   .floatingGround {
-    top: 89%; /* Adjusted to avoid instruction container overlap in landscape */
+    top: 70%; /* Moved down further for mobile */
+    left: 52%; /* Shifted right on mobile */
+    transform: translate(-50%, -50%) scale(1.3); /* Much bigger for mobile */
   }
 }

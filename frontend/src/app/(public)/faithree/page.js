@@ -28,6 +28,20 @@ function FAITHreePage() {
   const [isInitialView, setIsInitialView] = useState(true);
   const [isModelLoading, setIsModelLoading] = useState(false); // Track 3D model and background loading
   const [isTransitioningFromWelcome, setIsTransitioningFromWelcome] = useState(false); // Track transition from welcome screen
+  const [isImpactLevelOpen, setIsImpactLevelOpen] = useState(false); // Track Impact Level overlay state (mobile only)
+  
+  // Detect mobile screen size for responsive tree positioning
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Data fetching
   const { allOrganizations, featuredHighlights } = useFaithreeData();
@@ -260,14 +274,14 @@ function FAITHreePage() {
             )}
           </div>
           
-          {/* Rainy Mode Message */}
+          {/* Rainy Mode Message - Desktop (absolute positioned) */}
           {theme === 'rainy' && (
             <div className={styles.rainyMessage}>
               <p>No success stories yet... but the seeds are planted! 🌱</p>
             </div>
           )}
           
-          {/* Sunny Mode Success Message */}
+          {/* Sunny Mode Success Message - Desktop (absolute positioned) */}
           {theme !== 'rainy' && filteredHighlights.length > 0 && selectedOrganization && (() => {
             const selectedOrg = allOrganizations.find(org => org.id === selectedOrganization);
             const orgName = selectedOrg?.acronym || selectedOrg?.name || 'This organization';
@@ -331,7 +345,7 @@ function FAITHreePage() {
                 <div className={styles.tree3D}>
                   <TreeModel 
                     theme={theme} 
-                    treePosition={[2.0, -1.8, 0]} 
+                    treePosition={isMobile ? [0.5, -1.8, 0] : [2.0, -1.8, 0]} 
                     chunkHighlights={currentTreeHighlights}
                     allFeaturedHighlights={filteredHighlights}
                     chunkStartIndex={currentTreeIndex * CHUNK_SIZE}
@@ -346,12 +360,59 @@ function FAITHreePage() {
           </div>
         )}
 
-        {/* Bottom White Container - 34% height, in front of tree */}
+        {/* Bottom White Container - 25% height on mobile, in front of tree */}
         {!isInitialView && (
           <div className={`${styles.bottomGreenContainer} ${theme === 'rainy' ? styles.bottomGreenContainerRainy : ''}`}>
-            {/* Impact Level Showcase - Mobile only, inside bottom container */}
-            <div className={styles.mobileImpactLevelContainer}>
-              <ImpactLevelShowcase theme={theme} />
+            {/* Rainy Mode Message - Mobile (inside bottom container) */}
+            {theme === 'rainy' && (
+              <div className={styles.rainyMessage}>
+                <p>No success stories yet... but the seeds are planted! 🌱</p>
+              </div>
+            )}
+            
+            {/* Sunny Mode Success Message - Mobile (inside bottom container) */}
+            {theme !== 'rainy' && filteredHighlights.length > 0 && selectedOrganization && (() => {
+              const selectedOrg = allOrganizations.find(org => org.id === selectedOrganization);
+              const orgName = selectedOrg?.acronym || selectedOrg?.name || 'This organization';
+              return (
+                <div className={styles.sunnyMessage}>
+                  <p><strong>{orgName}</strong> made <strong>{filteredHighlights.length}</strong> {filteredHighlights.length === 1 ? 'success story' : 'success stories'} so far and counting!</p>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Impact Level Overlay - Mobile only */}
+        {!isInitialView && isImpactLevelOpen && (
+          <div 
+            className={`${styles.impactLevelOverlay} ${theme === 'rainy' ? styles.impactLevelOverlayRainy : ''}`}
+            onClick={(e) => {
+              // Close overlay when clicking on backdrop
+              if (e.target === e.currentTarget) {
+                setIsImpactLevelOpen(false);
+              }
+            }}
+          >
+            <div className={styles.impactLevelOverlayContent}>
+              {/* Modal Header with Title and Close Button */}
+              <div className={styles.impactLevelModalHeader}>
+                <h2 className={styles.impactLevelModalTitle}>Impact Level</h2>
+                <button
+                  className={styles.impactLevelCloseButton}
+                  onClick={() => setIsImpactLevelOpen(false)}
+                  aria-label="Close Impact Level information"
+                >
+                  <svg className={styles.impactLevelCloseIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              {/* Modal Body with Content */}
+              <div className={styles.impactLevelModalBody}>
+                <ImpactLevelShowcase theme={theme} hideHeader={true} />
+              </div>
             </div>
           </div>
         )}
@@ -367,6 +428,7 @@ function FAITHreePage() {
             onOrganizationChange={handleOrganizationChange}
             onYearChange={handleFilterYearChange}
             theme={theme}
+            onImpactLevelClick={() => setIsImpactLevelOpen(true)}
           />
         )}
 

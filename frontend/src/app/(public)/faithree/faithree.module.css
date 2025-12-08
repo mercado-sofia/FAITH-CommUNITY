@@ -198,7 +198,7 @@
   display: none;
 }
 
-/* Rainy Mode Message */
+/* Rainy Mode Message - Desktop */
 .rainyMessage {
   position: absolute;
   top: 10rem; /* Position below theme toggle */
@@ -241,7 +241,7 @@
   }
 }
 
-/* Sunny Mode Success Message */
+/* Sunny Mode Success Message - Desktop */
 .sunnyMessage {
   position: absolute;
   top: 10rem; /* Position below theme toggle */
@@ -912,7 +912,7 @@
   pointer-events: auto;
 }
 
-/* Bottom White Container - Mobile only (32% height), hidden on desktop */
+/* Bottom White Container - Mobile only (25% height), hidden on desktop */
 .bottomGreenContainer {
   position: absolute;
   bottom: 0;
@@ -943,23 +943,41 @@
   display: block; /* Visible on desktop */
 }
 
+/* Impact Level Toggle Button - Hidden on desktop */
+.impactLevelToggleButton {
+  display: none;
+}
+
+/* Impact Level Overlay - Hidden on desktop */
+.impactLevelOverlay {
+  display: none;
+}
+
 @media (max-width: 768px) {
-  /* Bottom container - 32% height on mobile only */
+  /* Bottom container - 25% height on mobile only */
   .bottomGreenContainer {
-    height: 32%; /* 32% height on mobile */
-    min-height: 32%; /* Ensure minimum height */
-    max-height: 32%; /* Ensure maximum height */
+    height: 25%; /* 25% height on mobile */
+    min-height: 25%; /* Ensure minimum height */
+    max-height: 25%; /* Ensure maximum height */
     display: flex; /* Show on mobile */
     pointer-events: auto; /* Enable interaction on mobile */
-    padding: 1.5rem 1.5rem max(2rem, env(safe-area-inset-bottom)) 1rem; /* Account for safe area at bottom */
+    padding: 2rem 1.5rem max(2.5rem, env(safe-area-inset-bottom)) 1.5rem; /* Increased padding for better spacing */
     align-items: center; /* Center content vertically */
     justify-content: center; /* Center content horizontally */
-    background: #ffffff; /* White background like the image */
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 -2px 8px rgba(0, 0, 0, 0.04); /* Subtle drop shadow like the image */
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%); /* Subtle gradient for depth */
+    border-top: 1px solid rgba(0, 0, 0, 0.06); /* Subtle top border */
+    border-radius: 32px 32px 0 0; /* More rounded corners */
+    box-shadow: 
+      0 -8px 32px rgba(0, 0, 0, 0.12),
+      0 -4px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9); /* Enhanced shadow with inset highlight */
     box-sizing: border-box; /* Include padding in height calculation */
     overflow-y: auto; /* Allow scrolling if content exceeds container */
     overflow-x: hidden; /* Prevent horizontal scroll */
-    transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
     /* Prevent layout shifts when interacting */
     contain: layout style paint;
     isolation: isolate;
@@ -968,23 +986,187 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Decorative top border accent */
+  .bottomGreenContainer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.3) 50%, transparent 100%);
+    border-radius: 0 0 2px 2px;
+  }
+
   /* Rainy theme styles for bottom container on mobile */
   .bottomGreenContainerRainy {
-    background: #0d1f1a; /* Dark green matching rainy theme */
+    background: linear-gradient(180deg, #0d1f1a 0%, #091815 100%); /* Dark gradient for rainy theme */
+    border-top: 1px solid rgba(135, 206, 250, 0.15); /* Subtle blue border for rainy theme */
     box-shadow: 
-      0 -4px 20px rgba(0, 0, 0, 0.3),
-      0 -2px 8px rgba(0, 0, 0, 0.2);
+      0 -8px 32px rgba(0, 0, 0, 0.4),
+      0 -4px 16px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(135, 206, 250, 0.1); /* Enhanced shadow with blue accent */
+  }
+
+  .bottomGreenContainerRainy::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(135, 206, 250, 0.4) 50%, transparent 100%);
   }
 
   .mobileImpactLevelContainer {
-    display: block; /* Show on mobile */
+    display: none; /* Hide on mobile - now using overlay instead */
     width: 100%;
     max-width: 100%;
-    padding-top: 0; /* No extra padding - use container padding only */
+    padding-top: 0;
   }
 
   .desktopImpactLevelContainer {
     display: none; /* Hide on mobile */
+  }
+
+  /* Impact Level Toggle Button - Now part of Filters component on mobile, hidden here */
+
+  /* Impact Level Overlay - Mobile only */
+  .impactLevelOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+    animation: overlayFadeIn 0.3s ease-out;
+    overflow-y: auto;
+  }
+
+  @keyframes overlayFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .impactLevelOverlayContent {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 0;
+    max-width: 90%;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.3),
+      0 8px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: overlayContentSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes overlayContentSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Modal Header */
+  .impactLevelModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem; /* Reduced bottom padding */
+    border-bottom: none; /* Removed border bottom line */
+    flex-shrink: 0;
+  }
+
+  .impactLevelModalTitle {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1b5e20;
+    margin: 0;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Modal Content Area */
+  .impactLevelModalBody {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* Rainy theme overlay */
+  .impactLevelOverlayRainy .impactLevelOverlayContent {
+    background: linear-gradient(135deg, rgba(15, 26, 37, 0.98) 0%, rgba(10, 42, 63, 0.95) 100%);
+    border: 2px solid rgba(135, 206, 250, 0.4);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .impactLevelOverlayRainy .impactLevelModalHeader {
+    border-bottom: none; /* Removed border bottom line for rainy theme */
+  }
+
+  .impactLevelOverlayRainy .impactLevelModalTitle {
+    color: #E0F6FF;
+  }
+
+  .impactLevelCloseButton {
+    position: static; /* Changed from absolute to static for header layout */
+    width: 30px; /* Reduced from 36px */
+    height: 30px; /* Reduced from 36px */
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .impactLevelCloseButton:hover {
+    background: rgba(0, 0, 0, 0.15);
+    transform: scale(1.05); /* Reduced from 1.1 */
+  }
+
+  .impactLevelCloseButton:active {
+    transform: scale(0.95);
+  }
+
+  .impactLevelCloseIcon {
+    width: 16px; /* Reduced from 20px */
+    height: 16px; /* Reduced from 20px */
+    color: #666;
+  }
+
+  .impactLevelOverlayRainy .impactLevelCloseButton {
+    background: rgba(135, 206, 250, 0.2);
+  }
+
+  .impactLevelOverlayRainy .impactLevelCloseButton:hover {
+    background: rgba(135, 206, 250, 0.3);
+  }
+
+  .impactLevelOverlayRainy .impactLevelCloseIcon {
+    color: #E0F6FF;
   }
 }
 
@@ -1131,6 +1313,9 @@
   .treesContainer {
     width: 100%;
     max-width: 100%;
+    /* Override flexbox centering to allow left positioning */
+    justify-content: flex-start;
+    align-items: center; /* Keep vertical centering */
   }
 
   .leftSidebar {
@@ -1159,7 +1344,7 @@
 
   .rightSidebar {
     top: auto;
-    bottom: calc(32% + 1.5rem); /* Position at bottom of 68% area (above the 32% container) - moved down */
+    bottom: calc(25% + 1.5rem); /* Position at bottom of 75% area (above the 25% container) - moved down */
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -1188,6 +1373,8 @@
     z-index: 11;
     pointer-events: auto;
   }
+
+  /* Impact Level Toggle Button - Now part of Filters component, no positioning needed here */
   
   /* Show toggle button on mobile */
   .instructionToggleContainer .instructionToggleButton {
@@ -1225,33 +1412,92 @@
     z-index: 10000;
   }
   
-  /* Rainy Mode Message - Mobile */
-  .rainyMessage {
-    top: 5rem; /* Position near top right on mobile */
-    right: 1rem;
-    left: auto; /* Ensure it's on the right, not centered */
-    max-width: 200px; /* Shorter width for mobile */
-    transform: none; /* Remove any centering transforms */
+  /* Hide desktop messages on mobile */
+  .ecoBackground .rainyMessage,
+  .ecoBackground .sunnyMessage {
+    display: none;
+  }
+
+  /* Rainy Mode Message - Mobile (inside bottom container) */
+  .bottomGreenContainer .rainyMessage {
+    position: static; /* Remove absolute positioning */
+    top: auto;
+    right: auto;
+    left: auto;
+    max-width: 90%; /* Slightly narrower for better readability */
+    width: 100%;
+    transform: none;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    display: block; /* Show in bottom container */
+    background: linear-gradient(135deg, rgba(20, 84, 126, 0.15) 0%, rgba(30, 52, 73, 0.1) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(135, 206, 250, 0.2);
+    border-radius: 16px;
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(135, 206, 250, 0.2);
+    animation: messageFadeIn 0.5s ease-out;
+    margin: 0 auto;
   }
   
-  .rainyMessage p {
-    font-size: 0.75rem; /* 12px on mobile */
+  .bottomGreenContainer .rainyMessage p {
+    font-size: 16px; /* 16px on mobile */
+    margin: 0;
+    color: #E0F6FF;
+    line-height: 1.6;
+    font-weight: 500;
   }
   
-  /* Sunny Mode Success Message - Mobile */
-  .sunnyMessage {
-    top: 6rem; /* Position below theme toggle on mobile */
-    left: 50%; /* Center horizontally */
-    right: auto; /* Remove right positioning */
-    transform: translateX(-50%); /* Center the element */
-    max-width: calc(100% - 0.75rem) !important; /* Wider with minimal margins */
-    width: auto; /* Allow content to determine width up to max-width */
-    padding: 0.75rem 1rem; /* Add padding for better text spacing */
-    box-sizing: border-box; /* Include padding in width calculation */
+  /* Sunny Mode Success Message - Mobile (inside bottom container) */
+  .bottomGreenContainer .sunnyMessage {
+    position: static; /* Remove absolute positioning */
+    top: auto;
+    left: auto;
+    right: auto;
+    transform: none;
+    max-width: 90% !important; /* Slightly narrower for better readability */
+    width: 100%;
+    padding: 1.25rem 1.5rem;
+    box-sizing: border-box;
+    text-align: center;
+    display: block; /* Show in bottom container */
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(100, 221, 23, 0.08) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    border-radius: 16px;
+    box-shadow: 
+      0 4px 16px rgba(76, 175, 80, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    animation: messageFadeIn 0.5s ease-out;
+    margin: 0 auto;
   }
   
-  .sunnyMessage p {
-    font-size: 0.8125rem; /* 13px on mobile */
+  .bottomGreenContainer .sunnyMessage p {
+    font-size: 16px; /* 16px on mobile */
+    margin: 0;
+    line-height: 1.6;
+    color: #1b5e20;
+    font-weight: 500;
+  }
+
+  .bottomGreenContainer .sunnyMessage p strong {
+    color: #2e7d32;
+    font-weight: 700;
+  }
+
+  /* Fade-in animation for messages */
+  @keyframes messageFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
   .themeToggleButton {
@@ -1351,10 +1597,13 @@
   .floatingGround {
     top: 48%;
     left: 50%;
-    transform: translate(calc(-50% - 5%), -50%) scale(1.2) translateZ(0);
-    width: 100%;
+    transform: translate(-60%, -50%) scale(1.25) translateZ(0) !important;
+    width: auto; /* Remove 100% width to allow proper left positioning */
     max-width: 100%;
     overflow: visible;
+    /* Override flexbox centering to allow left positioning */
+    justify-content: flex-start;
+    align-items: center; /* Keep vertical centering */
     /* Prevent layout shifts from viewport changes */
     will-change: transform;
     backface-visibility: hidden;
@@ -1424,7 +1673,7 @@
 
   .rightSidebar {
     top: auto;
-    bottom: calc(32% + 1.5rem); /* Position at bottom of 68% area (above the 32% container) - moved down */
+    bottom: calc(25% + 1.5rem); /* Position at bottom of 75% area (above the 25% container) - moved down */
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -1449,6 +1698,8 @@
     width: fit-content;
     min-width: fit-content;
   }
+
+  /* Impact Level Toggle Button - Now part of Filters component, no positioning needed here */
   
   /* Theme toggle at top right */
   .themeToggleContainer {
@@ -1504,7 +1755,6 @@
     line-height: 1.4;
   }
   
-  
   .tree3D {
     min-width: 100%;
     min-height: 1100px;
@@ -1515,11 +1765,14 @@
   
   .floatingGround {
     top: 48%;
-    left: 47.8%;
-    transform: translate(calc(-50% - 5%), -50%) scale(1.2);
-    width: 100%;
+    left: 50%;
+    transform: translate(-60%, -50%) scale(1.25) !important;
+    width: auto; /* Remove 100% width to allow proper left positioning */
     max-width: 100%;
     overflow: visible;
+    /* Override flexbox centering to allow left positioning */
+    justify-content: flex-start;
+    align-items: center; /* Keep vertical centering */
   }
 }
 
@@ -1534,7 +1787,7 @@
   }
 
   .rightSidebar {
-    bottom: calc(32% + 1.5rem); /* Position at bottom of 68% area (above the 32% container) - moved down */
+    bottom: calc(25% + 1.5rem); /* Position at bottom of 75% area (above the 25% container) - moved down */
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -1563,6 +1816,8 @@
     width: fit-content;
     min-width: fit-content;
   }
+
+  /* Impact Level Toggle Button - Now part of Filters component, no positioning needed here */
   
   /* Theme toggle at top right */
   .themeToggleContainer {
@@ -1626,7 +1881,7 @@
   .floatingGround {
     top: 48%;
     left: 50%;
-    transform: translate(calc(-50% - 5%), -50%) scale(1.2);
+    transform: translate(-50%, -50%) scale(1.25);
     overflow: visible;
   }
 }
@@ -1667,7 +1922,7 @@
   .floatingGround {
     top: 48%;
     left: 50%;
-    transform: translate(calc(-50% - 5%), -50%) scale(1.2);
+    transform: translate(-50%, -50%) scale(1.25);
     overflow: visible;
   }
 }
@@ -1712,7 +1967,7 @@
   .floatingGround {
     top: 48%;
     left: 50%;
-    transform: translate(calc(-50% - 5%), -50%) scale(1.2);
+    transform: translate(-50%, -50%) scale(1.25);
     overflow: visible;
   }
 }

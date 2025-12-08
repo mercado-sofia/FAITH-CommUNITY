@@ -33,6 +33,11 @@
   align-self: flex-start;
 }
 
+/* Impact Level Toggle Button - Hidden on desktop, shown in filters on mobile */
+.impactLevelToggleButton {
+  display: none;
+}
+
 /* ============================================
    ORGANIZATION FILTER
    ============================================ */
@@ -1178,6 +1183,64 @@
     align-self: flex-start;
   }
 
+  /* Impact Level Toggle Button - Mobile only, appears as third row in filters */
+  .impactLevelToggleButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #ffffff; /* White container background */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.8125rem; /* 13px - matching other filters */
+    font-weight: 600;
+    color: #1b5e20;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 3px 10px rgba(0, 0, 0, 0.08),
+      0 1px 4px rgba(0, 0, 0, 0.04);
+    min-height: 36px;
+    height: 36px;
+    width: 100%;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .impactLevelToggleButton:hover {
+    background: #f8f9fa; /* Slightly lighter on hover */
+    box-shadow: 
+      0 5px 14px rgba(0, 0, 0, 0.1),
+      0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Rainy theme styles for Impact Level toggle - dark theme */
+  .impactLevelToggleButton.filterRainy {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(135, 206, 250, 0.3);
+    color: #E0F6FF !important; /* Light blue-white text for rainy theme */
+    box-shadow: 
+      0 3px 10px rgba(0, 0, 0, 0.3),
+      0 1px 4px rgba(20, 84, 126, 0.25),
+      inset 0 1px 0 rgba(135, 206, 250, 0.2);
+  }
+
+  .impactLevelToggleButton.filterRainy:hover {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
+    border-color: rgba(135, 206, 250, 0.5);
+    box-shadow: 
+      0 5px 14px rgba(0, 0, 0, 0.4),
+      0 2px 6px rgba(20, 84, 126, 0.35),
+      inset 0 1px 0 rgba(135, 206, 250, 0.3);
+  }
+
   .orgDropdownHeader,
   .yearDropdownHeader {
     width: 100%;
@@ -1203,6 +1266,13 @@
   .yearFilter {
     width: 100%;
     align-self: flex-start;
+  }
+
+  .impactLevelToggleButton {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.8125rem; /* 13px */
+    min-height: 36px;
+    height: 36px;
   }
 
   .orgDropdownWrapper,
@@ -1235,6 +1305,13 @@
   .yearFilter {
     width: 100%;
     align-self: flex-start;
+  }
+
+  .impactLevelToggleButton {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem; /* 12px */
+    min-height: 32px;
+    height: 32px;
   }
 
   .orgDropdownWrapper,

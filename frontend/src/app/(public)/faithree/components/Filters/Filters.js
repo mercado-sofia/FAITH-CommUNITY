@@ -14,6 +14,7 @@ function Filters({
   onOrganizationChange,
   onYearChange,
   theme = 'morning',
+  onImpactLevelClick = null, // Callback for Impact Level toggle (mobile only)
 }) {
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
@@ -183,6 +184,17 @@ function Filters({
             )}
           </div>
         </div>
+      )}
+
+      {/* Impact Level Toggle - Mobile only, appears as third row in filters */}
+      {onImpactLevelClick && (
+        <button
+          className={`${styles.impactLevelToggleButton} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
+          onClick={onImpactLevelClick}
+          aria-label="Open Impact Level information"
+        >
+          <span>Impact Level</span>
+        </button>
       )}
     </div>
   );

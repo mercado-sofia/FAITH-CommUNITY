@@ -2,15 +2,17 @@
 
 import styles from './ImpactLevelShowcase.module.css';
 
-function ImpactLevelShowcase({ theme = 'morning' }) {
+function ImpactLevelShowcase({ theme = 'morning', hideHeader = false }) {
 
   return (
     <div className={`${styles.showcaseWrapper} ${styles[`showcase${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
       {/* Container - always visible */}
       <div className={`${styles.showcaseContainer} ${styles[`showcase${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
-        <div className={styles.showcaseHeader}>
-          <span className={styles.showcaseTitle}>Impact Level</span>
-        </div>
+        {!hideHeader && (
+          <div className={styles.showcaseHeader}>
+            <span className={styles.showcaseTitle}>Impact Level</span>
+          </div>
+        )}
         
         <div className={styles.showcaseContent}>
           {/* High Impact */}

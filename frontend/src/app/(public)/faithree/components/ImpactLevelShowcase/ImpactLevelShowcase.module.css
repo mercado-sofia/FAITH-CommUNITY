@@ -296,11 +296,11 @@
 
   .showcaseContent {
     padding: 0.5rem 0 0.75rem 0; /* Reduced padding for mobile */
-    gap: 0.25rem; /* Further reduced gap between items */
+    gap: 0.1rem; /* Further reduced gap between items */
   }
 
   .impactLevelItem {
-    padding: 0.4rem 0.5rem; /* Reduced vertical padding */
+    padding: 0.3rem 0.5rem; /* Reduced vertical padding */
     gap: 0.75rem; /* Reduced gap between star and text */
     background: transparent !important; /* No background on white container */
   }
@@ -409,11 +409,11 @@
 
   .showcaseContent {
     padding: 0.5rem 0.75rem 0.75rem 0.75rem; /* Reduced padding for smaller mobile */
-    gap: 0.2rem; /* Further reduced gap between items */
+    gap: 0.1rem; /* Further reduced gap between items */
   }
 
   .impactLevelItem {
-    padding: 0.35rem 0.5rem; /* Reduced padding for smaller mobile */
+    padding: 0.2rem 0.5rem; /* Reduced padding for smaller mobile */
     gap: 0.75rem; /* Reduced gap between star and text */
   }
 

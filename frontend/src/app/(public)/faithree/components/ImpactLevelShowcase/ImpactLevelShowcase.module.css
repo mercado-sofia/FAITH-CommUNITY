@@ -124,6 +124,43 @@
   border: none;
 }
 
+/* Rainy theme star containers - White background with blue tint */
+.showcaseRainy .starContainer {
+  background: rgba(255, 255, 255, 0.12); /* White with very low opacity for rainy theme */
+  border-color: rgba(135, 206, 250, 0.2);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(135, 206, 250, 0.1);
+}
+
+.showcaseRainy .starContainer::before {
+  background: radial-gradient(circle, rgba(135, 206, 250, 0.15) 1px, transparent 1px);
+}
+
+.showcaseRainy .starContainer.starHigh {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(135, 206, 250, 0.25);
+  box-shadow: 
+    0 2px 8px rgba(135, 206, 250, 0.2),
+    inset 0 1px 0 rgba(135, 206, 250, 0.15);
+}
+
+.showcaseRainy .starContainer.starAverage {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(135, 206, 250, 0.2);
+  box-shadow: 
+    0 2px 8px rgba(135, 206, 250, 0.15),
+    inset 0 1px 0 rgba(135, 206, 250, 0.12);
+}
+
+.showcaseRainy .starContainer.starSmall {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(135, 206, 250, 0.18);
+  box-shadow: 
+    0 2px 8px rgba(135, 206, 250, 0.12),
+    inset 0 1px 0 rgba(135, 206, 250, 0.1);
+}
+
 .impactLevelItem:hover {
   background: rgba(76, 175, 80, 0.1);
 }
@@ -139,70 +176,99 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
-  width: 3rem; /* Fixed width to accommodate largest star (1.8rem) with padding */
-  height: 3rem; /* Fixed height to accommodate largest star (1.8rem) with padding */
-  min-width: 3rem;
-  min-height: 3rem;
+  background: rgba(255, 255, 255, 0.4); /* White with low opacity */
+  border-radius: 8px;
+  padding: 0.3rem;
+  width: 2.25rem; /* Further reduced */
+  height: 2.25rem; /* Further reduced */
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Star Emoji */
-.starEmoji {
-  display: inline-block;
-  font-size: 2rem;
-  line-height: 1;
-  transition: transform 0.2s ease;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+/* Decorative background pattern for star container */
+.starContainer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
-/* Small Impact Star - Smaller size (0.6x), muted brown-orange color (#c29326) */
-.starSmall {
-  font-size: 1.2rem;
-  filter: 
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
-    sepia(30%) saturate(150%) hue-rotate(15deg) brightness(0.85);
-  /* Adjusts yellow emoji to brown-orange tone */
+/* Small Impact Star Container - White background */
+.starContainer.starSmall {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* Average Impact Star - Medium size (1.0x), yellow-orange color (#ffd520) */
-.starAverage {
-  font-size: 1.5rem;
-  filter: 
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
-    sepia(20%) saturate(120%) hue-rotate(-5deg) brightness(1.1);
-  /* Adjusts to yellow-orange tone */
+.starContainer.starSmall::before {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
 }
 
-/* High Impact Star - Largest size (1.4x), gold color (#ffcf00), with glow effect */
-.starHigh {
-  font-size: 1.8rem;
-  filter: 
-    drop-shadow(0 0 8px rgba(255, 207, 0, 0.8)) 
-    drop-shadow(0 0 16px rgba(255, 207, 0, 0.6)) 
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
-    sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.2);
-  /* Adjusts to gold tone with glow */
-  animation: starGlow 2s ease-in-out infinite;
+.starContainer.starSmall .starIcon {
+  width: 16px !important;
+  height: 16px !important;
 }
 
-@keyframes starGlow {
-  0%, 100% {
-    filter: 
-      drop-shadow(0 0 8px rgba(255, 207, 0, 0.8)) 
-      drop-shadow(0 0 16px rgba(255, 207, 0, 0.6)) 
-      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
-      sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.2);
-  }
-  50% {
-    filter: 
-      drop-shadow(0 0 12px rgba(255, 207, 0, 1)) 
-      drop-shadow(0 0 24px rgba(255, 207, 0, 0.8)) 
-      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))
-      sepia(10%) saturate(110%) hue-rotate(-8deg) brightness(1.4);
-  }
+/* Average Impact Star Container - White background */
+.starContainer.starAverage {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
+
+.starContainer.starAverage::before {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.starContainer.starAverage .starIcon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* High Impact Star Container - White background */
+.starContainer.starHigh {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.starContainer.starHigh::before {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.starContainer.starHigh .starIcon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* Star Icon (SVG) */
+.starIcon {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  position: relative;
+  z-index: 1; /* Ensure icon appears above background pattern */
+}
+
 
 /* Impact Label */
 .impactLabel {
@@ -328,24 +394,27 @@
   }
 
   .starContainer {
-    padding: 0;
-    width: 2rem; /* Reduced width for mobile */
-    height: 2rem; /* Reduced height for mobile */
-    min-width: 2rem;
-    min-height: 2rem;
+    padding: 0.35rem;
+    width: 2.5rem; /* Increased for mobile modal */
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
   }
 
-  /* Reduced star sizes for mobile */
-  .starSmall {
-    font-size: 0.9rem !important; /* Reduced from 1.2rem */
+  /* Increased star icon sizes for mobile */
+  .starContainer.starSmall .starIcon {
+    width: 18px !important;
+    height: 18px !important;
   }
 
-  .starAverage {
-    font-size: 1.1rem !important; /* Reduced from 1.5rem */
+  .starContainer.starAverage .starIcon {
+    width: 22px !important;
+    height: 22px !important;
   }
 
-  .starHigh {
-    font-size: 1.3rem !important; /* Reduced from 1.8rem */
+  .starContainer.starHigh .starIcon {
+    width: 28px !important;
+    height: 28px !important;
   }
 
   /* Change impact label to horizontal layout on mobile */
@@ -427,24 +496,27 @@
   }
 
   .starContainer {
-    padding: 0;
-    width: 2rem; /* Reduced width for smaller mobile */
-    height: 2rem; /* Reduced height for smaller mobile */
-    min-width: 2rem;
-    min-height: 2rem;
+    padding: 0.3rem;
+    width: 2.25rem; /* Increased for smaller mobile modal */
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
   }
 
-  /* Further reduced star sizes for smaller mobile */
-  .starSmall {
-    font-size: 0.8rem !important; /* Further reduced for small screens */
+  /* Increased star sizes for smaller mobile */
+  .starContainer.starSmall .starIcon {
+    width: 16px !important;
+    height: 16px !important;
   }
 
-  .starAverage {
-    font-size: 0.95rem !important; /* Further reduced for small screens */
+  .starContainer.starAverage .starIcon {
+    width: 20px !important;
+    height: 20px !important;
   }
 
-  .starHigh {
-    font-size: 1.1rem !important; /* Further reduced for small screens */
+  .starContainer.starHigh .starIcon {
+    width: 24px !important;
+    height: 24px !important;
   }
 
   /* Change impact label to vertical layout on smaller mobile - description below name */

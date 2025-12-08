@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import styles from './ImpactLevelShowcase.module.css';
 
 function ImpactLevelShowcase({ theme = 'morning', hideHeader = false }) {
@@ -17,8 +18,14 @@ function ImpactLevelShowcase({ theme = 'morning', hideHeader = false }) {
         <div className={styles.showcaseContent}>
           {/* High Impact */}
           <div className={styles.impactLevelItem}>
-            <div className={styles.starContainer}>
-              <span className={`${styles.starEmoji} ${styles.starHigh}`}>⭐</span>
+            <div className={`${styles.starContainer} ${styles.starHigh}`}>
+              <Image 
+                src="/assets/icons/high.svg" 
+                alt="High Impact" 
+                width={48} 
+                height={48}
+                className={styles.starIcon}
+              />
             </div>
             <div className={styles.impactLabel}>
               <span className={styles.impactLevelName}>High Impact</span>
@@ -28,8 +35,14 @@ function ImpactLevelShowcase({ theme = 'morning', hideHeader = false }) {
 
           {/* Average Impact */}
           <div className={styles.impactLevelItem}>
-            <div className={styles.starContainer}>
-              <span className={`${styles.starEmoji} ${styles.starAverage}`}>⭐</span>
+            <div className={`${styles.starContainer} ${styles.starAverage}`}>
+              <Image 
+                src="/assets/icons/average.svg" 
+                alt="Average Impact" 
+                width={48} 
+                height={48}
+                className={styles.starIcon}
+              />
             </div>
             <div className={styles.impactLabel}>
               <span className={styles.impactLevelName}>Average Impact</span>
@@ -39,8 +52,14 @@ function ImpactLevelShowcase({ theme = 'morning', hideHeader = false }) {
 
           {/* Small Impact */}
           <div className={styles.impactLevelItem}>
-            <div className={styles.starContainer}>
-              <span className={`${styles.starEmoji} ${styles.starSmall}`}>⭐</span>
+            <div className={`${styles.starContainer} ${styles.starSmall}`}>
+              <Image 
+                src="/assets/icons/small.svg" 
+                alt="Small Impact" 
+                width={48} 
+                height={48}
+                className={styles.starIcon}
+              />
             </div>
             <div className={styles.impactLabel}>
               <span className={styles.impactLevelName}>Small Impact</span>

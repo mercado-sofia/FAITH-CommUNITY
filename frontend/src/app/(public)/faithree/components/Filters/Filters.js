@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaChevronRight, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaChevronRight } from 'react-icons/fa';
 import styles from './Filters.module.css';
 
 function Filters({
@@ -14,15 +14,12 @@ function Filters({
   onOrganizationChange,
   onYearChange,
   theme = 'morning',
-  hideMobileToggle = false, // When true, hides toggle button and drawer (for desktop sidebar)
 }) {
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   const orgDropdownRef = useRef(null);
   const yearDropdownRef = useRef(null);
-  const drawerRef = useRef(null);
 
   // Close organization dropdown when clicking outside
   useEffect(() => {
@@ -52,41 +49,6 @@ function Filters({
     }
   }, [yearDropdownOpen]);
 
-  // Toggle drawer function
-  const toggleDrawer = () => {
-    setIsDrawerOpen(!isDrawerOpen);
-  };
-
-  // Close drawer function
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-  };
-
-  // Close drawer on ESC key press
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape' && isDrawerOpen) {
-        closeDrawer();
-      }
-    };
-
-    if (isDrawerOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isDrawerOpen]);
-
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (isDrawerOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [isDrawerOpen]);
-
   // Get display text for organization dropdown
   const selectedOrg = organizations.find(org => org.id === selectedOrganization);
   const orgDisplayText = selectedOrg ? selectedOrg.acronym : 'Select Organization';
@@ -113,10 +75,9 @@ function Filters({
     setYearDropdownOpen(false);
   };
 
-  // Filter controls content (to be reused in both desktop and drawer)
-  const filterControls = (
-    <>
-      {/* Organization Filter - Dropdown Button */}
+  return (
+    <div className={styles.filtersContainer}>
+      {/* Organization Filter - Top Left */}
       {organizations.length > 0 && (
         <div className={`${styles.organizationFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
           <div 
@@ -178,7 +139,7 @@ function Filters({
         </div>
       )}
 
-      {/* Year Filter - Dropdown */}
+      {/* Year Filter - Top Left (below org on mobile) */}
       {years.length > 0 && (
         <div className={`${styles.yearFilter} ${styles[`filter${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
           <div 
@@ -223,58 +184,7 @@ function Filters({
           </div>
         </div>
       )}
-    </>
-  );
-
-  return (
-    <>
-      {/* Toggle Button - Mobile Only (hidden when hideMobileToggle is true) */}
-      {!hideMobileToggle && (
-        <button
-          className={styles.filterToggleButton}
-          onClick={toggleDrawer}
-          aria-label="Toggle filters"
-        >
-          <FaFilter className={styles.filterToggleIcon} />
-        </button>
-      )}
-
-      {/* Overlay/Backdrop */}
-      {!hideMobileToggle && isDrawerOpen && (
-        <div
-          className={styles.filterDrawerOverlay}
-          onClick={closeDrawer}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Drawer Panel - Mobile Only (hidden when hideMobileToggle is true) */}
-      {!hideMobileToggle && (
-        <div
-          ref={drawerRef}
-          className={`${styles.filterDrawer} ${isDrawerOpen ? styles.filterDrawerOpen : ''}`}
-        >
-          <div className={styles.filterDrawerHeader}>
-            <h2 className={styles.filterDrawerTitle}>Filters</h2>
-            <button
-              className={styles.filterDrawerCloseButton}
-              onClick={closeDrawer}
-              aria-label="Close filters"
-            >
-              <FaTimes className={styles.filterDrawerCloseIcon} />
-            </button>
-          </div>
-          <div className={styles.filterDrawerContent}>
-            {filterControls}
-          </div>
-        </div>
-      )}
-
-      {/* Desktop View - Filters Wrapper (hidden on mobile) */}
-      <div className={styles.filtersWrapper}>
-        {filterControls}
-      </div>
-    </>
+    </div>
   );
 }
 

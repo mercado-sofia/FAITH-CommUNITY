@@ -135,7 +135,6 @@ function GlowingParticles({ starColor }) {
 
 // Star component - creates a glowing star shape (static like fruit on tree)
 function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.5], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average', highlight }) {
-  const meshRef = useRef()
   const groupRef = useRef()
   const [hovered, setHovered] = useState(false)
   
@@ -277,9 +276,7 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       onPointerOut={handlePointerOut}
       onClick={handleClick}
     >
-      <mesh 
-        ref={meshRef}
-      >
+      <mesh>
         <extrudeGeometry args={[starShape, extrudeSettings]} />
         <meshStandardMaterial
           color={starColor}
@@ -306,7 +303,7 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
 }
 
 // Component to load and display the GLB model
-function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null }) {
+function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null, isMobile = false }) {
   const { scene } = useGLTF(url)
   
   // Notify parent when model is loaded
@@ -375,9 +372,12 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null
   clonedScene.scale.set(scale, scale, scale)
   
   // Rotate the tree to face the camera directly (front-on, symmetrical view)
-  // Rotate around Y-axis to orient the tree properly
-  // Adjusted to face front - rotating more
-  clonedScene.rotation.y = Math.PI / 1.6 // Rotate ~120° to face front
+  // Different rotation for desktop and mobile
+  if (isMobile) {
+    clonedScene.rotation.y = Math.PI / 1.8 // Rotate to face front on mobile
+  } else {
+    clonedScene.rotation.y = Math.PI / 1.65 // Rotate to face front on desktop - rotated slightly to the right
+  }
   
   return <primitive object={clonedScene} />
 }
@@ -385,7 +385,8 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null
 // Static controls component - tree stays fixed, no rotation
 function StaticControls({ 
   treePosition = [0, 0, 0], 
-  cameraOffset = [2.5, 2.2, 7.5]
+  cameraOffset = [2.5, 2.2, 7.5],
+  isMobile = false
 }) {
   const controlsRef = useRef()
 
@@ -426,14 +427,18 @@ function StaticControls({
     controls.update()
   })
 
+  // Adjust distance limits for mobile to allow camera to be further back
+  const minDistance = isMobile ? 8.5 : 8.5
+  const maxDistance = isMobile ? 12 : 8.5
+
   return (
     <OrbitControls
       ref={controlsRef}
       enablePan={false}
       enableZoom={false}
       enableRotate={false}
-      minDistance={8.5}
-      maxDistance={8.5}
+      minDistance={minDistance}
+      maxDistance={maxDistance}
       autoRotate={false}
       target={treePosition}
       maxPolarAngle={Math.PI / 2.4}
@@ -583,18 +588,18 @@ export default function TreeModel({
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Adjust camera offset for mobile - zoom out more to show full tree
+  // Adjust camera offset for mobile to show more of the tree
   const adjustedCameraOffset = useMemo(() => {
     if (isMobile) {
-      // On mobile: reduce Z to zoom in more and make tree appear bigger while maintaining visibility
-      return [3.5, cameraOffset[1], 9.5] // Even further reduced Z (9.5) to make tree bigger, still wide enough to prevent cutoff
+      // Move camera further back and slightly to the left on mobile to show more of the tree and prevent left-side clipping
+      return [cameraOffset[0] - 0.5, cameraOffset[1], cameraOffset[2] + 2.5]
     }
     return cameraOffset
   }, [isMobile, cameraOffset])
 
-  // Adjust camera FOV for mobile - wider field of view to show more of the tree
+  // Use wider FOV for mobile to show more of the tree and prevent clipping
   const cameraFov = useMemo(() => {
-    return isMobile ? 80 : 66 // Even further reduced FOV (80) to make tree bigger while still preventing side cutoff
+    return isMobile ? 80 : 66 // Wider FOV on mobile to show more of the tree and prevent left-side clipping
   }, [isMobile])
 
   // State for star modal
@@ -753,6 +758,7 @@ export default function TreeModel({
               treePosition={treePosition} 
               theme={theme}
               onLoad={handleModelLoadCallback}
+              isMobile={isMobile}
             />
             
             {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
@@ -794,6 +800,7 @@ export default function TreeModel({
             <StaticControls 
               treePosition={treePosition} 
               cameraOffset={adjustedCameraOffset}
+              isMobile={isMobile}
             />
             
             {/* Coordinate projector - handles 3D to 2D conversion */}

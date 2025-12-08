@@ -6,11 +6,11 @@
   overflow: visible;
 }
 
-/* Allow tree model container to extend beyond viewport on mobile */
+/* Tree model container on mobile - properly sized */
 @media (max-width: 768px) {
   .treeModelContainer {
-    width: 120%; /* Wider than viewport to prevent clipping */
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
   }
 }
 

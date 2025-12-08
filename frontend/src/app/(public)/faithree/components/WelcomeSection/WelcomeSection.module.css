@@ -523,7 +523,7 @@
     flex-direction: column;
     max-width: none;
     margin: auto 0;
-    margin-top: 280px; /* Reduced space below txt1 on mobile */
+    margin-top: 250px; /* Reduced space below txt1 on mobile */
     gap: 1rem;
     position: relative;
     min-height: 240px;
@@ -651,7 +651,7 @@
 
   /* === Message Container === */
   .messageContainer {
-    margin-top: 260px; /* Reduced space below txt1 on small mobile */
+    margin-top: 230px; /* Reduced space below txt1 on small mobile */
     gap: 0.875rem;
     min-height: 220px;
     height: 220px;

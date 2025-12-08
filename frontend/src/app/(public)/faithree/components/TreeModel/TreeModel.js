@@ -134,9 +134,25 @@ function GlowingParticles({ starColor }) {
 }
 
 // Star component - creates a glowing star shape (static like fruit on tree)
-function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.5], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average', highlight }) {
+function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.5], starId, onStarClick, onHover, onHoverOut, impactLevel = 'average', highlight, isTransitioning = false }) {
   const groupRef = useRef()
   const [hovered, setHovered] = useState(false)
+  const [isVisible, setIsVisible] = useState(!isTransitioning) // Start visible if not transitioning
+  
+  // Handle fade-in animation when star appears
+  useEffect(() => {
+    if (isTransitioning) {
+      // Fade out when transitioning
+      setIsVisible(false)
+    } else {
+      // Fade in with staggered animation effect
+      const delay = starId * 50 // 50ms delay per star for cascading effect
+      const timeout = setTimeout(() => {
+        setIsVisible(true)
+      }, delay)
+      return () => clearTimeout(timeout)
+    }
+  }, [isTransitioning, starId])
   
   // Calculate star size based on impact level
   // Small: 0.75, Average: 1.0, High: 1.4
@@ -198,6 +214,8 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
 
   // Animated scale for smooth zoom effect
   const animatedScale = useRef(1)
+  // Animated opacity for fade-in effect
+  const animatedOpacity = useRef(0)
 
   // Make star face the camera and animate scale
   useFrame((state) => {
@@ -216,8 +234,25 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       const targetScale = hovered ? 1.15 : 1.0
       animatedScale.current += (targetScale - animatedScale.current) * 0.25 // Faster interpolation
       
+      // Smoothly animate opacity for fade-in effect
+      const targetOpacity = isVisible ? 1.0 : 0.0
+      animatedOpacity.current += (targetOpacity - animatedOpacity.current) * 0.15
+      
       // Apply animated scale
       groupRef.current.scale.setScalar(animatedScale.current)
+      
+      // Apply opacity to all materials in the group
+      groupRef.current.traverse((child) => {
+        if (child.isMesh && child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material]
+          materials.forEach(material => {
+            if (material.transparent !== undefined) {
+              material.transparent = true
+              material.opacity = animatedOpacity.current
+            }
+          })
+        }
+      })
 
       // Wiggle effect for high impact stars only
       if (impactLevel === 'high') {
@@ -275,6 +310,7 @@ function Star({ position, treePosition = [0, 0, 0], cameraOffset = [2.5, 2.2, 7.
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
       onClick={handleClick}
+      visible={isVisible || isTransitioning}
     >
       <mesh>
         <extrudeGeometry args={[starShape, extrudeSettings]} />
@@ -614,6 +650,10 @@ export default function TreeModel({
   const [hoveredStarScreenPos, setHoveredStarScreenPos] = useState(null)
   // Ref to store projection function
   const project3DTo2DRef = useRef(null)
+  // State for transition animations when navigating between trees
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [displayedHighlights, setDisplayedHighlights] = useState(chunkHighlights)
+  const prevChunkStartIndexRef = useRef(chunkStartIndex)
 
   // Handle star click - starId is now the index in chunkHighlights array (1-based)
   const handleStarClick = useCallback((starId) => {
@@ -709,6 +749,34 @@ export default function TreeModel({
     }
   }, [isModelLoaded, onLoad])
 
+  // Handle smooth transitions when navigating between trees
+  useEffect(() => {
+    // Check if we're navigating to a different tree (chunkStartIndex changed)
+    if (prevChunkStartIndexRef.current !== chunkStartIndex) {
+      // Start fade-out transition
+      setIsTransitioning(true)
+      
+      // After fade-out completes, update highlights and fade-in
+      // Use 250ms for fade-out, then update and fade-in
+      const transitionTimeout = setTimeout(() => {
+        setDisplayedHighlights(chunkHighlights)
+        prevChunkStartIndexRef.current = chunkStartIndex
+        
+        // Start fade-in after a brief delay to ensure state update
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsTransitioning(false)
+          })
+        })
+      }, 250) // Fade-out duration
+      
+      return () => clearTimeout(transitionTimeout)
+    } else {
+      // If chunkStartIndex hasn't changed, just update highlights directly
+      setDisplayedHighlights(chunkHighlights)
+    }
+  }, [chunkHighlights, chunkStartIndex])
+
   // Calculate initial camera position - use saved position if available
   // Memoize to update when mobile state or camera offset changes
   const savedCamPos = getSavedCameraPosition()
@@ -725,7 +793,7 @@ export default function TreeModel({
 
   return (
     <>
-      <div className={styles.treeModelContainer}>
+      <div className={`${styles.treeModelContainer} ${isTransitioning ? styles.transitioning : ''}`}>
         <Canvas
           camera={{ 
             position: initialCameraPosition, 
@@ -764,9 +832,9 @@ export default function TreeModel({
             {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
             {/* Maximum 12 stars per tree - additional stars appear on new trees */}
             {(() => {
-              // Ensure we never render more than 12 stars (chunking should handle this)
-              const maxStars = Math.min(chunkHighlights.length, 12);
-              const highlightsToRender = chunkHighlights.slice(0, maxStars);
+              // Use displayedHighlights for smooth transitions
+              const maxStars = Math.min(displayedHighlights.length, 12);
+              const highlightsToRender = displayedHighlights.slice(0, maxStars);
               
               // Generate positions for up to 12 stars
               const starPositions = generateStarPositions(maxStars);
@@ -779,7 +847,7 @@ export default function TreeModel({
                 
                 return (
                   <Star 
-                    key={starId}
+                    key={`${chunkStartIndex}-${starId}`}
                     position={position} 
                     treePosition={treePosition}
                     cameraOffset={adjustedCameraOffset}
@@ -789,6 +857,7 @@ export default function TreeModel({
                     onHoverOut={handleStarHoverOut}
                     impactLevel={impactLevel}
                     highlight={highlight}
+                    isTransitioning={isTransitioning}
                   />
                 );
               });

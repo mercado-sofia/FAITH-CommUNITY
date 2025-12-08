@@ -4,6 +4,12 @@
   height: 100%;
   position: relative;
   overflow: visible;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Transition state - fade out when navigating */
+.treeModelContainer.transitioning {
+  opacity: 0.5;
 }
 
 /* Tree model container on mobile - properly sized */
@@ -11,6 +17,17 @@
   .treeModelContainer {
     width: 100%;
     max-width: 100%;
+  }
+}
+
+/* Reduced motion - disable transitions */
+@media (prefers-reduced-motion: reduce) {
+  .treeModelContainer {
+    transition: none;
+  }
+  
+  .treeModelContainer.transitioning {
+    opacity: 1;
   }
 }
 

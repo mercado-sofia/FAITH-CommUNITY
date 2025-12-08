@@ -205,10 +205,10 @@
   right: 16rem;
   z-index: 99999; /* Very high z-index to ensure it's above tree model and any stacking contexts */
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, rgba(30, 52, 73, 0.85) 0%, rgba(20, 84, 126, 0.75) 100%);
+  background: linear-gradient(135deg, rgba(15, 26, 37, 0.5) 0%, rgba(10, 42, 63, 0.45) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1.5px solid rgba(135, 206, 250, 0.3);
+  border: 1.5px solid rgba(135, 206, 250, 0.25);
   border-radius: 12px;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.25),
@@ -1227,9 +1227,11 @@
   
   /* Rainy Mode Message - Mobile */
   .rainyMessage {
-    top: 8rem; /* Position below theme toggle on mobile */
+    top: 5rem; /* Position near top right on mobile */
     right: 1rem;
-    max-width: calc(100% - 2rem);
+    left: auto; /* Ensure it's on the right, not centered */
+    max-width: 200px; /* Shorter width for mobile */
+    transform: none; /* Remove any centering transforms */
   }
   
   .rainyMessage p {

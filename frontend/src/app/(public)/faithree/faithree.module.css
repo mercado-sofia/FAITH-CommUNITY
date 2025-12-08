@@ -1311,9 +1311,9 @@
   }
   
   .floatingGround {
-    top: 62%;
+    top: 48%;
     left: 50%;
-    transform: translate(calc(-50% + 3%), -50%) scale(1.3);
+    transform: translate(calc(-50% - 5%), -50%) scale(1.3);
     width: 100%;
     max-width: 100%;
     overflow: visible;
@@ -1472,14 +1472,13 @@
   }
   
   .floatingGround {
-    top: 62%;
-    left: 50%;
-    transform: translate(calc(-50% + 3%), -50%) scale(1.3);
+    top: 40%;
+    left: 43%;
+    transform: translate(calc(-50% - 5%), -50%) scale(1.3);
     width: 100%;
     max-width: 100%;
     overflow: visible;
   }
-  
 }
 
 /* Very small screens */
@@ -1583,9 +1582,9 @@
   }
   
   .floatingGround {
-    top: 62%;
+    top: 48%;
     left: 50%;
-    transform: translate(calc(-50% + 3%), -50%) scale(1.3);
+    transform: translate(calc(-50% - 5%), -50%) scale(1.3);
     overflow: visible;
   }
 }
@@ -1624,9 +1623,9 @@
   
   
   .floatingGround {
-    top: 62%;
+    top: 48%;
     left: 50%;
-    transform: translate(calc(-50% + 3%), -50%) scale(1.3);
+    transform: translate(calc(-50% - 5%), -50%) scale(1.3);
     overflow: visible;
   }
 }
@@ -1669,9 +1668,9 @@
   
   
   .floatingGround {
-    top: 62%;
+    top: 48%;
     left: 50%;
-    transform: translate(calc(-50% + 3%), -50%) scale(1.3);
+    transform: translate(calc(-50% - 5%), -50%) scale(1.3);
     overflow: visible;
   }
 }

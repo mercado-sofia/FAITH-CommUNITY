@@ -211,7 +211,6 @@ function FAITHreePage() {
           aria-label="FAITHree interactive environment"
         >
         {/* Eco-themed background */}
-        {/* Note: isInitialView is always false here since organization is selected in WelcomeSection */}
         <div className={`${styles.ecoBackground} ${styles.ecoBackgroundTree}`}>
           {/* Sky with clouds */}
           <div 
@@ -349,7 +348,7 @@ function FAITHreePage() {
 
         {/* Bottom White Container - 34% height, in front of tree */}
         {!isInitialView && (
-          <div className={styles.bottomGreenContainer}>
+          <div className={`${styles.bottomGreenContainer} ${theme === 'rainy' ? styles.bottomGreenContainerRainy : ''}`}>
             {/* Impact Level Showcase - Mobile only, inside bottom container */}
             <div className={styles.mobileImpactLevelContainer}>
               <ImpactLevelShowcase theme={theme} />
@@ -357,7 +356,7 @@ function FAITHreePage() {
           </div>
         )}
 
-        {/* Filters Component - Rendered outside sidebar so toggle button is always visible on mobile */}
+        {/* Filters Component - Positioned at top corners (left: org, right: year) */}
         {!isInitialView && (
           <Filters
             organizations={allOrganizations}
@@ -371,23 +370,9 @@ function FAITHreePage() {
           />
         )}
 
-        {/* Left Sidebar - Desktop filters and Impact Level Showcase */}
+        {/* Left Sidebar - Impact Level Showcase */}
         {!isInitialView && (
           <div className={styles.leftSidebar}>
-            {/* Desktop filters - hidden on mobile, shown in sidebar */}
-            <div className={styles.desktopFiltersOnly}>
-              <Filters
-                organizations={allOrganizations}
-                years={uniqueYears}
-                selectedOrganization={selectedOrganization}
-                selectedYear={selectedYear}
-                showAllYears={showAllYears}
-                onOrganizationChange={handleOrganizationChange}
-                onYearChange={handleFilterYearChange}
-                theme={theme}
-                hideMobileToggle={true}
-              />
-            </div>
             {/* Impact Level Showcase - Desktop only */}
             <div className={styles.desktopImpactLevelContainer}>
               <ImpactLevelShowcase theme={theme} />

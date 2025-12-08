@@ -43,4 +43,3 @@ export default function PageLoadingOverlay({ isLoading }) {
     </div>
   );
 }
-

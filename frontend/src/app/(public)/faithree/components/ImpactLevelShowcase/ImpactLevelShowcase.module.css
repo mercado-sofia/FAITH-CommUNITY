@@ -83,7 +83,7 @@
 }
 
 .showcaseRainy .showcaseTitle {
-  color: #E0F6FF;
+  color: #ffffff;
 }
 
 /* Showcase Content */
@@ -215,21 +215,21 @@
 .impactLevelName {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #000000; /* Black text */
+  color: #1b5e20; /* Dark green text */
 }
 
 .showcaseRainy .impactLevelName {
-  color: #000000; /* Black text */
+  color: #ffffff; /* White text */
 }
 
 .impactDescription {
   font-size: 0.75rem;
-  color: #000000; /* Black text */
+  color: #2e7d32; /* Medium green text */
   opacity: 0.8;
 }
 
 .showcaseRainy .impactDescription {
-  color: #000000; /* Black text */
+  color: #ffffff; /* White text */
   opacity: 0.8;
 }
 
@@ -273,7 +273,7 @@
   }
 
   .showcaseHeader {
-    padding: 1.5rem 0 0.5rem 0; /* Added top padding to move label away from top edge */
+    padding: 0.75rem 0 0.5rem 0; /* Reduced top padding for mobile */
     cursor: default;
     border-bottom: none; /* Removed line separator */
     justify-content: center; /* Center horizontally */
@@ -284,24 +284,24 @@
   }
 
   .showcaseTitle {
-    font-size: 1rem; /* 16px */
+    font-size: 0.9375rem; /* 15px - slightly reduced */
     letter-spacing: 0.5px;
     text-align: center; /* Center the label text */
     color: #2e7d32; /* Dark green for white background - keeping green theme */
   }
 
   .showcaseRainy .showcaseTitle {
-    color: #2e7d32; /* Dark green for white background - keeping green theme */
+    color: #ffffff; /* White for dark background in rainy mode */
   }
 
   .showcaseContent {
-    padding: 0.75rem 0;
-    gap: 0.3rem; /* Reduced gap between items on mobile */
+    padding: 0.5rem 0 0.75rem 0; /* Reduced padding for mobile */
+    gap: 0.25rem; /* Further reduced gap between items */
   }
 
   .impactLevelItem {
-    padding: 0.5rem;
-    gap: 1rem; /* Increased gap between star and text */
+    padding: 0.4rem 0.5rem; /* Reduced vertical padding */
+    gap: 0.75rem; /* Reduced gap between star and text */
     background: transparent !important; /* No background on white container */
   }
 
@@ -315,16 +315,16 @@
   }
 
   .showcaseRainy .impactLevelItem:hover {
-    background: rgba(76, 175, 80, 0.08) !important;
+    background: rgba(135, 206, 250, 0.15) !important; /* Light blue hover for dark background in rainy mode */
     border: none !important;
   }
 
   .starContainer {
     padding: 0;
-    width: 2.5rem; /* Fixed width for mobile to accommodate largest star (1.3rem) with padding */
-    height: 2.5rem; /* Fixed height for mobile to accommodate largest star (1.3rem) with padding */
-    min-width: 2.5rem;
-    min-height: 2.5rem;
+    width: 2rem; /* Reduced width for mobile */
+    height: 2rem; /* Reduced height for mobile */
+    min-width: 2rem;
+    min-height: 2rem;
   }
 
   /* Reduced star sizes for mobile */
@@ -351,7 +351,7 @@
   }
 
   .impactLevelName {
-    font-size: 0.875rem; /* 14px for mobile (reduced by 1px) */
+    font-size: 0.8125rem; /* 13px for mobile - further reduced */
     color: #000000; /* Black text */
     font-weight: 600;
     white-space: nowrap;
@@ -359,12 +359,12 @@
   }
 
   .showcaseRainy .impactLevelName {
-    color: #000000; /* Black text */
+    color: #E0F6FF; /* Light blue-white for dark background in rainy mode */
   }
 
   .impactDescription {
-    font-size: 0.8125rem; /* 13px for mobile (reduced by 1px) */
-    color: #666666; /* Gray text for mobile */
+    font-size: 0.75rem; /* 12px for mobile - further reduced */
+    color: #999999; /* Light gray text for mobile */
     opacity: 0.85;
     white-space: nowrap;
     flex-shrink: 0;
@@ -372,8 +372,8 @@
   }
 
   .showcaseRainy .impactDescription {
-    color: #666666; /* Gray text for mobile */
-    opacity: 0.85;
+    color: #E0F6FF; /* Light blue-white for dark background in rainy mode */
+    opacity: 0.9; /* Slightly higher opacity for better visibility on dark background */
   }
 }
 
@@ -391,34 +391,38 @@
   }
 
   .showcaseHeader {
-    padding: 1.5rem 0.75rem 0.6rem 0.75rem; /* Added top padding to move label away from top edge */
+    padding: 0.75rem 0.75rem 0.5rem 0.75rem; /* Reduced top padding for smaller mobile */
     cursor: default;
     justify-content: center; /* Center horizontally */
     border-bottom: none; /* Removed line separator */
   }
 
   .showcaseTitle {
-    font-size: 1rem; /* 16px */
+    font-size: 0.9375rem; /* 15px - slightly reduced */
     text-align: center; /* Center the label text */
     color: #2e7d32; /* Dark green for white background - keeping green theme */
   }
 
+  .showcaseRainy .showcaseTitle {
+    color: #ffffff; /* White for dark background in rainy mode */
+  }
+
   .showcaseContent {
-    padding: 0.75rem;
-    gap: 0.25rem; /* Reduced gap between items on smaller mobile */
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem; /* Reduced padding for smaller mobile */
+    gap: 0.2rem; /* Further reduced gap between items */
   }
 
   .impactLevelItem {
-    padding: 0.6rem;
-    gap: 1rem; /* Increased gap between star and text */
+    padding: 0.35rem 0.5rem; /* Reduced padding for smaller mobile */
+    gap: 0.75rem; /* Reduced gap between star and text */
   }
 
   .starContainer {
     padding: 0;
-    width: 2.25rem; /* Fixed width for smaller mobile to accommodate largest star (1.2rem) with padding */
-    height: 2.25rem; /* Fixed height for smaller mobile to accommodate largest star (1.2rem) with padding */
-    min-width: 2.25rem;
-    min-height: 2.25rem;
+    width: 2rem; /* Reduced width for smaller mobile */
+    height: 2rem; /* Reduced height for smaller mobile */
+    min-width: 2rem;
+    min-height: 2rem;
   }
 
   /* Further reduced star sizes for smaller mobile */
@@ -427,11 +431,11 @@
   }
 
   .starAverage {
-    font-size: 1rem !important; /* Further reduced for small screens */
+    font-size: 0.95rem !important; /* Further reduced for small screens */
   }
 
   .starHigh {
-    font-size: 1.2rem !important; /* Further reduced for small screens */
+    font-size: 1.1rem !important; /* Further reduced for small screens */
   }
 
   /* Change impact label to horizontal layout on smaller mobile */
@@ -445,7 +449,7 @@
   }
 
   .impactLevelName {
-    font-size: 0.875rem; /* 14px for smaller mobile (reduced by 1px) */
+    font-size: 0.8125rem; /* 13px for smaller mobile - further reduced */
     color: #000000; /* Black text */
     font-weight: 600;
     white-space: nowrap;
@@ -453,11 +457,11 @@
   }
 
   .showcaseRainy .impactLevelName {
-    color: #000000; /* Black text */
+    color: #E0F6FF; /* Light blue-white for dark background in rainy mode */
   }
 
   .impactDescription {
-    font-size: 0.8125rem; /* 13px for smaller mobile (reduced by 1px) */
+    font-size: 0.75rem; /* 12px for smaller mobile - further reduced */
     color: #666666; /* Gray text for mobile */
     opacity: 0.85;
     white-space: nowrap;
@@ -466,8 +470,8 @@
   }
 
   .showcaseRainy .impactDescription {
-    color: #666666; /* Gray text for mobile */
-    opacity: 0.85;
+    color: #B8E6FF; /* Lighter blue for dark background in rainy mode */
+    opacity: 0.9;
   }
 }
 

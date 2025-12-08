@@ -52,4 +52,3 @@ function ImpactLevelShowcase({ theme = 'morning' }) {
 }
 
 export default ImpactLevelShowcase;
-

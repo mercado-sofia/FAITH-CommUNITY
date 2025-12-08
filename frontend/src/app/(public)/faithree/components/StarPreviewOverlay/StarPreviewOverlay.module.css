@@ -69,9 +69,9 @@
 .previewLabel {
   background: #ffffff;
   border: 4px solid #c1f5d8;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 6px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   width: fit-content;
   display: inline-block;
   font-size: 13px;
@@ -247,10 +247,10 @@
   }
 
   .previewLabel {
-    margin-bottom: 8px;
+    margin-bottom: 3px;
     padding: 5px 10px;
     font-size: 12px;
-    border-radius: 6px;
+    border-radius: 999px;
   }
 
   .title {

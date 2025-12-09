@@ -6,6 +6,7 @@ import { FiEdit3, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { getOrganizationImageUrl } from '@/utils/shared/uploadPaths';
+import { API_BASE_URL } from '@/config/api';
 import styles from './HeadManagement.module.css';
 
 export default function HeadManagement({ showSuccessModal }) {
@@ -33,7 +34,6 @@ export default function HeadManagement({ showSuccessModal }) {
     
     const loadHeadData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/heads-faces`,
@@ -115,7 +115,6 @@ export default function HeadManagement({ showSuccessModal }) {
       const formData = new FormData();
       formData.append('image', file);
 
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       // No need to check token - cookies handle authentication
 
@@ -205,7 +204,6 @@ export default function HeadManagement({ showSuccessModal }) {
         image_url: imageUrl
       };
       
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/heads-faces/manage`,
@@ -240,14 +238,16 @@ export default function HeadManagement({ showSuccessModal }) {
       } else {
         let errorMessage = 'Failed to update head of FACES';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Update error response:', errorData);
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Update error response:', errorData);
+          }
         } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
+          console.error('Non-JSON error response:', response?.status, response?.statusText);
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
       }
     } catch (error) {
       console.error('Save error:', error);

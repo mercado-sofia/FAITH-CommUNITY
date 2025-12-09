@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaPlay } from 'react-icons/fa';
 import { FiTrash2, FiEdit3, FiUpload } from 'react-icons/fi';
 import Image from 'next/image';
@@ -10,6 +10,7 @@ import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAu
 import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { ConfirmationModal } from '@/components';
 import { getImageUrl } from '@/utils/shared/uploadPaths';
+import { API_BASE_URL } from '@/config/api';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
   const [heroData, setHeroData] = useState({
@@ -62,6 +63,12 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [selectedImageFiles, setSelectedImageFiles] = useState({});
   // Track images that should be deleted (images that had URLs but are now removed)
   const [imagesToDelete, setImagesToDelete] = useState(new Set());
+  
+  // Preview URLs for selected image files (keyed by image ID)
+  const [previewUrls, setPreviewUrls] = useState({});
+  
+  // Track object URLs for cleanup to prevent memory leaks (keyed by image ID)
+  const objectUrlsRef = useRef(new Map());
 
   // Load hero data - only on mount to prevent race conditions
   useEffect(() => {
@@ -69,7 +76,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     
     const loadHeroData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/hero-section`,
@@ -205,7 +211,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const handleTextConfirm = async () => {
     try {
       setIsUpdatingText(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       // Update both tag and heading in one request
@@ -237,15 +242,19 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal('Text content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          setIsUpdatingText(false);
+          setShowTextModal(false);
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          setIsUpdatingText(false);
+          setShowTextModal(false);
           return;
         }
         
@@ -319,7 +328,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     return url; // Return original if no conversion needed
   };
 
-
   // File upload handlers
   // silent: if true, don't show success modal or update heroData (for batch operations)
   const handleFileUpload = async (file, type, imageId = null, silent = false) => {
@@ -338,7 +346,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         formData.append('imageId', imageId);
       }
 
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       const endpoint = imageId 
@@ -392,13 +399,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         }
         
         // Handle 401 responses (should not happen if token refresh worked)
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
           return null;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
           return null;
@@ -464,7 +471,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const handleVideoConfirm = async () => {
     try {
       setIsUpdatingVideo(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       let finalVideoData = { ...tempVideoData };
@@ -487,10 +493,14 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             setSelectedVideoFile(null);
           } else {
             showSuccessModal('Failed to upload video. Please try again.');
+            setIsUpdatingVideo(false);
+            setShowVideoModal(false);
             return;
           }
         } catch (error) {
           showSuccessModal('Failed to upload video. Please try again.');
+          setIsUpdatingVideo(false);
+          setShowVideoModal(false);
           return;
         }
       }
@@ -526,15 +536,19 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal('Video content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          setIsUpdatingVideo(false);
+          setShowVideoModal(false);
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          setIsUpdatingVideo(false);
+          setShowVideoModal(false);
           return;
         }
         
@@ -605,11 +619,29 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   };
 
   const handleImagesCancel = () => {
+    // Clean up all object URLs when canceling edit
+    objectUrlsRef.current.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+    objectUrlsRef.current.clear();
+    
     setIsEditingImages(false);
     setTempImagesData([]);
     setSelectedImageFiles({});
     setImagesToDelete(new Set());
+    setPreviewUrls({});
   };
+  
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    const urlsMap = objectUrlsRef.current;
+    return () => {
+      urlsMap.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      urlsMap.clear();
+    };
+  }, []);
 
   const handleImagesSave = () => {
     setShowImagesModal(true);
@@ -618,7 +650,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const handleImagesConfirm = async () => {
     try {
       setIsUpdatingImages(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       let finalImagesData = [...tempImagesData];
@@ -669,17 +700,26 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             });
           } else {
             showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
+            setIsUpdatingImages(false);
+            setShowImagesModal(false);
             return;
           }
         } catch (error) {
           showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
+          setIsUpdatingImages(false);
+          setShowImagesModal(false);
           return;
         }
       }
       
-      // Clear selected files and deletion tracking
+      // Clear selected files, deletion tracking, and object URLs
+      objectUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      objectUrlsRef.current.clear();
       setSelectedImageFiles({});
       setImagesToDelete(new Set());
+      setPreviewUrls({});
       
       // Save images data
       const response = await makeAuthenticatedRequest(
@@ -708,15 +748,19 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal('Banner images updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          setIsUpdatingImages(false);
+          setShowImagesModal(false);
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          setIsUpdatingImages(false);
+          setShowImagesModal(false);
           return;
         }
         
@@ -763,7 +807,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       // If not in edit mode, delete immediately
       try {
         setIsDeleting(true);
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const endpoint = `${baseUrl}/api/superadmin/hero-section/video`;
         
@@ -783,24 +826,32 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           showSuccessModal('Video deleted successfully!');
         } else {
           // Handle errors
-          if (response.status === 401) {
+          if (response && response.status === 401) {
             showSuccessModal('Authentication expired. Please log in again.');
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteType(null);
             return;
           }
           
-          if (response.status === 0) {
+          if (response && response.status === 0) {
             showSuccessModal(`CORS error: Unable to connect to backend.`);
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteType(null);
             return;
           }
           
           let errorMessage = 'Failed to delete video';
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            if (response) {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+            }
           } catch (e) {
-            errorMessage = response.statusText || `Server error (${response.status})`;
+            errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
           }
-          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+          showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
         }
       } catch (error) {
         showSuccessModal('Failed to delete video. Please try again.');
@@ -837,7 +888,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       // If not in edit mode, delete immediately
       try {
         setIsDeleting(true);
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const endpoint = `${baseUrl}/api/superadmin/hero-section/image/${deleteType.imageId}`;
         
@@ -857,24 +907,32 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           showSuccessModal('Image deleted successfully!');
         } else {
           // Handle errors
-          if (response.status === 401) {
+          if (response && response.status === 401) {
             showSuccessModal('Authentication expired. Please log in again.');
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteType(null);
             return;
           }
           
-          if (response.status === 0) {
+          if (response && response.status === 0) {
             showSuccessModal(`CORS error: Unable to connect to backend.`);
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteType(null);
             return;
           }
           
           let errorMessage = 'Failed to delete image';
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            if (response) {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+            }
           } catch (e) {
-            errorMessage = response.statusText || `Server error (${response.status})`;
+            errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
           }
-          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+          showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
         }
       } catch (error) {
         showSuccessModal('Failed to delete image. Please try again.');
@@ -1261,11 +1319,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                       
                       // Prioritize newly selected file over existing image URL
                       // This ensures the new selection immediately replaces the old preview
-                      if (selectedImageFiles[image.id]) {
+                      if (selectedImageFiles[image.id] && previewUrls[image.id]) {
                         return (
                           <div className={styles.preview}>
                             <Image 
-                              src={URL.createObjectURL(selectedImageFiles[image.id])} 
+                              src={previewUrls[image.id]} 
                               alt={`Banner image ${index + 1} preview`} 
                               width={200}
                               height={150}
@@ -1285,6 +1343,15 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                 onChange={(e) => {
                                   if (e.target.files[0]) {
                                     const newFile = e.target.files[0];
+                                    // Clean up previous preview URL for this image if exists
+                                    const existingUrl = objectUrlsRef.current.get(image.id);
+                                    if (existingUrl) {
+                                      URL.revokeObjectURL(existingUrl);
+                                    }
+                                    // Create new preview URL
+                                    const newPreviewUrl = URL.createObjectURL(newFile);
+                                    objectUrlsRef.current.set(image.id, newPreviewUrl);
+                                    setPreviewUrls(prev => ({ ...prev, [image.id]: newPreviewUrl }));
                                     // Set the new file - preview logic will prioritize this over image.url
                                     setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
                                     // Clear deletion flag since we're replacing, not deleting
@@ -1293,9 +1360,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                       newSet.delete(image.id);
                                       return newSet;
                                     });
-                                    // Don't clear the URL - let the preview logic handle it
-                                    // The selectedImageFiles check happens first, so new file will show
-                                    // Old URL will be replaced when we save
                                   }
                                   // Reset input value to allow selecting the same file again
                                   e.target.value = '';
@@ -1330,6 +1394,15 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                 onChange={(e) => {
                                   if (e.target.files[0]) {
                                     const newFile = e.target.files[0];
+                                    // Clean up previous preview URL for this image if exists
+                                    const existingUrl = objectUrlsRef.current.get(image.id);
+                                    if (existingUrl) {
+                                      URL.revokeObjectURL(existingUrl);
+                                    }
+                                    // Create new preview URL
+                                    const newPreviewUrl = URL.createObjectURL(newFile);
+                                    objectUrlsRef.current.set(image.id, newPreviewUrl);
+                                    setPreviewUrls(prev => ({ ...prev, [image.id]: newPreviewUrl }));
                                     // Set the new file - preview logic will prioritize this over image.url
                                     setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
                                     // Clear deletion flag since we're replacing, not deleting
@@ -1338,9 +1411,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                       newSet.delete(image.id);
                                       return newSet;
                                     });
-                                    // Don't clear the URL - let the preview logic handle it
-                                    // The selectedImageFiles check happens first, so new file will show
-                                    // Old URL will be replaced when we save
                                   }
                                   // Reset input value to allow selecting the same file again
                                   e.target.value = '';
@@ -1378,6 +1448,15 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                 onChange={(e) => {
                                   if (e.target.files[0]) {
                                     const newFile = e.target.files[0];
+                                    // Clean up previous preview URL for this image if exists
+                                    const existingUrl = objectUrlsRef.current.get(image.id);
+                                    if (existingUrl) {
+                                      URL.revokeObjectURL(existingUrl);
+                                    }
+                                    // Create new preview URL
+                                    const newPreviewUrl = URL.createObjectURL(newFile);
+                                    objectUrlsRef.current.set(image.id, newPreviewUrl);
+                                    setPreviewUrls(prev => ({ ...prev, [image.id]: newPreviewUrl }));
                                     // Set the new file - preview logic will prioritize this over image.url
                                     setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
                                     // Clear deletion flag since we're replacing, not deleting
@@ -1386,9 +1465,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                       newSet.delete(image.id);
                                       return newSet;
                                     });
-                                    // Don't clear the URL - let the preview logic handle it
-                                    // The selectedImageFiles check happens first, so new file will show
-                                    // Old URL will be replaced when we save
                                   }
                                   // Reset input value to allow selecting the same file again
                                   e.target.value = '';
@@ -1447,6 +1523,19 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         </span>
                         <button
                           onClick={() => {
+                            // Clean up object URL for this image
+                            const url = objectUrlsRef.current.get(image.id);
+                            if (url) {
+                              URL.revokeObjectURL(url);
+                              objectUrlsRef.current.delete(image.id);
+                            }
+                            
+                            setPreviewUrls(prev => {
+                              const newUrls = { ...prev };
+                              delete newUrls[image.id];
+                              return newUrls;
+                            });
+                            
                             setSelectedImageFiles(prev => {
                               const newFiles = { ...prev };
                               delete newFiles[image.id];

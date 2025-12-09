@@ -5,6 +5,7 @@ import { FiTarget, FiEye, FiEdit3 } from 'react-icons/fi';
 import { mutate } from 'swr';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
+import { API_BASE_URL } from '@/config/api';
 import styles from './MissionVisionManagement.module.css';
 
 export default function MissionVisionManagement({ showSuccessModal }) {
@@ -25,7 +26,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
     
     const loadMissionVisionData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/mission-vision`,
@@ -59,18 +59,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
             setTempVision(currentVision);
           }
         } else {
-          if (isMounted) {
-            console.error('Failed to load mission/vision: response not ok', response);
-            if (response) {
-              console.error('Response status:', response.status);
-              try {
-                const errorData = await response.json();
-                console.error('Error data:', errorData);
-              } catch (e) {
-                console.error('Could not parse error response');
-              }
-            }
-          }
+          // Response not ok - error will be handled in catch block
         }
       } catch (error) {
         if (isMounted) {
@@ -141,7 +130,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   const handleMissionVisionConfirm = async () => {
     try {
       setIsUpdating(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       // Normalize values for comparison (handle null/empty string)
@@ -185,7 +173,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               } else {
                 const errorMessage = responseData.error || responseData.message || 'Failed to save Mission';
                 errors.push(`Mission: ${errorMessage}`);
-                console.error('Save mission error response:', responseData);
               }
             } catch (parseError) {
               // If response is OK but can't parse JSON, assume success
@@ -258,7 +245,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               } else {
                 const errorMessage = responseData.error || responseData.message || 'Failed to save Vision';
                 errors.push(`Vision: ${errorMessage}`);
-                console.error('Save vision error response:', responseData);
               }
             } catch (parseError) {
               // If response is OK but can't parse JSON, assume success

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
+import { API_BASE_URL } from '@/config/api';
 import styles from './SiteNameManagement.module.css';
 
 export default function SiteNameManagement({ showSuccessModal }) {
@@ -22,7 +23,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
     
     const loadSiteNameData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding/site-name`,
@@ -61,8 +61,7 @@ export default function SiteNameManagement({ showSuccessModal }) {
               }
             } catch (error) {
               if (isMounted) {
-                console.error('Auto-insert site name error:', error);
-                // Use default for display even if auto-insert fails
+                // Auto-insert failed - use default for display (non-critical)
                 siteNameValue = defaultSiteName;
               }
             }
@@ -124,7 +123,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
   const handleSiteNameConfirm = async () => {
     try {
       setIsUpdatingSiteName(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/branding/site-name`,
@@ -160,14 +158,16 @@ export default function SiteNameManagement({ showSuccessModal }) {
         
         let errorMessage = 'Failed to update site name';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Update error response:', errorData);
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Update error response:', errorData);
+          }
         } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
+          console.error('Non-JSON error response:', response?.status, response?.statusText);
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
       }
     } catch (error) {
       console.error('Update error:', error);

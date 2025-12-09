@@ -146,7 +146,23 @@ const urlencodedParser = express.urlencoded({ extended: true });
 const shouldSkipBodyParsing = (req) => {
   // Check both originalUrl and path for maximum reliability
   const url = req.originalUrl || req.url || req.path || '';
-  return url.startsWith('/api/submissions');
+  
+  // Check Content-Type header - if it's multipart/form-data, skip JSON parsing
+  const contentType = req.headers['content-type'] || '';
+  const isMultipart = contentType.includes('multipart/form-data');
+  
+  // Skip body parsing for:
+  // 1. Submission routes (they have their own parser with 50MB limit)
+  // 2. File upload routes (they use FormData/multipart which multer handles)
+  // 3. Any multipart/form-data requests (file uploads)
+  return url.startsWith('/api/submissions') || 
+         url.includes('/upload-') || 
+         url.includes('/upload-image') ||
+         url.includes('/upload-video') ||
+         url.includes('/upload-logo') ||
+         url.includes('/upload-favicon') ||
+         url.includes('/upload-name') ||
+         isMultipart;
 };
 
 app.use((req, res, next) => {

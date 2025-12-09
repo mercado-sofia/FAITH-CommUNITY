@@ -66,15 +66,21 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
     throw new Error('Cannot make authenticated request on server side');
   }
 
+  // Prepare headers - don't set Content-Type for FormData (browser sets it with boundary)
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData
+    ? { ...options.headers } // No Content-Type for FormData - browser will set it with boundary
+    : {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+
   // Make the request - tokens are in httpOnly cookies, sent automatically
   const response = await fetch(url, {
     ...options,
     credentials: 'include', // CRITICAL: Include httpOnly cookies
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-      // REMOVED: 'Authorization' header - cookies handle this now
-    }
+    headers
+    // REMOVED: 'Authorization' header - cookies handle this now
   });
   
   // Handle 401/403 responses - try refresh if possible
@@ -101,13 +107,18 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
       const refreshed = await getValidAccessToken(true);
       if (refreshed) {
         // Retry request - new token is in cookie
+        // Use same header logic as initial request (preserve FormData handling)
+        const retryHeaders = isFormData
+          ? { ...options.headers }
+          : {
+              'Content-Type': 'application/json',
+              ...options.headers
+            };
+        
         const retryResponse = await fetch(url, {
           ...options,
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-          }
+          headers: retryHeaders
         });
         
         // Check if retry also failed

@@ -71,8 +71,23 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   // Branding file upload handlers
   const handleFileUpload = async (file, type) => {
     try {
+      // Validate file before creating FormData
+      if (!file || !(file instanceof File)) {
+        console.error('Invalid file object:', file);
+        showSuccessModal(`Invalid file for ${type}. Please select a file again.`);
+        return null;
+      }
+      
       const formData = new FormData();
       formData.append(type, file);
+      
+      // File info logged for debugging (can be removed in production)
+      // console.log(`Uploading ${type}:`, {
+      //   name: file.name,
+      //   size: file.size,
+      //   type: file.type,
+      //   fieldName: type
+      // });
 
       const baseUrl = API_BASE_URL || '';
       // No need to check token - cookies handle authentication
@@ -91,8 +106,31 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        const fileUrl = data.data[`${type}_url`];
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error('Error parsing upload response:', parseError);
+          showSuccessModal(`Failed to upload ${type}: Invalid response from server. Please try again.`);
+          return null;
+        }
+        
+        // Check if response has success flag and data
+        if (!data.success) {
+          const errorMessage = data.message || data.error || `Failed to upload ${type}`;
+          console.error('Upload failed:', errorMessage);
+          showSuccessModal(errorMessage);
+          return null;
+        }
+        
+        // Extract file URL from response data
+        const fileUrl = data.data?.[`${type}_url`];
+        
+        if (!fileUrl) {
+          console.error('Upload response missing file URL:', data);
+          showSuccessModal(`Failed to upload ${type}: Server response missing file URL. Please try again.`);
+          return null;
+        }
         
         // Update state immediately for individual uploads
         setBrandingData(prev => ({
@@ -135,14 +173,23 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         let errorMessage = `Failed to upload ${type}`;
         try {
           const errorData = await response.json();
+          // Backend returns { success: false, message: '...', error: '...' }
           errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Upload error response:', errorData);
+          console.error('Upload error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          });
         } catch (e) {
           // If response is not JSON, use status text
           errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          console.error('Non-JSON error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            parseError: e
+          });
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage}${response.status ? ` (Status: ${response.status})` : ''}`);
         return null;
       }
     } catch (error) {
@@ -323,9 +370,18 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         // Upload files if selected
         for (const [fileType, file] of Object.entries(selectedFiles)) {
           try {
+            // Validate file exists and is a File object
+            if (!file || !(file instanceof File)) {
+              console.error(`Invalid file for ${fileType}:`, file);
+              showSuccessModal(`Invalid file selected for ${fileType}. Please select a file again.`);
+              setIsUpdatingBranding(false);
+              setShowBrandingModal(false);
+              return;
+            }
+            
             const fileUrl = await handleFileUpload(file, fileType);
             if (!fileUrl) {
-              showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
+              // handleFileUpload already shows error message, just reset state and return
               setIsUpdatingBranding(false);
               setShowBrandingModal(false);
               return;
@@ -339,7 +395,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             const fieldName = fieldMap[fileType] || `${fileType}_url`;
             finalBrandingData[fieldName] = fileUrl;
           } catch (error) {
-            showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
+            // handleFileUpload should handle most errors, but catch any unexpected errors
+            console.error(`Unexpected error uploading ${fileType}:`, error);
+            showSuccessModal(`Failed to upload ${fileType}: ${error.message || 'Unknown error'}. Please try again.`);
             setIsUpdatingBranding(false);
             setShowBrandingModal(false);
             return;

@@ -30,6 +30,7 @@ import { FaXTwitter } from 'react-icons/fa6';
 import { mutate } from 'swr';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { ConfirmationModal } from '@/components';
+import { API_BASE_URL } from '@/config/api';
 import styles from './FooterContentManagement.module.css';
 
 // Social media platform mapping with icons
@@ -93,7 +94,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     
     const loadFooterData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/footer`,
@@ -149,8 +149,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
               }
             } catch (error) {
               if (isMounted) {
-                console.error('Auto-insert copyright error:', error);
-                // Use default for display even if auto-insert fails
+                // Auto-insert failed - use default for display (non-critical)
                 copyrightData = defaultCopyright;
               }
             }
@@ -257,7 +256,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     // If not in edit mode, add directly to services via API
     try {
       setIsUpdatingFooter(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/footer/services`,
@@ -272,19 +270,26 @@ export default function FooterContentManagement({ showSuccessModal }) {
       );
 
       if (response && response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          console.error('Error parsing add service response:', e);
+          showSuccessModal('Service added but could not parse response');
+          return;
+        }
         setServices(prev => [...prev, data.data]);
         setNewService('');
         showSuccessModal('Service added successfully!');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
           return;
@@ -292,14 +297,16 @@ export default function FooterContentManagement({ showSuccessModal }) {
         
         let errorMessage = 'Failed to add service';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Add service error response:', errorData);
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Add service error response:', errorData);
+          }
         } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
+          console.error('Non-JSON error response:', response?.status, response?.statusText);
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
       }
     } catch (error) {
       console.error('Add service error:', error);
@@ -338,7 +345,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     // If not in edit mode, delete via API
     try {
       setIsDeleting(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/footer/services/${serviceToDelete.id}`,
@@ -351,28 +357,38 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal('Service deleted successfully!');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          setIsDeleting(false);
+          setShowDeleteModal(false);
+          setServiceToDelete(null);
+          setIsDeletingFromEditMode(false);
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          setIsDeleting(false);
+          setShowDeleteModal(false);
+          setServiceToDelete(null);
+          setIsDeletingFromEditMode(false);
           return;
         }
         
         let errorMessage = 'Failed to delete service';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Delete service error response:', errorData);
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Delete service error response:', errorData);
+          }
         } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
+          console.error('Non-JSON error response:', response?.status, response?.statusText);
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
       }
     } catch (error) {
       console.error('Delete service error:', error);
@@ -402,7 +418,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const handleFooterConfirm = async () => {
     try {
       setIsUpdatingFooter(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       let endpoint = '';
       let body = {};
@@ -472,28 +487,36 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
-        if (response.status === 401) {
+        if (response && response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          setIsUpdatingFooter(false);
+          setShowFooterModal(false);
+          setFooterModalType('');
           return;
         }
         
         // Handle CORS errors (status 0)
-        if (response.status === 0) {
+        if (response && response.status === 0) {
           console.error('CORS or network error detected');
           showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          setIsUpdatingFooter(false);
+          setShowFooterModal(false);
+          setFooterModalType('');
           return;
         }
         
         let errorMessage = 'Failed to update footer content';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Update error response:', errorData);
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Update error response:', errorData);
+          }
         } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          errorMessage = response ? (response.statusText || `Server error (${response.status})`) : 'Network error';
+          console.error('Non-JSON error response:', response?.status, response?.statusText);
         }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+        showSuccessModal(`${errorMessage} (Status: ${response?.status || 'unknown'})`);
       }
     } catch (error) {
       console.error('Update error:', error);
@@ -574,7 +597,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const handleServicesUpdate = async () => {
     try {
       setIsUpdatingFooter(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       // Helper function to handle API errors

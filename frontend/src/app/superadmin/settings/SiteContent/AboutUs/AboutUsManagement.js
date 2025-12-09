@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/shared/portalAuth';
 import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import { ConfirmationModal } from '@/components';
 import { getImageUrl } from '@/utils/shared/uploadPaths';
+import { API_BASE_URL } from '@/config/api';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
@@ -25,6 +26,10 @@ export default function AboutUsManagement({ showSuccessModal }) {
   // Image upload state
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null); // Preview URL for selected file
+  
+  // Track object URLs for cleanup to prevent memory leaks
+  const objectUrlsRef = useRef(new Set());
   
   // Image deletion state
   const [showDeleteImageModal, setShowDeleteImageModal] = useState(false);
@@ -79,7 +84,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
     
     const loadAboutUsData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
@@ -138,6 +142,12 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
   // Cancel edit function
   const handleCancelEdit = () => {
+    // Clean up object URLs when canceling edit
+    objectUrlsRef.current.forEach(url => {
+      URL.revokeObjectURL(url);
+    });
+    objectUrlsRef.current.clear();
+    
     setIsEditingAboutUs(false);
     setTempAboutUs({
       description: aboutUsData?.description || '',
@@ -145,7 +155,19 @@ export default function AboutUsManagement({ showSuccessModal }) {
       image_url: aboutUsData?.image_url || ''
     });
     setSelectedFile(null); // Clear any selected file
+    setPreviewUrl(null); // Clear preview URL
   };
+  
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    const urlsSet = objectUrlsRef.current;
+    return () => {
+      urlsSet.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+      urlsSet.clear();
+    };
+  }, []);
 
   // About us update handler - no validation, all fields optional
   const handleAboutUsUpdate = () => {
@@ -157,7 +179,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
       try {
         setIsUpdatingAboutUs(true);
         
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         
         // CRITICAL: Save the record FIRST (creates it if it doesn't exist)
@@ -185,6 +206,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
         if (!initialResponse) {
           showSuccessModal('Authentication failed. Please log in again.');
+          setIsUpdatingAboutUs(false);
+          setShowAboutUsModal(false);
           return;
         }
         
@@ -202,6 +225,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
             errorMessage = initialResponse.statusText || `Server error (${initialResponse.status})`;
           }
           showSuccessModal(`${errorMessage} (Status: ${initialResponse.status})`);
+          setIsUpdatingAboutUs(false);
+          setShowAboutUsModal(false);
           return;
         }
         
@@ -221,7 +246,13 @@ export default function AboutUsManagement({ showSuccessModal }) {
         if (selectedFile) {
           try {
             finalImageUrl = await handleImageUpload(selectedFile);
+            // Clean up preview URL after successful upload
+            if (previewUrl) {
+              URL.revokeObjectURL(previewUrl);
+              objectUrlsRef.current.delete(previewUrl);
+            }
             setSelectedFile(null); // Clear selected file after successful upload
+            setPreviewUrl(null); // Clear preview URL
             
             // Step 3: Update the record with the new image URL
             const updateResponse = await makeAuthenticatedRequest(
@@ -274,6 +305,12 @@ export default function AboutUsManagement({ showSuccessModal }) {
         }
         
         // Step 4: Use saved data from response (no need to reload - we already have the data)
+        // Clean up preview URL after successful save
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          objectUrlsRef.current.delete(previewUrl);
+        }
+        
         if (savedData) {
           setAboutUsData(savedData);
           setTempAboutUs({
@@ -282,10 +319,12 @@ export default function AboutUsManagement({ showSuccessModal }) {
             image_url: savedData.image_url || ''
           });
           setIsEditingAboutUs(false);
+          setPreviewUrl(null); // Clear preview URL
           showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         } else {
           // This should rarely happen, but if it does, show success anyway since the save succeeded
           setIsEditingAboutUs(false);
+          setPreviewUrl(null); // Clear preview URL
           showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         }
       } catch (error) {
@@ -374,6 +413,16 @@ export default function AboutUsManagement({ showSuccessModal }) {
         return;
       }
       
+      // Clean up previous preview URL if exists
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        objectUrlsRef.current.delete(previewUrl);
+      }
+      
+      // Create new preview URL
+      const newPreviewUrl = URL.createObjectURL(file);
+      objectUrlsRef.current.add(newPreviewUrl);
+      setPreviewUrl(newPreviewUrl);
       setSelectedFile(file);
     }
   };
@@ -383,11 +432,9 @@ export default function AboutUsManagement({ showSuccessModal }) {
     try {
       setUploadingImage(true);
       
-      
       const formData = new FormData();
       formData.append('image', file);
 
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       
       // Use centralized API client with automatic token refresh
@@ -473,7 +520,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleDeleteImageConfirm = async () => {
       try {
         setIsDeletingImage(true);
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         
         const response = await makeAuthenticatedRequest(
@@ -483,17 +529,38 @@ export default function AboutUsManagement({ showSuccessModal }) {
         );
 
         if (response && response.ok) {
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+          } catch (e) {
+            console.error('Error parsing delete response:', e);
+            showSuccessModal('Image deleted but could not parse response');
+            return;
+          }
           setAboutUsData(data.data);
           setTempAboutUs(prev => ({
             ...prev,
             image_url: ''
           }));
+          // Clean up preview URL if exists
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            objectUrlsRef.current.delete(previewUrl);
+          }
           setSelectedFile(null); // Clear any selected file
+          setPreviewUrl(null); // Clear preview URL
           showSuccessModal('Image deleted successfully!');
         } else {
-          const errorData = await response.json();
-          showSuccessModal(errorData.message || 'Failed to delete image');
+          let errorMessage = 'Failed to delete image';
+          try {
+            if (response) {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorMessage;
+            }
+          } catch (e) {
+            console.error('Error parsing delete error response:', e);
+          }
+          showSuccessModal(errorMessage);
         }
       } catch (error) {
         showSuccessModal('Failed to delete image. Please try again.');
@@ -563,11 +630,11 @@ export default function AboutUsManagement({ showSuccessModal }) {
                   const currentImageUrl = isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '');
                   
                   // Priority: selectedFile > currentImageUrl > fallback (gray container)
-                  if (selectedFile) {
+                  if (selectedFile && previewUrl) {
                     return (
                       <div className={styles.currentImageContainer}>
                         <Image
-                          src={URL.createObjectURL(selectedFile)}
+                          src={previewUrl}
                           alt="Selected Image Preview"
                           className={styles.currentImage}
                           width={400}
@@ -676,7 +743,15 @@ export default function AboutUsManagement({ showSuccessModal }) {
                       Image will be uploaded when you save changes
                     </span>
                     <button
-                      onClick={() => setSelectedFile(null)}
+                      onClick={() => {
+                        // Clean up object URL
+                        if (previewUrl) {
+                          URL.revokeObjectURL(previewUrl);
+                          objectUrlsRef.current.delete(previewUrl);
+                        }
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                      }}
                       className={styles.cancelBtn}
                     >
                       Remove Selection

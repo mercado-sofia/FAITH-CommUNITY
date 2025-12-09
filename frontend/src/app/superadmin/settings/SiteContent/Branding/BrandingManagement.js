@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
@@ -26,6 +26,12 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   
   // File selection states for batch upload
   const [selectedFiles, setSelectedFiles] = useState({});
+  
+  // Preview URLs for selected files (created when files are selected, not during render)
+  const [previewUrls, setPreviewUrls] = useState({});
+  
+  // Track object URLs for cleanup to prevent memory leaks (keyed by file type)
+  const objectUrlsRef = useRef(new Map());
 
   // Load branding data - only on mount to prevent race conditions
   useEffect(() => {
@@ -33,7 +39,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
     
     const loadBrandingData = async () => {
       try {
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding`,
@@ -66,11 +71,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   // Branding file upload handlers
   const handleFileUpload = async (file, type) => {
     try {
-      
       const formData = new FormData();
       formData.append(type, file);
 
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       // No need to check token - cookies handle authentication
 
@@ -101,7 +104,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         // This ensures the Navbar logo updates immediately after individual uploads
         // Use the same API_BASE_URL format as usePublicBranding hook for cache key matching
         try {
-          const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
+          const cacheKey = `${baseUrl}/api/superadmin/branding/public`;
           await mutate(cacheKey);
         } catch (cacheError) {
           // Cache invalidation failed - non-critical, continue
@@ -168,7 +171,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
     
     try {
       setIsDeleting(true);
-      const { API_BASE_URL } = await import('@/config/api');
       const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/branding/${deleteType}`,
@@ -185,7 +187,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         // Invalidate SWR cache for public branding to force immediate refresh
         // Use the same API_BASE_URL format as usePublicBranding hook for cache key matching
         try {
-          const cacheKey = `${API_BASE_URL || ''}/api/superadmin/branding/public`;
+          const cacheKey = `${baseUrl}/api/superadmin/branding/public`;
           await mutate(cacheKey);
         } catch (cacheError) {
           // Cache invalidation failed - non-critical, continue
@@ -209,8 +211,17 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         
         showSuccessModal(successMessage);
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || `Failed to delete ${deleteType}`);
+        let errorMessage = `Failed to delete ${deleteType}`;
+        try {
+          if (response) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          }
+        } catch (e) {
+          // Response is not JSON or already consumed
+          console.error('Error parsing delete response:', e);
+        }
+        showSuccessModal(errorMessage);
       }
     } catch (error) {
       showSuccessModal(`Failed to delete ${deleteType}. Please try again.`);
@@ -238,12 +249,58 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
     setIsEditingBranding(!isEditingBranding);
   };
 
+  // Helper function to create and track object URL (called when file is selected)
+  const createTrackedObjectURL = (file, fileType) => {
+    // Revoke previous URL for this file type if exists
+    const existingUrl = objectUrlsRef.current.get(fileType);
+    if (existingUrl) {
+      URL.revokeObjectURL(existingUrl);
+    }
+    
+    const url = URL.createObjectURL(file);
+    objectUrlsRef.current.set(fileType, url);
+    setPreviewUrls(prev => ({ ...prev, [fileType]: url }));
+    return url;
+  };
+  
+  // Helper function to revoke object URL for a specific file type
+  const revokeObjectURL = (fileType) => {
+    const url = objectUrlsRef.current.get(fileType);
+    if (url) {
+      URL.revokeObjectURL(url);
+      objectUrlsRef.current.delete(fileType);
+    }
+    setPreviewUrls(prev => {
+      const newUrls = { ...prev };
+      delete newUrls[fileType];
+      return newUrls;
+    });
+  };
+  
   // Cancel edit
   const handleCancelEdit = () => {
+    // Clean up all object URLs when canceling edit
+    objectUrlsRef.current.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+    objectUrlsRef.current.clear();
+    
     setIsEditingBranding(false);
     setTempBrandingData({});
     setSelectedFiles({});
+    setPreviewUrls({});
   };
+  
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    const urlsMap = objectUrlsRef.current;
+    return () => {
+      urlsMap.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      urlsMap.clear();
+    };
+  }, []);
 
   // Branding update handler
   const handleBrandingUpdate = () => {
@@ -269,6 +326,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             const fileUrl = await handleFileUpload(file, fileType);
             if (!fileUrl) {
               showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
+              setIsUpdatingBranding(false);
+              setShowBrandingModal(false);
               return;
             }
             // Map file type to correct field name
@@ -281,13 +340,21 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             finalBrandingData[fieldName] = fileUrl;
           } catch (error) {
             showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
+            setIsUpdatingBranding(false);
+            setShowBrandingModal(false);
             return;
           }
         }
+        
+        // Clear selected files and object URLs only after all uploads succeed
+        objectUrlsRef.current.forEach((url) => {
+          URL.revokeObjectURL(url);
+        });
+        objectUrlsRef.current.clear();
         setSelectedFiles({});
+        setPreviewUrls({});
         
         // Save all branding data
-        const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding`,
@@ -315,8 +382,17 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           
           showSuccessModal('Branding updated successfully! The changes will be visible on the public site immediately.');
         } else {
-          const errorData = await response.json();
-          showSuccessModal(errorData.message || 'Failed to update branding');
+          let errorMessage = 'Failed to update branding';
+          try {
+            if (response) {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorMessage;
+            }
+          } catch (e) {
+            // Response is not JSON or already consumed
+            console.error('Error parsing update response:', e);
+          }
+          showSuccessModal(errorMessage);
         }
       } catch (error) {
         showSuccessModal('Failed to update branding. Please try again.');
@@ -397,10 +473,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                   style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
-            ) : selectedFiles.logo ? (
+            ) : selectedFiles.logo && previewUrls.logo ? (
               <div className={styles.preview}>
                 <Image 
-                  src={URL.createObjectURL(selectedFiles.logo)} 
+                  src={previewUrls.logo} 
                   alt="Logo preview" 
                   width={100}
                   height={100}
@@ -422,7 +498,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files[0]) {
-                          setSelectedFiles(prev => ({ ...prev, logo: e.target.files[0] }));
+                          const file = e.target.files[0];
+                          setSelectedFiles(prev => ({ ...prev, logo: file }));
+                          createTrackedObjectURL(file, 'logo');
                         }
                       }}
                       style={{ display: 'none' }}
@@ -444,11 +522,16 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                     </div>
                     <div className={styles.uploadButtons}>
                       <button
-                        onClick={() => setSelectedFiles(prev => {
-                          const newFiles = { ...prev };
-                          delete newFiles.logo;
-                          return newFiles;
-                        })}
+                        onClick={() => {
+                          // Clean up object URL for logo
+                          revokeObjectURL('logo');
+                          
+                          setSelectedFiles(prev => {
+                            const newFiles = { ...prev };
+                            delete newFiles.logo;
+                            return newFiles;
+                          });
+                        }}
                         className={styles.cancelBtn}
                       >
                         Remove Selection
@@ -486,10 +569,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                   style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
-            ) : selectedFiles.name ? (
+            ) : selectedFiles.name && previewUrls.name ? (
               <div className={styles.preview}>
                 <Image 
-                  src={URL.createObjectURL(selectedFiles.name)} 
+                  src={previewUrls.name} 
                   alt="Logo name preview" 
                   width={100}
                   height={100}
@@ -511,7 +594,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files[0]) {
-                          setSelectedFiles(prev => ({ ...prev, name: e.target.files[0] }));
+                          const file = e.target.files[0];
+                          setSelectedFiles(prev => ({ ...prev, name: file }));
+                          createTrackedObjectURL(file, 'name');
                         }
                       }}
                       style={{ display: 'none' }}
@@ -533,11 +618,16 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                     </div>
                     <div className={styles.uploadButtons}>
                       <button
-                        onClick={() => setSelectedFiles(prev => {
-                          const newFiles = { ...prev };
-                          delete newFiles.name;
-                          return newFiles;
-                        })}
+                        onClick={() => {
+                          // Clean up object URL for name
+                          revokeObjectURL('name');
+                          
+                          setSelectedFiles(prev => {
+                            const newFiles = { ...prev };
+                            delete newFiles.name;
+                            return newFiles;
+                          });
+                        }}
                         className={styles.cancelBtn}
                       >
                         Remove Selection
@@ -575,10 +665,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                   style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
                 />
               </div>
-            ) : selectedFiles.favicon ? (
+            ) : selectedFiles.favicon && previewUrls.favicon ? (
               <div className={styles.preview}>
                 <Image 
-                  src={URL.createObjectURL(selectedFiles.favicon)} 
+                  src={previewUrls.favicon} 
                   alt="Favicon preview" 
                   width={64}
                   height={64}
@@ -600,7 +690,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files[0]) {
-                          setSelectedFiles(prev => ({ ...prev, favicon: e.target.files[0] }));
+                          const file = e.target.files[0];
+                          setSelectedFiles(prev => ({ ...prev, favicon: file }));
+                          createTrackedObjectURL(file, 'favicon');
                         }
                       }}
                       style={{ display: 'none' }}
@@ -622,11 +714,16 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
                     </div>
                     <div className={styles.uploadButtons}>
                       <button
-                        onClick={() => setSelectedFiles(prev => {
-                          const newFiles = { ...prev };
-                          delete newFiles.favicon;
-                          return newFiles;
-                        })}
+                        onClick={() => {
+                          // Clean up object URL for favicon
+                          revokeObjectURL('favicon');
+                          
+                          setSelectedFiles(prev => {
+                            const newFiles = { ...prev };
+                            delete newFiles.favicon;
+                            return newFiles;
+                          });
+                        }}
                         className={styles.cancelBtn}
                       >
                         Remove Selection

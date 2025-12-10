@@ -371,27 +371,32 @@ export const updateHighlight = async (req, res) => {
     
     await connection.execute(updateQuery, updateParams);
     
-    // Create a submission record for the highlight update
-    const submissionQuery = `
-      INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
-      VALUES (?, 'highlights', ?, ?, 'pending', NOW())
-    `;
-    
-    const proposedData = JSON.stringify({
-      highlight_id: id,
-      title,
-      description,
-      media_files: mediaFilesJson,
-      program_id: program_id || null,
-      year: year !== null && year !== undefined ? parseInt(year, 10) : null,
-      action: 'update'
-    });
-    
-    await connection.execute(submissionQuery, [
-      orgId,
-      proposedData,
-      req.admin.id
-    ]);
+    // Only create a submission record if the highlight is not already approved
+    // If the highlight is already approved, admins can update it directly without requiring approval
+    const currentStatus = currentHighlight.status;
+    if (currentStatus !== 'approved') {
+      // Create a submission record for the highlight update (only for pending/rejected highlights)
+      const submissionQuery = `
+        INSERT INTO submissions (organization_id, section, proposed_data, submitted_by, status, submitted_at)
+        VALUES (?, 'highlights', ?, ?, 'pending', NOW())
+      `;
+      
+      const proposedData = JSON.stringify({
+        highlight_id: id,
+        title,
+        description,
+        media_files: mediaFilesJson,
+        program_id: program_id || null,
+        year: year !== null && year !== undefined ? parseInt(year, 10) : null,
+        action: 'update'
+      });
+      
+      await connection.execute(submissionQuery, [
+        orgId,
+        proposedData,
+        req.admin.id
+      ]);
+    }
     
     await connection.commit();
     

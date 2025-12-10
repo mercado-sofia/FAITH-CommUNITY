@@ -15,6 +15,7 @@
 - `MAIL_FROM` (email sender address)
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME` (for Post Act Reports)
+- `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` (optional, for real-time notifications)
 - `PORT` (optional, defaults to 8080)
 - `NODE_ENV` (development or production)
 - `LOG_LEVEL` (debug, info, warn, error)
@@ -29,6 +30,7 @@
 - `NEXT_PUBLIC_API_URL` (backend API URL)
 - `NEXT_PUBLIC_BACKEND_URL` (backend URL for file uploads)
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` (optional, for real-time notifications)
 
 ## Deployment
 

@@ -4,12 +4,14 @@ This guide explains how to migrate from local file storage to Cloudinary for the
 
 ## Overview
 
-The project has been updated to use Cloudinary for file storage instead of local `/uploads` directory. This provides:
+The project uses **Cloudinary** for image storage (profiles, branding, news, programs, organizations). This provides:
 - Better scalability
 - CDN delivery
 - Image optimization
 - Automatic format conversion
 - Reduced server storage requirements
+
+**Note**: Post-Act Report documents (PDFs, DOC, DOCX) use AWS S3 instead. See [AWS S3 Integration Guide](./AWS_S3_INTEGRATION_GUIDE.md) for document storage setup.
 
 ## Prerequisites
 

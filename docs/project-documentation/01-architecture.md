@@ -6,7 +6,7 @@ FAITH CommUNITY is a full-stack volunteer management platform built with a moder
 ## Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 15.5.4 (React 19.0.0)
+- **Framework**: Next.js 15.5.7 (React 19.0.0)
 - **State Management**: Redux Toolkit (RTK Query) for server state, React Context for client state
 - **Data Fetching**: SWR for real-time data synchronization
 - **Styling**: CSS Modules with custom styling

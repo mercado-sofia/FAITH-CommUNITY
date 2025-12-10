@@ -231,6 +231,19 @@ AWS_SECRET_ACCESS_KEY=your-secret
 AWS_S3_BUCKET_NAME=faith-community-files
 ```
 
+### Pusher (Optional - for Real-time Notifications)
+
+For real-time notifications via WebSocket:
+
+```env
+PUSHER_APP_ID=your-app-id
+PUSHER_KEY=your-key
+PUSHER_SECRET=your-secret
+PUSHER_CLUSTER=us2
+```
+
+**Note:** If Pusher is not configured, the system will fall back to polling every 60 seconds for notifications. See [Pusher Documentation](../../docs/project-documentation/PUSHER.md) for detailed setup instructions.
+
 ## Testing the Setup
 
 ### 1. Test Database Connection

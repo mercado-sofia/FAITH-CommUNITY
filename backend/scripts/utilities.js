@@ -30,9 +30,16 @@ async function createSuperadmin() {
   try {
     console.log('🔧 Creating/updating superadmin account...');
     
-    // Use the same email as database initialization
-    const superadminEmail = 'faithcommunityfaces@gmail.com';
-    const superadminPassword = 'admin123';
+    // Get superadmin credentials from environment variables
+    const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
+    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
+    
+    // In production, require environment variables
+    if (isProduction && (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD)) {
+      console.error('❌ ERROR: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in environment variables for production');
+      process.exit(1);
+    }
+    
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
     
@@ -100,8 +107,16 @@ async function resetSuperadminPassword() {
   try {
     console.log('🔧 Resetting superadmin password...');
     
-    const superadminEmail = 'faithcommunityfaces@gmail.com';
-    const superadminPassword = 'admin123';
+    // Get superadmin credentials from environment variables
+    const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
+    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
+    
+    // In production, require environment variables
+    if (isProduction && (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD)) {
+      console.error('❌ ERROR: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in environment variables for production');
+      process.exit(1);
+    }
+    
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
     

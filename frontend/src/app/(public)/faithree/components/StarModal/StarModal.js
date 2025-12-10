@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { formatDateShort } from '@/utils/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import styles from './StarModal.module.css'
 
@@ -179,24 +178,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
     return null
   }
 
-  // Format date - use formatDateShort and extract month and year
-  const formattedDate = highlight.created_at 
-    ? (() => {
-        const formatted = formatDateShort(highlight.created_at);
-        if (formatted === 'Invalid date' || formatted === 'Not specified') {
-          return '';
-        }
-        // Extract month and year from formatDateShort output (e.g., "Sep 18, 2004" -> "Sep 2004")
-        const parts = formatted.split(', ');
-        if (parts.length >= 2) {
-          const datePart = parts[0]; // "Sep 18"
-          const year = parts[1]; // "2004"
-          const month = datePart.split(' ')[0]; // "Sep"
-          return `${month} ${year}`;
-        }
-        return formatted;
-      })()
-    : ''
 
   // Get current media item
   const currentMedia = highlight.media && highlight.media[currentImageIndex]
@@ -397,15 +378,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                     <span className={styles.metaValue}>{highlight.year}</span>
                   </div>
                 )}
-                {formattedDate && (
-                  <div className={styles.metaItem}>
-                    <svg className={styles.metaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span className={styles.metaLabel}>Date:</span>
-                    <span className={styles.metaValue}>{formattedDate}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -416,4 +388,3 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
 
   return createPortal(modalContent, document.body)
 }
-

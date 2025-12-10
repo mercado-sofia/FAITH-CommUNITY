@@ -3,7 +3,7 @@
 # Note: If rootDirectory is set in railway.json, Railway will already be in the backend directory
 
 [phases.setup]
-nixPkgs = ["nodejs-18_x"]
+nixPkgs = ["nodejs-20_x"]
 
 [phases.install]
 cmds = ["npm install"]

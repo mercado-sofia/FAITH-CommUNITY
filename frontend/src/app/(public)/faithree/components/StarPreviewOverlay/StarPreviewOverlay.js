@@ -3,40 +3,37 @@
 import { createPortal } from 'react-dom'
 import styles from './StarPreviewOverlay.module.css'
 
-export default function StarPreviewOverlay({ highlight, isVisible }) {
-  // Overlay position is fixed via CSS (left: 1000px, top: 130px)
+export default function StarPreviewOverlay({ highlight, starId, screenPosition, isVisible }) {
+  // Overlay position is dynamically set based on star's screen position
 
-  if (!highlight || !isVisible || typeof document === 'undefined' || !document.body) {
+  if (!highlight || !isVisible || !screenPosition || typeof document === 'undefined' || !document.body) {
     return null
+  }
+
+  // Calculate position with offset to appear near the star
+  const overlayStyle = {
+    left: `${screenPosition.x}px`,
+    top: `${screenPosition.y}px`,
   }
 
   const overlayContent = (
     <div
       className={`${styles.overlay} ${isVisible ? styles.visible : ''}`}
+      style={overlayStyle}
     >
-      {/* Preview Label */}
-      <div className={styles.previewLabel}>
-        Preview
+      {/* Title Container */}
+      <div className={styles.titleContainer}>
+        <h3 className={styles.title}>
+          {highlight.title || 'Featured Highlight'}
+        </h3>
       </div>
 
-      {/* Content Container */}
-      <div className={styles.content}>
-        {/* Highlight Title */}
-        <div className={styles.titleSection}>
-          <h3 className={styles.title}>
-            {highlight.title || 'Featured Highlight'}
-          </h3>
-        </div>
-
-        {/* Impact Level Indicator (optional visual cue) */}
-        {highlight.impact_level && (
-          <div className={styles.impactIndicator}>
-            <span className={`${styles.impactValue} ${styles[`impact${highlight.impact_level.charAt(0).toUpperCase() + highlight.impact_level.slice(1)}`]}`}>
-              {highlight.impact_level === 'high' ? 'High Impact' : highlight.impact_level === 'average' ? 'Average Impact' : 'Small Impact'}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* Impact Level Text */}
+      {highlight.impact_level && (
+        <span className={styles.impactValue}>
+          {highlight.impact_level === 'high' ? 'High Impact' : highlight.impact_level === 'average' ? 'Average Impact' : 'Small Impact'}
+        </span>
+      )}
     </div>
   )
 

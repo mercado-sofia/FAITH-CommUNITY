@@ -559,8 +559,8 @@ function generateStarPositions(count) {
     // Secondary row - positioned with maximum spacing from primary stars
     [-0.9, 2.15, 1.2],     // Star 9 - Center-left, high (moved left)
     [0.65, 2.25, 0.8],     // Star 10 - Center-right, high (moved left a little more, closer to tree)
-    [0.95, 2.1, 0.4],    // Star 11 - Far right, very high (moved left and down a little)
-    [-0.35, 2.2, 1.0]     // Star 12 - Center-left, very high (moved closer to tree, reduced gap behind)
+    [0.95, 2.1, 0.8],    // Star 11 - Far right, very high (moved forward to avoid tree model)
+    [-0.35, 2.2, 1.2]     // Star 12 - Center-left, very high (moved forward to avoid tree model)
   ];
 
   // Ensure count never exceeds 12 (chunking should handle this, but enforce it here)
@@ -648,6 +648,7 @@ export default function TreeModel({
   // State for hover preview overlay
   const [hoveredStarData, setHoveredStarData] = useState(null)
   const [hoveredStarScreenPos, setHoveredStarScreenPos] = useState(null)
+  const [hoveredStarId, setHoveredStarId] = useState(null)
   // Ref to store projection function
   const project3DTo2DRef = useRef(null)
   // State for transition animations when navigating between trees
@@ -671,22 +672,24 @@ export default function TreeModel({
     
     // Try to use mouse position from native DOM event first (most accurate)
     if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
-      // Use mouse position directly with small offset to position near cursor
+      // Use mouse position directly - overlay will be centered above the cursor
       setHoveredStarScreenPos({
-        x: event.clientX + 15, // 15px to the right of cursor
-        y: event.clientY - 10   // 10px above cursor
+        x: event.clientX, // Overlay will be centered horizontally on this point
+        y: event.clientY  // Overlay will appear above this point
       })
       setHoveredStarData(highlight)
+      setHoveredStarId(starId)
     } else if (project3DTo2DRef.current && worldPosition) {
       // Fallback to 3D projection if mouse position not available
       const screenPos = project3DTo2DRef.current(worldPosition)
       if (screenPos) {
-        // Add small offset to position overlay near the star (slightly above and to the right)
+        // Position overlay centered above the star
         setHoveredStarScreenPos({
-          x: screenPos.x + 15, // 15px to the right of the star
-          y: screenPos.y - 10  // 10px above the star (smaller offset for closer positioning)
+          x: screenPos.x, // Overlay will be centered horizontally on the star
+          y: screenPos.y  // Overlay will appear above the star
         })
         setHoveredStarData(highlight)
+        setHoveredStarId(starId)
       }
     }
   }, [])
@@ -695,6 +698,7 @@ export default function TreeModel({
     setIsStarHovered(false)
     setHoveredStarData(null)
     setHoveredStarScreenPos(null)
+    setHoveredStarId(null)
   }, [])
 
   // Callback to receive projection function from CoordinateProjector
@@ -881,6 +885,8 @@ export default function TreeModel({
       {/* Star Preview Overlay */}
       <StarPreviewOverlay
         highlight={hoveredStarData}
+        starId={hoveredStarId}
+        screenPosition={hoveredStarScreenPos}
         isVisible={!!hoveredStarData && !!hoveredStarScreenPos}
       />
       

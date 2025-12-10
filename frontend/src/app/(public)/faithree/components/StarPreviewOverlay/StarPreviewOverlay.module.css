@@ -1,10 +1,6 @@
 .overlay {
   position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: 8rem !important;
-  transform: translateX(calc(-50% + 120px)) translateY(10px) scale(0.95);
+  transform: translate(-50%, 0%) translateY(50px) scale(0.95);
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
@@ -13,11 +9,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 8px;
 }
 
 .overlay.visible {
   opacity: 1;
-  transform: translateX(calc(-50% + 120px)) translateY(0) scale(1);
+  transform: translate(-50%, 0%) translateY(50px) scale(1);
 }
 
 /* Organization Section - Inside content container */
@@ -49,12 +46,12 @@
   width: fit-content;
 }
 
-/* Content Container */
-.content {
+/* Title Container */
+.titleContainer {
   background: #ffffff;
   border: 4px solid #c1f5d8;
-  border-radius: 20px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 8px 18px;
   width: fit-content;
   min-width: 280px;
   max-width: 420px;
@@ -65,23 +62,6 @@
   position: relative;
 }
 
-/* Preview Label */
-.previewLabel {
-  background: #ffffff;
-  border: 4px solid #c1f5d8;
-  border-radius: 999px;
-  padding: 6px 12px;
-  margin-bottom: 4px;
-  width: fit-content;
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 800;
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #1b5e20;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
 
 /* Logo Container in Tab */
 .logoContainer {
@@ -145,13 +125,7 @@
   opacity: 0.85;
 }
 
-/* Title Section */
-.titleSection {
-  margin-bottom: 12px;
-  margin-top: 0;
-  position: relative;
-}
-
+/* Title */
 .title {
   font-size: 17px;
   font-weight: 800;
@@ -171,86 +145,53 @@
   background-clip: text;
 }
 
-/* Impact Level Indicator */
-.impactIndicator {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  margin-top: 4px;
-  position: relative;
-}
-
 .impactValue {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   padding: 6px 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   display: inline-block;
   position: relative;
   overflow: hidden;
+  color: #1b5e20;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .impactValue::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.impactHigh {
-  color: #854d0e;
-  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(250, 204, 21, 0.1));
-  border: 1px solid rgba(234, 179, 8, 0.3);
-  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.15);
-}
-
-.impactAverage {
-  color: #a16207;
-  background: linear-gradient(135deg, rgba(202, 138, 4, 0.15), rgba(217, 119, 6, 0.1));
-  border: 1px solid rgba(202, 138, 4, 0.3);
-  box-shadow: 0 2px 8px rgba(202, 138, 4, 0.15);
-}
-
-.impactSmall {
-  color: #78350f;
-  background: linear-gradient(135deg, rgba(146, 64, 14, 0.15), rgba(180, 83, 9, 0.1));
-  border: 1px solid rgba(146, 64, 14, 0.3);
-  box-shadow: 0 2px 8px rgba(146, 64, 14, 0.15);
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .overlay {
-    left: 50% !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: 6rem !important;
-    transform: translateX(calc(-50% + 60px)) translateY(10px) scale(0.95);
+    transform: translate(-50%, 0%) translateY(50px) scale(0.95);
     align-items: flex-start;
   }
   
   .overlay.visible {
-    transform: translateX(calc(-50% + 60px)) translateY(0) scale(1);
+    transform: translate(-50%, 0%) translateY(50px) scale(1);
   }
 
-  .content {
+  .titleContainer {
     min-width: 260px;
     max-width: 340px;
-    padding: 16px;
+    padding: 8px 16px;
     border-radius: 18px;
-  }
-
-  .previewLabel {
-    margin-bottom: 3px;
-    padding: 5px 10px;
-    font-size: 12px;
-    border-radius: 999px;
   }
 
   .title {
@@ -286,4 +227,3 @@
     padding: 5px 10px;
   }
 }
-

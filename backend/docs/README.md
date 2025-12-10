@@ -11,7 +11,8 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 - [Security Guide](./02-security/SECURITY_GUIDE.md) - Comprehensive security documentation covering authentication, authorization, audit logging, and security best practices
 
 ## 📁 03-File Management
-- [Cloudinary Integration Guide](./03-file-management/CLOUDINARY_INTEGRATION_GUIDE.md) - File upload and storage setup
+- [Cloudinary Integration Guide](./03-file-management/CLOUDINARY_INTEGRATION_GUIDE.md) - Image upload and storage setup (profiles, branding, news, programs)
+- [AWS S3 Integration Guide](./03-file-management/AWS_S3_INTEGRATION_GUIDE.md) - Document storage setup (Post-Act Reports)
 - [Profile Photo Upload](./03-file-management/PROFILE_PHOTO_UPLOAD.md) - Profile photo upload implementation
 
 ## 🚢 04-Deployment
@@ -25,7 +26,7 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 ### Key Features
 - **Multi-role Authentication**: Unified user system with role-based access (user, admin, superadmin) using JWT tokens
 - **Secure Email System**: SMTP/SendGrid integration for transactional emails
-- **File Management**: Cloudinary integration for image and file uploads
+- **File Management**: Cloudinary for images, AWS S3 for documents (Post-Act Reports)
 - **Audit Logging**: Comprehensive security event logging
 - **Rate Limiting**: Protection against abuse and DDoS
 - **Database Management**: MySQL with automatic migrations
@@ -88,7 +89,7 @@ The FAITH CommUNITY backend is currently deployed and working in production:
 - ✅ Backend deployed on Railway
 - ✅ Database configured and operational (MySQL)
 - ✅ Email services configured (SendGrid)
-- ✅ File uploads working (Cloudinary)
+- ✅ File uploads working (Cloudinary for images, AWS S3 for documents)
 - ✅ Authentication system operational
 - ✅ All API endpoints tested and working
 - ✅ Security features implemented and active

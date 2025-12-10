@@ -974,8 +974,19 @@ export const initializeSuperadmin = async (req, res) => {
       });
     }
     
-    const superadminEmail = 'faithcommunityfaces@gmail.com';
-    const superadminPassword = 'admin123';
+    // Get superadmin credentials from environment variables
+    const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
+    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
+    
+    // In production, require environment variables
+    if (process.env.NODE_ENV === 'production' && (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD)) {
+      logError('SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in environment variables for production', 
+        new Error('Missing superadmin credentials'), { context: 'superadmin' });
+      return res.status(500).json({ 
+        error: 'Server configuration error: Superadmin credentials not configured' 
+      });
+    }
+    
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
     

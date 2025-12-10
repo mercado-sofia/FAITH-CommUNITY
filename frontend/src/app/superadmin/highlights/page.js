@@ -130,8 +130,18 @@ const SuperadminHighlightsPage = () => {
       setShowDropdown(null)
     }
 
-    function handleScroll() {
+    function handleScroll(e) {
+      // Only close dropdowns if scrolling outside of dropdown containers
       if (showDropdown) {
+        // Check if scroll is happening inside the dropdown options or wrapper
+        const target = e.target;
+        if (target && (
+          target.closest(`.${styles.options}`) ||
+          target.closest(`.${styles.dropdownWrapper}`)
+        )) {
+          // Don't close if scrolling inside dropdown
+          return;
+        }
         setShowDropdown(null)
       }
     }

@@ -1228,7 +1228,6 @@ export const checkAuthStatus = async (req, res) => {
     const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
     
     if (!token) {
-      
       const refreshToken = req.cookies?.refresh_token;
       if (refreshToken) {
         try {

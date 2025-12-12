@@ -170,25 +170,22 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     
     // Handle redirect - ensure logout API completes first
     if (redirect) {
-      // Small delay to ensure all cleanup is complete
-      const redirectDelay = showLoader ? 1000 : 100;
+      // Hide loader immediately if it was shown
+      if (showLoader && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+      }
       
-      setTimeout(() => {
-        if (showLoader && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
-        }
+      // Use different redirect paths based on user type
+      const finalRedirectPath = userType === USER_TYPES.PUBLIC 
+        ? redirectPath 
+        : '/login';
         
-        // Use different redirect paths based on user type
-        const finalRedirectPath = userType === USER_TYPES.PUBLIC 
-          ? redirectPath 
-          : '/login';
-          
-        if (typeof window !== 'undefined') {
-          // Don't clear logout flag before redirect - let it persist across page navigation
-          // The flag will be cleared on the new page after confirming logout is complete
-          window.location.href = finalRedirectPath;
-        }
-      }, redirectDelay);
+      if (typeof window !== 'undefined') {
+        // Don't clear logout flag before redirect - let it persist across page navigation
+        // The flag will be cleared on the new page after confirming logout is complete
+        // Use immediate redirect - API call already completed, no need for delay
+        window.location.href = finalRedirectPath;
+      }
     } else {
       // If not redirecting, clear the logout flag
       if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {

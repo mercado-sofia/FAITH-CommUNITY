@@ -5,6 +5,7 @@
 
 import logger from '@/utils/shared/logger';
 import { clearAuthAndRedirect, showAuthError } from '@/utils/shared/portalAuth';
+import { getValidAccessToken, isRefreshTokenExpired } from '@/utils/shared/tokenRefresh';
 
 /**
  * Error types
@@ -23,7 +24,7 @@ export const ERROR_TYPES = {
  * @param {Error|Response} error - The error object or response
  * @param {string} context - Context where error occurred
  * @param {object} options - Additional options
- * @returns {object} Error information object
+ * @returns {object|Promise<object>} Error information object (Promise for 401 errors)
  */
 export const handleApiError = (error, context = 'api_call', options = {}) => {
   const {
@@ -42,21 +43,76 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
     const status = error.status;
     
     if (status === 401) {
-      if (logError && !error._alreadyLogged) {
-        logger.apiError(context, new Error('Authentication failed'), { status });
-      }
-      
-      if (redirectOnAuth) {
-        showAuthError('Your session has expired. Please log in again.');
-        clearAuthAndRedirect('admin');
-      }
-      
-      return {
-        type: ERROR_TYPES.AUTHENTICATION,
-        message: 'Your session has expired. Please log in again.',
-        action: 'redirect_to_login',
-        status
-      };
+      // For 401 errors, attempt silent token refresh before showing error
+      // Return a Promise that resolves after refresh attempt
+      return (async () => {
+        try {
+          // Silently attempt to refresh token
+          const refreshed = await getValidAccessToken(true, true); // Force refresh, silent mode
+          
+          if (refreshed) {
+            // Token refresh succeeded - access token was expired but refresh token is valid
+            // Don't show error, return success indicator so caller can retry
+            return {
+              type: ERROR_TYPES.AUTHENTICATION,
+              message: 'Token refreshed successfully',
+              action: 'retry_request', // Indicate that request should be retried
+              status,
+              refreshed: true
+            };
+          } else {
+            // Refresh failed - check if refresh token is expired
+            const refreshTokenExpired = await isRefreshTokenExpired();
+            
+            if (refreshTokenExpired) {
+              // Refresh token is expired (after 7 days) - show error and redirect
+              if (logError && !error._alreadyLogged) {
+                logger.apiError(context, new Error('Authentication failed - refresh token expired'), { status });
+              }
+              
+              if (redirectOnAuth) {
+                showAuthError('Your session has expired. Please log in again.');
+                clearAuthAndRedirect('admin');
+              }
+              
+              return {
+                type: ERROR_TYPES.AUTHENTICATION,
+                message: 'Your session has expired. Please log in again.',
+                action: 'redirect_to_login',
+                status
+              };
+            } else {
+              // Access token expired but refresh token is still valid
+              // This shouldn't happen if refresh succeeded, but handle gracefully
+              // Return retry indicator
+              return {
+                type: ERROR_TYPES.AUTHENTICATION,
+                message: 'Token refresh in progress',
+                action: 'retry_request',
+                status,
+                refreshed: false
+              };
+            }
+          }
+        } catch (refreshError) {
+          // Error during refresh attempt - assume refresh token is expired
+          if (logError && !error._alreadyLogged) {
+            logger.apiError(context, new Error('Authentication failed - refresh error'), { status, refreshError });
+          }
+          
+          if (redirectOnAuth) {
+            showAuthError('Your session has expired. Please log in again.');
+            clearAuthAndRedirect('admin');
+          }
+          
+          return {
+            type: ERROR_TYPES.AUTHENTICATION,
+            message: 'Your session has expired. Please log in again.',
+            action: 'redirect_to_login',
+            status
+          };
+        }
+      })();
     }
     
     if (status === 403) {
@@ -114,26 +170,82 @@ export const handleApiError = (error, context = 'api_call', options = {}) => {
   
   // Handle Error objects
   if (error instanceof Error) {
-    if (logError && !error._alreadyLogged) {
-      logger.apiError(context, error);
-    }
-    
     // Check for authentication-related error messages
-    if (error.message.includes('token') || 
+    const isAuthError = error.message.includes('token') || 
         error.message.includes('session') || 
         error.message.includes('authentication') ||
-        error.message.includes('expired')) {
-      
-      if (redirectOnAuth) {
-        showAuthError('Your session has expired. Please log in again.');
-        clearAuthAndRedirect('admin');
-      }
-      
-      return {
-        type: ERROR_TYPES.AUTHENTICATION,
-        message: 'Your session has expired. Please log in again.',
-        action: 'redirect_to_login'
-      };
+        error.message.includes('expired');
+    
+    if (isAuthError) {
+      // For auth errors, attempt silent token refresh before showing error
+      // Return a Promise that resolves after refresh attempt
+      return (async () => {
+        try {
+          // Silently attempt to refresh token
+          const refreshed = await getValidAccessToken(true, true); // Force refresh, silent mode
+          
+          if (refreshed) {
+            // Token refresh succeeded - don't show error
+            return {
+              type: ERROR_TYPES.AUTHENTICATION,
+              message: 'Token refreshed successfully',
+              action: 'retry_request', // Indicate that request should be retried
+              refreshed: true
+            };
+          } else {
+            // Refresh failed - check if refresh token is expired
+            const refreshTokenExpired = await isRefreshTokenExpired();
+            
+            if (refreshTokenExpired) {
+              // Refresh token is expired (after 7 days) - show error and redirect
+              if (logError && !error._alreadyLogged) {
+                logger.apiError(context, error);
+              }
+              
+              if (redirectOnAuth) {
+                showAuthError('Your session has expired. Please log in again.');
+                clearAuthAndRedirect('admin');
+              }
+              
+              return {
+                type: ERROR_TYPES.AUTHENTICATION,
+                message: 'Your session has expired. Please log in again.',
+                action: 'redirect_to_login'
+              };
+            } else {
+              // Access token expired but refresh token is still valid
+              // Return retry indicator
+              return {
+                type: ERROR_TYPES.AUTHENTICATION,
+                message: 'Token refresh in progress',
+                action: 'retry_request',
+                refreshed: false
+              };
+            }
+          }
+        } catch (refreshError) {
+          // Error during refresh attempt - assume refresh token is expired
+          if (logError && !error._alreadyLogged) {
+            logger.apiError(context, error);
+          }
+          
+          if (redirectOnAuth) {
+            showAuthError('Your session has expired. Please log in again.');
+            clearAuthAndRedirect('admin');
+          }
+          
+          return {
+            type: ERROR_TYPES.AUTHENTICATION,
+            message: 'Your session has expired. Please log in again.',
+            action: 'redirect_to_login'
+          };
+        }
+      })();
+    }
+    
+    // Non-auth errors - log normally
+    if (logError && !error._alreadyLogged) {
+      logger.apiError(context, error);
     }
     
     return {

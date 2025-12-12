@@ -17,23 +17,28 @@ export const useAuthState = () => {
       
       // Check if logout is in progress - prevent race condition
       const logoutInProgress = sessionStorage.getItem('logoutInProgress');
-      if (logoutInProgress === 'true') {
-        // Logout is in progress, don't re-authenticate
-        // Clear the flag since we're handling it now
-        sessionStorage.removeItem('logoutInProgress');
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
       
       // Check authentication status from backend (reads from httpOnly cookie)
+      // getCurrentUser() will return null if logoutInProgress is set
       const { getCurrentUser } = await import('@/utils/shared/authService');
       const userData = await getCurrentUser();
       
-      // Clear logout flag after auth check completes (whether successful or not)
-      // This ensures the flag doesn't persist across page loads
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('logoutInProgress');
+      // Only clear logout flag after confirming user is actually logged out
+      // This ensures the flag persists until logout is fully complete
+      if (logoutInProgress === 'true' && !userData) {
+        // Logout is complete - user is confirmed logged out
+        // Clear the flag now that we've confirmed logout
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('logoutInProgress');
+        }
+      } else if (logoutInProgress === 'true' && userData) {
+        // Logout flag is set but user data was returned - this shouldn't happen
+        // but if it does, clear stale data and keep flag to prevent re-auth
+        const { clearAuthImmediate, USER_TYPES } = await import('@/utils/shared/authService');
+        clearAuthImmediate(USER_TYPES.PUBLIC);
+        setUser(null);
+        setIsLoading(false);
+        return;
       }
       
       if (userData) {

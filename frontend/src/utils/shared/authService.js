@@ -122,6 +122,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     // This flag will be checked by useAuthState to prevent re-authentication
     if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('logoutInProgress', 'true');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:124',message:'logoutInProgress flag set',data:{userType,redirect},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
     }
     
     // Show loader if requested
@@ -145,6 +148,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     try {
       // Use unified logout endpoint - works for all roles
       const logoutUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/logout` : '/api/users/logout';
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:147',message:'Calling logout API',data:{logoutUrl,apiBaseUrl:API_BASE_URL,isProduction:process.env.NODE_ENV==='production',userType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       const response = await fetch(logoutUrl, {
         method: 'POST',
         credentials: 'include', // Include cookies to clear them
@@ -152,6 +158,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
           'Content-Type': 'application/json',
         },
       });
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:157',message:'Logout API response',data:{status:response.status,ok:response.ok,logoutUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       
       // Wait for the response to ensure logout is processed on backend
       if (!response.ok) {
@@ -190,6 +199,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
       // If not redirecting, clear the logout flag
       if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
         sessionStorage.removeItem('logoutInProgress');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:192',message:'logoutInProgress flag cleared (no redirect)',data:{userType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
       }
     }
     
@@ -269,8 +281,14 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
   // Check if logout is in progress - prevent re-authentication during logout
   if (typeof sessionStorage !== 'undefined') {
     const logoutInProgress = sessionStorage.getItem('logoutInProgress');
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:271',message:'getCurrentUser checking logoutInProgress',data:{logoutInProgress:logoutInProgress,userType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     if (logoutInProgress === 'true') {
       // Logout is in progress, don't make any auth checks
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:274',message:'getCurrentUser returning null due to logoutInProgress',data:{userType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       return null;
     }
   }
@@ -279,17 +297,20 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     // Build URL - use relative path if API_BASE_URL is empty (rewrites enabled)
     const authCheckUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/auth/check` : '/api/users/auth/check';
     
-    const response = await fetch(authCheckUrl, {
-      method: 'GET',
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Add cache control to prevent stale responses
-      cache: 'no-store',
-    });
+      const response = await fetch(authCheckUrl, {
+        method: 'GET',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add cache control to prevent stale responses
+        cache: 'no-store',
+      });
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:292',message:'getCurrentUser API response',data:{status:response.status,ok:response.ok,url:authCheckUrl,isProduction:process.env.NODE_ENV==='production'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
 
-    if (!response.ok) {
+      if (!response.ok) {
       // If we get a 401, it might mean cookies aren't available yet (race condition)
       // Return null and let the caller retry
       if (response.status === 401) {
@@ -304,6 +325,9 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     
     // If authenticated, return user data
     if (data.authenticated && data.user) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:307',message:'getCurrentUser returning user data',data:{authenticated:data.authenticated,hasUser:!!data.user,userRole:data.user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       return data.user;
     }
     

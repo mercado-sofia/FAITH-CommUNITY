@@ -43,11 +43,12 @@ export const useTokenRefresh = (options = {}) => {
         // Check auth status - this will automatically refresh if needed
         // The getValidAccessToken function checks if token needs refresh
         // and refreshes it if expiring soon or expired
-        await getValidAccessToken(false); // Don't force refresh, let it decide
+        // Use silent mode to prevent any console errors or user notifications
+        await getValidAccessToken(false, true); // Don't force refresh, let it decide, silent mode
       } catch (error) {
         // Silently fail - don't interrupt user experience
         // Token refresh failures will be handled on next API call
-        console.debug('[useTokenRefresh] Token check failed:', error);
+        // No console logging in production - completely silent
       } finally {
         isRefreshingRef.current = false;
       }

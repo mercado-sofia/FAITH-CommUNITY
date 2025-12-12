@@ -184,11 +184,8 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
           : '/login';
           
         if (typeof window !== 'undefined') {
-          // Clear logout flag just before redirect
-          // It will be cleared on the new page load if it still exists
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem('logoutInProgress');
-          }
+          // Don't clear logout flag before redirect - let it persist across page navigation
+          // The flag will be cleared on the new page after confirming logout is complete
           window.location.href = finalRedirectPath;
         }
       }, redirectDelay);
@@ -271,6 +268,15 @@ export const isAuthenticated = async (userType = USER_TYPES.PUBLIC) => {
 export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return null;
+  
+  // Check if logout is in progress - prevent re-authentication during logout
+  if (typeof sessionStorage !== 'undefined') {
+    const logoutInProgress = sessionStorage.getItem('logoutInProgress');
+    if (logoutInProgress === 'true') {
+      // Logout is in progress, don't make any auth checks
+      return null;
+    }
+  }
   
   try {
     // Build URL - use relative path if API_BASE_URL is empty (rewrites enabled)

@@ -129,7 +129,6 @@ async function rotateRefreshToken(oldToken, userId, { userAgent, ipAddress }) {
 - **Token Reuse Prevention**: Old tokens are immediately revoked
 - **Atomic Operation**: Transaction ensures consistency
 - **Attack Mitigation**: Limits impact of token theft
-- **Audit Trail**: Tracks token usage with IP and User-Agent
 
 ---
 

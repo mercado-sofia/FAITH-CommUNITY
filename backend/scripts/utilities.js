@@ -326,8 +326,8 @@ async function fixMissingData() {
       'advocacies', 'competencies', 'organization_heads', 'heads_faces',
       'branding', 'site_name', 'footer_content', 'hero_section', 'hero_section_images',
       'about_us', 'mission_vision', 'password_reset_tokens', 'refresh_tokens',
-      'audit_logs', 'superadmin', 'email_change_otps', 'login_attempts',
-      'admin_sessions', 'security_logs', 'migrations'
+      'superadmin', 'email_change_otps', 'login_attempts',
+      'security_logs', 'migrations'
     ];
     
     const missingTables = requiredTables.filter(table => !existingTables.includes(table));

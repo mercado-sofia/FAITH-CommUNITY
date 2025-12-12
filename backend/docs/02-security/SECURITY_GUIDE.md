@@ -105,33 +105,6 @@ All superadmin routes are protected with `verifySuperadminToken` middleware:
 - **Initialization**: Automatically created on database initialization, can be reset via secure API endpoint with secret key
 - **Default Credentials**: `faithcommunityfaces@gmail.com` / `admin123` (must be changed immediately)
 
-## Audit Logging
-
-### Implementation
-
-Comprehensive audit logging system tracks all security-relevant actions:
-
-**Features:**
-- ✅ Structured logging with Pino logger
-- ✅ Input validation for all audit operations
-- ✅ Error handling with proper logging
-- ✅ Query functions with validation
-- ✅ Automatic cleanup of old logs
-
-**Logged Actions:**
-- Login attempts (successful and failed)
-- Password changes
-- Email changes
-- Account lockouts
-- Admin actions
-- Superadmin actions
-- Security events
-
-**Query Functions:**
-- `getAuditLogs(userId, userType, limit)` - Get audit logs for a user
-- `getRecentAuditLogs(userId, userType, hours, limit)` - Get recent logs
-- `getAuditLogsByAction(userId, userType, action, limit)` - Get logs by action
-
 ## Security Headers
 
 The application implements security headers via Helmet middleware:
@@ -195,10 +168,10 @@ All security events are logged:
 
 ### Monitoring Recommendations
 
-1. **Monitor Audit Logs**: Regularly review audit logs for suspicious activity
-2. **Failed Login Alerts**: Set up alerts for excessive failed login attempts
-3. **Account Lockout Alerts**: Monitor account lockout events
-4. **Unusual Activity**: Track unusual patterns in user behavior
+1. **Failed Login Alerts**: Set up alerts for excessive failed login attempts
+2. **Account Lockout Alerts**: Monitor account lockout events
+3. **Unusual Activity**: Track unusual patterns in user behavior
+4. **Security Logs**: Review security_logs table for security events
 
 ## Known Security Considerations
 
@@ -221,11 +194,10 @@ Before deploying to production:
 - [ ] CORS is configured with production frontend URL only
 - [ ] Database uses SSL/TLS connections
 - [ ] Rate limiting is configured appropriately
-- [ ] Audit logging is enabled and monitored
 - [ ] Default passwords are changed
 - [ ] MFA is enabled for superadmin (recommended)
 - [ ] Security headers are configured
-- [ ] Regular security audits are scheduled
+- [ ] Regular security reviews are scheduled
 
 ## Additional Resources
 

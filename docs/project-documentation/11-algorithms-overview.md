@@ -239,7 +239,6 @@ This document provides a high-level overview of all algorithms implemented in th
 - ✅ Defense in depth (multiple security layers)
 - ✅ Fail secure (default deny)
 - ✅ Least privilege principle
-- ✅ Audit logging
 - ✅ Regular security updates
 
 ---

@@ -2,7 +2,6 @@ import db from "../../database.js"
 import crypto from "crypto"
 import * as bcrypt from "bcrypt"
 import { sendMail } from "../../utils/mailer.js"
-import { logSuperadminAction } from "../../utils/audit.js"
 import { getSiteName } from "../../utils/siteName.js"
 
 const generateInvitationToken = () => {
@@ -159,8 +158,6 @@ export const sendInvitation = async (req, res) => {
         details: emailResult.error || "Please check your SMTP configuration"
       })
     }
-
-    await logSuperadminAction(req.superadmin?.id, 'send_invitation', `Sent admin invitation to ${email}`, req)
 
     res.status(201).json({
       message: "Invitation sent successfully",
@@ -453,14 +450,6 @@ export const resendInvitation = async (req, res) => {
     }
 
     await connection.commit()
-
-    // Log the resend action
-    await logSuperadminAction(
-      req.superadmin?.id, 
-      'resend_invitation', 
-      `Resent admin invitation to ${invitation.email}`, 
-      req
-    )
 
     res.json({ 
       message: "Invitation resent successfully",

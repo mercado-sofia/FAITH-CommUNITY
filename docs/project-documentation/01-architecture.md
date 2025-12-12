@@ -63,7 +63,6 @@ FAITH CommUNITY is a full-stack volunteer management platform built with a moder
 │  │  - Login Attempt Tracking                          │     │
 │  │  - Email Services                                 │     │
 │  │  - File Upload (Cloudinary/S3)                   │     │
-│  │  - Audit Logging                                  │     │
 │  └──────────────────────┬───────────────────────────┘     │
 └──────────────────────────┼─────────────────────────────────┘
                             │
@@ -90,10 +89,9 @@ FAITH CommUNITY is a full-stack volunteer management platform built with a moder
 │  ┌────────────────────────────────────────────────────┐   │
 │  │  Security Tables                                     │   │
 │  │  - refresh_tokens, login_attempts                   │   │
-│  │  - admin_sessions, security_logs                    │   │
+│  │  - security_logs                                    │   │
 │  │  - password_reset_tokens, email_change_otps         │   │
 │  │  - step_up_challenges, mfa_backup_codes            │   │
-│  │  - audit_logs                                        │   │
 │  └────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -119,10 +117,8 @@ backend/
 │   ├── database.js           # Database connection & initialization
 │   └── utils/                # Shared utilities
 │       ├── jwt.js            # JWT token management
-│       ├── sessionSecurity.js # Session security
 │       ├── loginAttemptTracker.js # Login attempt tracking
 │       ├── mailer.js          # Email service
-│       ├── audit.js           # Audit logging
 │       └── ...
 └── docs/                      # Backend documentation
 ```

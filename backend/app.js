@@ -712,10 +712,7 @@ httpServer.listen(PORT, async () => {
       }, CLEANUP_TIMEOUT_MS);
       
       try {
-        const { SessionSecurity } = await import("./src/utils/sessionSecurity.js");
-        await SessionSecurity.cleanExpiredSessions();
-        
-        // Also cleanup expired/revoked refresh tokens
+        // Cleanup expired/revoked refresh tokens
         const db = await import("./src/database.js");
         await db.default.query(
           'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'

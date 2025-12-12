@@ -5,7 +5,6 @@ import crypto from "crypto"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
-import { logSuperadminAction } from "../../utils/audit.js"
 import { logError, logInfo } from "../../utils/logger.js"
 import {
   signAccessToken,
@@ -170,8 +169,6 @@ export const loginSuperadmin = async (req, res) => {
     });
 
     await LoginAttemptTracker.clearFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
-    
-    await logSuperadminAction(superadmin.id, 'login', 'Superadmin logged in', req)
     
     // Set both tokens as httpOnly cookies (secure!)
     // Pass req to cookie options functions so they can use forwarded host for domain

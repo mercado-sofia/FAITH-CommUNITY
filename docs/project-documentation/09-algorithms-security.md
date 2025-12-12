@@ -122,51 +122,48 @@ Bind admin/superadmin sessions to specific IP addresses and User-Agent strings t
 
 ### Implementation Details
 
-**Time Complexity:** O(1) - Constant time hashing and lookup
-**Space Complexity:** O(1) - Fixed size hash output
+**Time Complexity:** O(1) - Constant time JWT verification
+**Space Complexity:** O(1) - Fixed size token validation
 
-**Code Location:** `backend/src/utils/sessionSecurity.js`
+**Code Location:** `backend/src/admin/controllers/adminAuthController.js`
 
 ```javascript
-// Fingerprint Generation Algorithm
-static createFingerprint(ipAddress, userAgent) {
-  const data = `${ipAddress}:${userAgent || 'unknown'}`
-  return crypto.createHash('sha256').update(data).digest('hex')
-}
-
-// Session Verification Algorithm
-static async verifyAdminSession(token, ipAddress, userAgent) {
-  const tokenHash = this.hashToken(token) // SHA-256 hash
-  const currentFingerprint = this.createFingerprint(ipAddress, userAgent)
+// Admin Token Verification Algorithm
+export const verifyAdminToken = async (req, res, next) => {
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1]
   
-  const [rows] = await db.execute(
-    `SELECT admin_id, fingerprint FROM admin_sessions 
-     WHERE token_hash = ? AND expires_at > NOW()`,
-    [tokenHash]
+  // Verify JWT token signature and expiration
+  const decoded = jwt.verify(token, JWT_SECRET, {
+    issuer: process.env.JWT_ISS || "faith-community-api",
+    audience: process.env.JWT_AUD || "faith-community-client",
+  })
+  
+  // Verify admin account is active
+  const [adminRows] = await db.execute(
+    `SELECT u.id, u.is_active, u.organization_id, o.status as org_status
+     FROM users u
+     LEFT JOIN organizations o ON u.organization_id = o.id
+     WHERE u.id = ? AND u.role = 'admin'`,
+    [decoded.id]
   )
   
-  if (rows.length === 0) {
-    return { valid: false, reason: 'Session not found or expired' }
+  if (adminRows.length === 0 || !adminRows[0].is_active) {
+    return { valid: false, reason: 'Admin account is inactive' }
   }
   
-  const session = rows[0]
-  
-  // Security check: fingerprint must match
-  if (session.fingerprint !== currentFingerprint) {
-    await this.revokeAdminSession(tokenHash) // Immediate revocation
-    return { valid: false, reason: 'Session security violation - IP/UA mismatch' }
+  if (adminRows[0].organization_id && adminRows[0].org_status !== 'ACTIVE') {
+    return { valid: false, reason: 'Organization is inactive' }
   }
   
-  return { valid: true, adminId: session.admin_id }
+  return { valid: true, adminId: decoded.id }
 }
 ```
 
 ### Security Features
-- **Token Hashing**: Tokens stored as SHA-256 hashes (not plain text)
-- **Fingerprinting**: SHA-256 hash of IP + User-Agent
-- **Automatic Revocation**: Sessions revoked on security violation
-- **Expiration**: 30-minute session lifetime
-- **Database Storage**: Sessions stored in `admin_sessions` table
+- **JWT Validation**: Token signature and expiration verified
+- **Account Status**: Admin account and organization status checked
+- **Token Expiration**: Short-lived access tokens (15 minutes)
+- **Refresh Token Rotation**: Refresh tokens rotated on each use
 
 ---
 
@@ -390,9 +387,8 @@ const globalSpeedLimiter = slowDown({
 1. **Defense in Depth**: Multiple layers of security
 2. **Fail Secure**: Default to denying access
 3. **Least Privilege**: Minimum necessary permissions
-4. **Audit Logging**: Track security events
-5. **Regular Updates**: Keep dependencies updated
-6. **Configuration**: Environment-based security settings
+4. **Regular Updates**: Keep dependencies updated
+5. **Configuration**: Environment-based security settings
 
 ---
 

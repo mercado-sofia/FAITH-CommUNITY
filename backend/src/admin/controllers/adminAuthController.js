@@ -1,7 +1,5 @@
 import jwt from "jsonwebtoken"
 import db from "../../database.js"
-import { SessionSecurity } from "../../utils/sessionSecurity.js"
-import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -17,26 +15,6 @@ export const verifyAdminToken = async (req, res, next) => {
       issuer: process.env.JWT_ISS || "faith-community-api",
       audience: process.env.JWT_AUD || "faith-community-client",
     })
-
-    try {
-      const sessionResult = await SessionSecurity.verifyAdminSession(
-        token,
-        getClientIpAddress(req),
-        req.headers['user-agent']
-      )
-      
-      if (!sessionResult.valid) {
-        return res.status(403).json({ 
-          error: "Session verification failed", 
-          reason: sessionResult.reason 
-        })
-      }
-    } catch (sessionError) {
-      return res.status(403).json({ 
-        error: "Session verification error", 
-        reason: "Unable to verify session security" 
-      })
-    }
 
     if (decoded.role === 'admin' && decoded.id) {
       const [adminRows] = await db.execute(

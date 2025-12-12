@@ -18,7 +18,6 @@ import { LoginAttemptTracker } from '../../utils/loginAttemptTracker.js';
 import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 import { logError } from '../../utils/logger.js';
-import { SessionSecurity } from '../../utils/sessionSecurity.js';
 import { publishNotification } from '../../utils/pusher.js';
 
 export const registerUser = async (req, res) => {
@@ -995,11 +994,6 @@ export const logoutUser = async (req, res) => {
         'UPDATE users SET last_login = NOW() WHERE id = ?',
         [userId]
       );
-      
-      // Revoke admin/superadmin sessions
-      if (role === 'admin' || role === 'superadmin') {
-        await SessionSecurity.revokeAllAdminSessions(userId);
-      }
     }
 
     const presented = req.cookies?.refresh_token

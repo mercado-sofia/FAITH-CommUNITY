@@ -3,8 +3,6 @@ import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { authenticator } from "otplib"
-import { logAdminAction, logSuperadminAction } from "../../utils/audit.js"
-import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { logError } from "../../utils/logger.js"
@@ -96,16 +94,7 @@ export const loginAdmin = async (req, res) => {
       ipAddress: getClientIpAddress(req),
     });
 
-    await SessionSecurity.createAdminSession(
-      admin.id,
-      getClientIpAddress(req),
-      req.headers['user-agent'],
-      accessToken
-    )
-
     await LoginAttemptTracker.clearFailedAttempts(normalizedEmail, ipAddress, 'admin');
-    
-    await logAdminAction(admin.id, 'login', 'Admin logged in', req)
     
     // Set both tokens as httpOnly cookies (secure!)
     // Pass req to cookie options functions so they can use forwarded host for domain
@@ -298,9 +287,6 @@ export const updateAdmin = async (req, res) => {
 
     await connection.commit()
 
-    // Log superadmin action
-    await logSuperadminAction(req.superadmin?.id, 'update_admin', `Updated admin ${id}: ${JSON.stringify(updateData)}`, req)
-
     // Get updated admin data with organization info
     const [updatedAdmin] = await db.execute(
       `SELECT u.id, u.email, u.is_active, u.organization_id, u.created_at,
@@ -370,9 +356,6 @@ export const deactivateAdmin = async (req, res) => {
 
     await connection.commit()
 
-    // Log superadmin action
-    await logSuperadminAction(req.superadmin?.id, 'deactivate_admin', `${action} admin ${id} (org: ${organizationId})`, req)
-
     res.json({ 
       message: `Admin ${action} successfully`,
       is_active: newStatus,
@@ -436,9 +419,6 @@ export const deleteAdmin = async (req, res) => {
     }
 
     await connection.commit()
-
-    // Log superadmin action
-    await logSuperadminAction(req.superadmin?.id, 'delete_admin', `Deleted admin ${id} (org: ${organizationId})`, req)
 
     res.json({ 
       message: "Admin deleted successfully",

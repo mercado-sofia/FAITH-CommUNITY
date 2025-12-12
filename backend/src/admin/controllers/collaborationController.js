@@ -355,25 +355,6 @@ export const optOutCollaboration = async (req, res) => {
       `, [collaboration.program_id]);
     }
 
-    try {
-      const { logAuditEvent } = await import('../../utils/audit.js');
-      await logAuditEvent({
-        adminId: currentAdminId,
-        action: 'COLLABORATION_OPT_OUT',
-        details: {
-          collaborationId: parseInt(collaborationId),
-          programId: collaboration.program_id,
-          programTitle: collaboration.program_title,
-          adminEmail: collaboration.admin_email,
-          adminOrg: collaboration.admin_org_name,
-          remainingCollaborators: remainingCollaborations[0].count
-        },
-        ipAddress: getClientIpAddress(req),
-        userAgent: req.get('User-Agent')
-      });
-    } catch (auditError) {
-    }
-
     res.json({
       success: true,
       message: `You have opted out of collaborating on "${collaboration.program_title}". The program will no longer appear in your programs list.`

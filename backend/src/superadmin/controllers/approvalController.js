@@ -1,7 +1,6 @@
 //db table: submissions
 import db from '../../database.js';
 import NotificationController from '../../admin/controllers/notificationController.js';
-import { logSuperadminAction } from '../../utils/audit.js';
 import { logError, logWarn, logInfo } from '../../utils/logger.js';
 import { calculateInitialStatusFromDates } from '../../utils/programStatusUtils.js';
 
@@ -1685,13 +1684,6 @@ export const approveSubmission = async (req, res) => {
 
     // Note: Collaborator notifications are handled within the section-specific blocks
 
-    // Log superadmin action
-    try {
-      await logSuperadminAction(req.superadmin?.id, 'approve_submission', `Approved submission ${id} (${section}) for org ${orgId}`, req);
-    } catch (auditError) {
-      // Don't fail the main operation if audit logging fails
-    }
-
      // Commit transaction
      await connection.commit();
     
@@ -1905,9 +1897,6 @@ export const rejectSubmission = async (req, res) => {
       logError('Failed to create notification', notificationResult.error, { context: 'approval_controller' });
       // Don't fail the main operation if notification fails
     }
-
-    // Log superadmin action
-    await logSuperadminAction(req.superadmin?.id, 'reject_submission', `Rejected submission ${id} (${submission.section}) for org ${submission.organization_id}`, req)
 
     res.json({ 
       success: true, 

@@ -8,7 +8,7 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 - [Setup Guide](./01-setup/SETUP_GUIDE.md) - Complete setup guide for development and production, including environment variables, superadmin setup, and configuration
 
 ## 🔒 02-Security
-- [Security Guide](./02-security/SECURITY_GUIDE.md) - Comprehensive security documentation covering authentication, authorization, audit logging, and security best practices
+- [Security Guide](./02-security/SECURITY_GUIDE.md) - Comprehensive security documentation covering authentication, authorization, and security best practices
 
 ## 📁 03-File Management
 - [Cloudinary Integration Guide](./03-file-management/CLOUDINARY_INTEGRATION_GUIDE.md) - Image upload and storage setup (profiles, branding, news, programs)
@@ -27,7 +27,6 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 - **Multi-role Authentication**: Unified user system with role-based access (user, admin, superadmin) using JWT tokens
 - **Secure Email System**: SMTP/SendGrid integration for transactional emails
 - **File Management**: Cloudinary for images, AWS S3 for documents (Post-Act Reports)
-- **Audit Logging**: Comprehensive security event logging
 - **Rate Limiting**: Protection against abuse and DDoS
 - **Database Management**: MySQL with automatic migrations
 
@@ -95,7 +94,7 @@ The FAITH CommUNITY backend is currently deployed and working in production:
 - ✅ Security features implemented and active
 
 ### Recent Updates
-- ✅ Security improvements (audit logging, email change)
+- ✅ Security improvements (email change)
 - ✅ Performance optimizations
 - ✅ Database initialization improvements
 - ✅ Error handling enhancements
@@ -109,7 +108,6 @@ The backend implements multiple security layers:
 - **Authentication**: JWT tokens with secure storage
 - **Authorization**: Role-based access control (User, Admin, Superadmin)
 - **Rate Limiting**: Protection against brute force and DDoS
-- **Audit Logging**: Comprehensive security event tracking
 - **Input Validation**: All inputs validated and sanitized
 - **SQL Injection Protection**: Parameterized queries
 - **CSRF Protection**: Token-based CSRF protection

@@ -211,6 +211,10 @@ export default function LoginPage() {
     setShowError(false)
     setFieldErrors({})
     clearAllSessionData()
+    // #region agent log
+    const logoutInProgressBefore = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+    fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:213',message:'Login attempt started',data:{logoutInProgress:logoutInProgressBefore,email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
 
     try {
       // Detect which system to try based on email or previous attempts
@@ -299,6 +303,9 @@ export default function LoginPage() {
 
       if (result && result.ok) {
         const data = result.data
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:300',message:'Login successful, processing response',data:{system:successfulSystem,hasUserData:!!data.user,status:result.status,isProduction:process.env.NODE_ENV==='production'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         // Tokens are now in httpOnly cookies - don't store in localStorage!
         // Only store non-sensitive user data
         switch (successfulSystem) {
@@ -318,6 +325,15 @@ export default function LoginPage() {
             localStorage.setItem("userData", JSON.stringify(data.user))
             document.cookie = "userRole=user; path=/; max-age=86400"
             // REMOVED: localStorage.setItem("userToken", ...) - token is in httpOnly cookie
+            // #region agent log
+            const logoutInProgressAfterLogin = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+            if (logoutInProgressAfterLogin === 'true') {
+              sessionStorage.removeItem('logoutInProgress');
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:320',message:'Cleared logoutInProgress flag after successful user login',data:{userId:data.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            } else {
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:320',message:'User login successful, logoutInProgress was not set',data:{userId:data.user?.id,logoutInProgress:logoutInProgressAfterLogin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            }
+            // #endregion
             break
         }
 
@@ -468,6 +484,13 @@ export default function LoginPage() {
           // Only store non-sensitive user data
           localStorage.setItem("userData", JSON.stringify(userData.user))
           document.cookie = "userRole=user; path=/; max-age=86400"
+          // #region agent log
+          const logoutInProgressAfterFallbackLogin = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+          if (logoutInProgressAfterFallbackLogin === 'true') {
+            sessionStorage.removeItem('logoutInProgress');
+            fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:469',message:'Cleared logoutInProgress flag after successful fallback user login',data:{userId:userData.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+          }
+          // #endregion
           setIsLoading(false)
           
           // Use same redirect logic as main success handler

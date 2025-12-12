@@ -118,7 +118,10 @@ export default function Navbar() {
 
   const handleConfirmLogout = async () => {
     setShowLogoutConfirm(false);
-    
+    // #region agent log
+    const logoutInProgressBefore = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+    fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.js:119',message:'Logout initiated',data:{logoutInProgress:logoutInProgressBefore,isProduction:process.env.NODE_ENV==='production'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     // Use centralized logout service
     await logout(USER_TYPES.PUBLIC, {
       showLoader: true,

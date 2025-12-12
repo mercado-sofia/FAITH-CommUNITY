@@ -17,6 +17,9 @@ export const useAuthState = () => {
       
       // Check if logout is in progress - prevent race condition
       const logoutInProgress = sessionStorage.getItem('logoutInProgress');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useAuthState.js:19',message:'initializeAuth checking logoutInProgress',data:{logoutInProgress:logoutInProgress},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       
       // If logout is in progress, check auth status directly (bypassing getCurrentUser's logoutInProgress check)
       // to confirm cookies are actually cleared before clearing the flag
@@ -53,6 +56,9 @@ export const useAuthState = () => {
           // If userData is null, logout is confirmed - clear flag and set user to null
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.removeItem('logoutInProgress');
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useAuthState.js:55',message:'logoutInProgress flag cleared after confirming logout',data:{userData:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+            // #endregion
           }
           setUser(null);
           setIsLoading(false);
@@ -70,6 +76,9 @@ export const useAuthState = () => {
       // Normal auth check when logout is not in progress
       const { getCurrentUser } = await import('@/utils/shared/authService');
       const userData = await getCurrentUser();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useAuthState.js:72',message:'initializeAuth got userData from getCurrentUser',data:{hasUserData:!!userData,userRole:userData?.role,logoutInProgress:logoutInProgress},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       
       // Legacy code path - should not be reached when logoutInProgress is set
       if (logoutInProgress === 'true' && userData) {
@@ -94,6 +103,9 @@ export const useAuthState = () => {
           // Regular user - store and set user data
           localStorage.setItem('userData', JSON.stringify(userData));
           setUser(userData);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useAuthState.js:96',message:'User authenticated and set in state',data:{userRole:userData.role,userId:userData.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+          // #endregion
         }
       } else {
         // Not authenticated - clear any stale data

@@ -314,12 +314,30 @@ export default function LoginPage() {
             localStorage.setItem("superAdminData", JSON.stringify(data.superadmin))
             // REMOVED: localStorage.setItem("superAdminToken", ...) - token is in httpOnly cookie
             dispatch(loginSuperAdmin({ token: null, superadmin: data.superadmin })) // Token in cookie
+            // #region agent log
+            const logoutInProgressAfterSuperadminLogin = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+            if (logoutInProgressAfterSuperadminLogin === 'true') {
+              sessionStorage.removeItem('logoutInProgress');
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:316',message:'Cleared logoutInProgress flag after successful superadmin login',data:{superadminId:data.superadmin?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            } else {
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:316',message:'Superadmin login successful, logoutInProgress was not set',data:{superadminId:data.superadmin?.id,logoutInProgress:logoutInProgressAfterSuperadminLogin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            }
+            // #endregion
             break
           case "admin":
             localStorage.setItem("adminData", JSON.stringify(data.admin))
             document.cookie = "userRole=admin; path=/; max-age=86400"
             // REMOVED: localStorage.setItem("adminToken", ...) - token is in httpOnly cookie
             dispatch(loginAdmin({ token: null, admin: data.admin })) // Token in cookie
+            // #region agent log
+            const logoutInProgressAfterAdminLogin = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+            if (logoutInProgressAfterAdminLogin === 'true') {
+              sessionStorage.removeItem('logoutInProgress');
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:325',message:'Cleared logoutInProgress flag after successful admin login',data:{adminId:data.admin?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            } else {
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:325',message:'Admin login successful, logoutInProgress was not set',data:{adminId:data.admin?.id,logoutInProgress:logoutInProgressAfterAdminLogin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            }
+            // #endregion
             break
           case "user":
             localStorage.setItem("userData", JSON.stringify(data.user))
@@ -532,6 +550,13 @@ export default function LoginPage() {
             // Only store non-sensitive user data
             localStorage.setItem("superAdminData", JSON.stringify(superadminData.superadmin))
             dispatch(loginSuperAdmin({ token: null, superadmin: superadminData.superadmin })) // Token in cookie
+            // #region agent log
+            const logoutInProgressAfterFallbackSuperadminLogin = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('logoutInProgress') : null;
+            if (logoutInProgressAfterFallbackSuperadminLogin === 'true') {
+              sessionStorage.removeItem('logoutInProgress');
+              fetch('http://127.0.0.1:7242/ingest/3442d38b-68d6-48de-91d8-fe923fb3e90a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.js:553',message:'Cleared logoutInProgress flag after successful fallback superadmin login',data:{superadminId:superadminData.superadmin?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+            }
+            // #endregion
             setIsLoading(false)
             window.location.href = "/superadmin"
             return

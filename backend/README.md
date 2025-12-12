@@ -202,7 +202,7 @@ The application uses MySQL with automatic database initialization. The database 
 - **Feature Tables**: volunteers, messages, subscribers, collaborations
 - **Content Tables**: advocacies, competencies, organization_heads
 - **UI Tables**: branding, site_name, footer_content, hero_section
-- **Security Tables**: superadmin, login_attempts, security_logs, audit_logs
+- **Security Tables**: superadmin, login_attempts, security_logs
 
 ### Utility Scripts
 - `scripts/utilities.js` - Consolidated utility functions

@@ -1735,23 +1735,6 @@ const initializeDatabase = async () => {
         )
       `);
 
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS audit_logs (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          user_id INT NOT NULL,
-          user_type ENUM('admin', 'superadmin') NOT NULL,
-          action VARCHAR(100) NOT NULL,
-          details TEXT,
-          ip_address VARCHAR(45) NULL,
-          user_agent VARCHAR(255) NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_user_id (user_id),
-          INDEX idx_user_type (user_type),
-          INDEX idx_action (action),
-          INDEX idx_created_at (created_at)
-        )
-      `);
-
       try {
         // Get superadmin credentials from environment variables
         const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
@@ -1854,24 +1837,6 @@ const initializeDatabase = async () => {
           INDEX idx_created (created_at),
           INDEX idx_user_type (user_type),
           INDEX idx_combined (identifier, ip_address, user_type, attempt_type)
-        )
-      `);
-      
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS admin_sessions (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          admin_id INT NOT NULL,
-          token_hash VARCHAR(64) NOT NULL,
-          fingerprint VARCHAR(64) NOT NULL,
-          ip_address VARCHAR(45) NOT NULL,
-          user_agent VARCHAR(500) NULL,
-          expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
-          INDEX idx_admin_id (admin_id),
-          INDEX idx_token_hash (token_hash),
-          INDEX idx_fingerprint (fingerprint),
-          INDEX idx_expires_at (expires_at)
         )
       `);
 

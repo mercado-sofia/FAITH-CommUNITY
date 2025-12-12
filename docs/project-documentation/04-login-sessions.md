@@ -57,48 +57,37 @@
   - Not accessible to JavaScript (XSS protection)
 
 **Session Management:**
-- **Database-Backed Sessions**: Sessions stored in `admin_sessions` table
-- **Security Binding**: Sessions bound to IP address and User-Agent
-- **Fingerprinting**: SHA-256 hash of IP + User-Agent
-- **Token Hashing**: Tokens stored as SHA-256 hashes (not plain text)
-- **Session Expiration**: Database session records expire in 30 minutes (separate from JWT token expiration)
+- **JWT-Based Authentication**: Uses JWT tokens for authentication (no database session storage)
+- **Token Expiration**: Access tokens expire in 15 minutes
+- **Refresh Tokens**: 7-day expiration, stored in httpOnly cookie
 
 **Session Flow:**
 1. Admin logs in with email/password
 2. Backend validates credentials
-3. Backend creates session:
+3. Backend creates tokens:
    - Generates JWT access token (15-minute expiration)
    - Issues refresh token (7-day expiration, stored in httpOnly cookie)
-   - Creates fingerprint from IP + User-Agent
-   - Stores session in `admin_sessions` table:
-     - `token_hash`: SHA-256 hash of access token
-     - `fingerprint`: SHA-256 hash of IP + User-Agent
-     - `ip_address`: Client IP
-     - `user_agent`: Client User-Agent
-     - `expires_at`: 30 minutes from creation (database session record)
 4. Frontend stores access token in localStorage
 5. On each request:
-   - Frontend sends token in Authorization header
-   - Backend verifies token and session:
+   - Frontend sends token in Authorization header or cookie
+   - Backend verifies JWT token:
      - Validates JWT signature
-     - Checks session exists and not expired
-     - Verifies fingerprint matches current IP/UA
-   - If fingerprint mismatch: Session revoked, request rejected
+     - Checks token expiration
+     - Verifies admin account is active
+     - Verifies organization is active (if applicable)
 6. When access token expires:
    - Frontend can use refresh token to get new access token
    - Uses unified `/api/users/refresh` endpoint
    - Refresh token is rotated on each use
 
 **Session Verification:**
-- **IP/UA Mismatch**: Session automatically revoked
-- **Expired Sessions**: Automatically cleaned up
-- **Session Revocation**: Can revoke individual or all sessions
+- **JWT Validation**: Token signature and expiration checked
+- **Account Status**: Admin account and organization status verified
 - **Token Refresh**: Admin users can refresh access tokens using refresh tokens
 
 **Code Locations:**
 - Backend: `backend/src/superadmin/controllers/adminController.js` - `loginAdmin()`
-- Backend: `backend/src/utils/sessionSecurity.js` - Session management
-- Backend: `backend/src/superadmin/middleware/verifyAdminToken.js` - Token verification
+- Backend: `backend/src/admin/controllers/adminAuthController.js` - `verifyAdminToken()` middleware
 - Backend: `backend/src/(public)/controllers/userController.js` - `refreshAccessToken()` (unified for all roles)
 
 ### 3. Superadmin Users
@@ -116,21 +105,19 @@
   - Not accessible to JavaScript (XSS protection)
 
 **Session Management:**
-- Similar to admin sessions (database-backed with security binding)
+- **JWT-Based Authentication**: Uses JWT tokens for authentication (no database session storage)
 - **2FA Support**: Optional TOTP-based two-factor authentication
-- **Session Expiration**: Database session records expire in 30 minutes (separate from JWT token expiration)
-- **Hardcoded Token**: Special "superadmin" token for main account (ID = 1)
+- **Token Expiration**: Access tokens expire in 15 minutes
+- **Hardcoded Token**: Special "superadmin" token for main account (ID = 1) - development only
 
 **Session Flow:**
 1. Superadmin logs in with email/password
 2. If 2FA enabled: Requires TOTP code
-3. Backend creates session:
+3. Backend creates tokens:
    - Generates JWT access token (15-minute expiration)
    - Issues refresh token (7-day expiration, stored in httpOnly cookie)
-   - Creates fingerprint from IP + User-Agent
-   - Stores session in `admin_sessions` table (30-minute database record expiration)
 4. Frontend stores access token in localStorage
-5. Session verification (same as admin)
+5. Session verification (same as admin - JWT validation)
 6. When access token expires:
    - Frontend can use refresh token to get new access token
    - Uses unified `/api/users/refresh` endpoint
@@ -138,7 +125,6 @@
 
 **Code Locations:**
 - Backend: `backend/src/superadmin/controllers/superadminAuthController.js` - `loginSuperadmin()`
-- Backend: `backend/src/utils/sessionSecurity.js` - Session management
 - Backend: `backend/src/utils/twoFA.js` - 2FA implementation
 - Backend: `backend/src/(public)/controllers/userController.js` - `refreshAccessToken()` (unified for all roles)
 
@@ -147,12 +133,10 @@
 1. **Token Expiration**: Short-lived access tokens (15 minutes for all roles)
 2. **Refresh Token Rotation**: Refresh tokens rotated on each use (all roles)
 3. **Unified Refresh System**: All roles (user, admin, superadmin) use the same refresh token endpoint (`/api/users/refresh`)
-4. **Session Binding**: IP address and User-Agent fingerprinting (admin/superadmin)
-5. **Token Hashing**: Tokens stored as hashes in database (admin/superadmin)
-6. **Automatic Cleanup**: Expired sessions automatically removed
-7. **Revocation Support**: Ability to revoke sessions
-8. **Security Violation Detection**: Sessions revoked on IP/UA mismatch (admin/superadmin)
-9. **Database Session Records**: Admin/superadmin sessions stored in database with 30-minute expiration (separate from 15-minute JWT expiration)
+4. **JWT Validation**: Token signature and expiration verified on each request
+5. **Account Status Checks**: Admin/superadmin account and organization status verified
+6. **Revocation Support**: Refresh tokens can be revoked on logout
+7. **Automatic Cleanup**: Expired refresh tokens automatically removed
 
 ## Session Storage
 
@@ -162,11 +146,11 @@
 
 **Admin Users:**
 - Access Token: httpOnly cookie (automatically sent with requests, XSS protected)
-- Session: Database (`admin_sessions` table) - for IP/UA fingerprinting
+- Refresh Token: httpOnly cookie (not accessible to JavaScript)
 
 **Superadmin Users:**
 - Access Token: httpOnly cookie (automatically sent with requests, XSS protected)
-- Session: Database (`admin_sessions` table, similar to admin) - for IP/UA fingerprinting
+- Refresh Token: httpOnly cookie (not accessible to JavaScript)
 
 **Note:** Access tokens are stored in httpOnly cookies for enhanced security against XSS attacks. CSRF protection is provided via the double-submit cookie pattern. The backend middleware supports both cookie-based and Authorization header-based token reading for flexibility.
 

@@ -113,16 +113,9 @@
 - **Single Use**: Tokens invalidated after use
 - **Time-Limited**: Tokens expire after 1 hour
 
-### 9. Audit Logging
-
-**Logged Events:**
-- Admin actions (create, update, delete operations)
-- Superadmin actions (all administrative operations)
-- Security events (failed logins, suspicious activity)
-- Login attempts (successful and failed)
+### 9. Security Logging
 
 **Log Storage:**
-- **audit_logs**: Admin and superadmin actions
 - **security_logs**: Security-related events with severity levels
 - **login_attempts**: Failed login attempt tracking
 

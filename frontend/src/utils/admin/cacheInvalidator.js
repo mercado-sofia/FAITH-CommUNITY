@@ -17,56 +17,62 @@ export const invalidateCache = (keys) => {
 /**
  * Invalidate all news-related caches
  * This ensures both admin and public news views are updated
+ * @param {string} orgAcronym - Organization acronym to invalidate specific org caches (required for org-specific invalidation)
  */
-export const invalidateNewsCache = () => {
+export const invalidateNewsCache = (orgAcronym = null) => {
   const base = API_BASE_URL || '';
-  // Invalidate public news cache
+  // Always invalidate public news cache
   invalidateCache(`${base}/api/news`);
   
-  // Invalidate organization-specific news caches
-  // We'll invalidate common organization acronyms
-  const commonOrgs = ['FACTS', 'FAHSS', 'FABCOMMS', 'FAIEES'];
-  commonOrgs.forEach(org => {
-    invalidateCache(`${base}/api/news/org/${org}`);
-    invalidateCache(`${base}/api/news/approved/${org}`);
-  });
-  
-  // Invalidate admin news caches for all organizations
-  commonOrgs.forEach(org => {
-    invalidateCache(`${base}/api/news/org/${org}`);
-  });
+  // If orgAcronym is provided, invalidate that specific organization's caches
+  if (orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '') {
+    invalidateCache(`${base}/api/news/org/${orgAcronym}`);
+    invalidateCache(`${base}/api/news/approved/${orgAcronym}`);
+    // CRITICAL: Also invalidate archived news cache so archive page updates immediately
+    invalidateCache(`${base}/api/news/archived/${orgAcronym}`);
+  }
+  // Note: If orgAcronym is not provided, only public cache is invalidated
+  // For org-specific operations, always pass the orgAcronym parameter
   
   // News cache invalidated
 };
 
 /**
  * Invalidate organization-related caches
+ * @param {string} orgAcronym - Optional organization acronym to invalidate specific org cache
  */
-export const invalidateOrganizationCache = () => {
+export const invalidateOrganizationCache = (orgAcronym = null) => {
   const base = API_BASE_URL || '';
+  // Always invalidate general organizations cache
   invalidateCache(`${base}/api/organizations`);
-  invalidateCache(`${base}/api/organization/org/FACTS`);
-  invalidateCache(`${base}/api/organization/org/FAHSS`);
-  invalidateCache(`${base}/api/organization/org/FABCOMMS`);
-  invalidateCache(`${base}/api/organization/org/FAIEES`);
+  
+  // If orgAcronym is provided, invalidate that specific organization's cache
+  if (orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '') {
+    invalidateCache(`${base}/api/organization/org/${orgAcronym}`);
+  }
+  // Note: If orgAcronym is not provided, only general cache is invalidated
+  // For org-specific operations, always pass the orgAcronym parameter
   
   // Organization cache invalidated
 };
 
 /**
  * Invalidate programs-related caches
+ * @param {string} orgAcronym - Optional organization acronym to invalidate specific org caches
  */
-export const invalidateProgramsCache = () => {
+export const invalidateProgramsCache = (orgAcronym = null) => {
   const base = API_BASE_URL || '';
+  // Always invalidate general program caches
   invalidateCache(`${base}/api/programs`);
   invalidateCache(`${base}/api/programs/approved/upcoming`);
   
-  // Invalidate organization-specific program caches
-  const commonOrgs = ['FACTS', 'FAHSS', 'FABCOMMS', 'FAIEES'];
-  commonOrgs.forEach(org => {
-    invalidateCache(`${base}/api/programs/org/${org}`);
-    invalidateCache(`${base}/api/admin/programs/${org}`);
-  });
+  // If orgAcronym is provided, invalidate that specific organization's program caches
+  if (orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '') {
+    invalidateCache(`${base}/api/programs/org/${orgAcronym}`);
+    invalidateCache(`${base}/api/admin/programs/${orgAcronym}`);
+  }
+  // Note: If orgAcronym is not provided, only general caches are invalidated
+  // For org-specific operations, always pass the orgAcronym parameter
   
   // Programs cache invalidated
 };

@@ -228,7 +228,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       setSuccessModal({ isVisible: true, message: 'News created successfully!', type: 'success' });
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true };
     } catch (error) {
       // Log the full error for debugging (development only)
@@ -291,7 +291,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       setSuccessModal({ isVisible: true, message: 'News updated successfully!', type: 'success' });
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true };
     } catch (error) {
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -302,7 +302,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateNewsData, createFormData, refreshNews, setSuccessModal]);
+  }, [orgId, validateNewsData, createFormData, refreshNews, setSuccessModal]);
 
   // Handle single news deletion
   const handleDeleteNews = useCallback(async (newsId) => {
@@ -323,7 +323,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       setSuccessModal({ isVisible: true, message: 'News deleted successfully!', type: 'success' });
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true };
     } catch (error) {
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -334,7 +334,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   // Handle news archiving
   const handleArchiveNews = useCallback(async (newsId) => {
@@ -409,7 +409,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       setSuccessModal({ isVisible: true, message: 'News archived successfully!', type: 'success' });
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true };
     } catch (error) {
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -420,7 +420,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   // Handle news unarchiving (restore)
   const handleUnarchiveNews = useCallback(async (newsId) => {
@@ -441,7 +441,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
 
       setSuccessModal({ isVisible: true, message: 'News unarchived successfully!', type: 'success' });
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true };
     } catch (error) {
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -452,7 +452,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   // Handle bulk news deletion
   const handleBulkDelete = useCallback(async (selectedNewsIds) => {
@@ -488,7 +488,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true, failedCount: failedDeletes };
     } catch (error) {
       setSuccessModal({ isVisible: true, message: 'Failed to delete news items. Please try again.', type: 'error' });
@@ -496,7 +496,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   // Handle bulk news archiving
   const handleBulkArchive = useCallback(async (selectedNewsIds, newsItems) => {
@@ -547,7 +547,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true, failedCount: failedArchives };
     } catch (error) {
       setSuccessModal({ isVisible: true, message: 'Failed to archive news items. Please try again.', type: 'error' });
@@ -555,7 +555,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   // Handle bulk news unarchiving
   const handleBulkUnarchive = useCallback(async (selectedNewsIds) => {
@@ -593,7 +593,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       refreshNews();
-      invalidateNewsCache();
+      invalidateNewsCache(orgId);
       return { success: true, failedCount: failedUnarchives };
     } catch (error) {
       setSuccessModal({ isVisible: true, message: 'Failed to unarchive news items. Please try again.', type: 'error' });
@@ -601,7 +601,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshNews, setSuccessModal]);
+  }, [orgId, refreshNews, setSuccessModal]);
 
   return {
     // State

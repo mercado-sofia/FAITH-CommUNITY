@@ -12,7 +12,9 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { SkeletonLoader } from '../components';
 import { API_BASE_URL, logError } from '@/config/api';
 import { useDispatch } from 'react-redux';
+import { mutate } from 'swr';
 import { superadminHighlightsApi } from '@/rtk/superadmin/highlightsApi';
+import { dashboardApi } from '@/rtk/superadmin/dashboardApi';
 import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import styles from './approvals.module.css';
 
@@ -603,9 +605,21 @@ export default function PendingApprovalsPage() {
         throw new Error(errorMessage);
       }
 
-      // Invalidate and refetch highlights cache if this was a highlight approval
-      // This ensures the Highlights management page shows updated status
+      // Invalidate cache to update sidebar counts immediately
       try {
+        // CRITICAL: Invalidate Dashboard tag to update pending approvals count in sidebar
+        dispatch(dashboardApi.util.invalidateTags(['Dashboard']));
+        
+        // CRITICAL: Invalidate SWR cache for submissions to update admin sidebar count
+        // Invalidate all submission caches (for all organizations)
+        mutate(
+          (key) => typeof key === 'string' && key.includes('/api/submissions/'),
+          undefined,
+          { revalidate: true }
+        );
+        
+        // Invalidate and refetch highlights cache if this was a highlight approval
+        // This ensures the Highlights management page shows updated status
         if (item.section === 'highlights') {
           // Invalidate all highlight queries to force refetch
           // This will trigger automatic refetch for any active queries
@@ -672,13 +686,30 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Rejection failed');
       }
 
+      // CRITICAL: Invalidate cache to update sidebar counts immediately
+      try {
+        // CRITICAL: Invalidate Dashboard tag to update pending approvals count in sidebar
+        dispatch(dashboardApi.util.invalidateTags(['Dashboard']));
+        
+        // CRITICAL: Invalidate SWR cache for submissions to update admin sidebar count
+        // Invalidate all submission caches (for all organizations)
+        mutate(
+          (key) => typeof key === 'string' && key.includes('/api/submissions/'),
+          undefined,
+          { revalidate: true }
+        );
+      } catch (cacheError) {
+        // Don't fail the rejection if cache invalidation fails
+        logError(cacheError, { context: 'handleReject-cacheInvalidation', itemId: item.id });
+      }
+
       showSuccessModal('Item has been rejected.');
       fetchApprovals();
     } catch (err) {
       logError(err, { context: 'handleReject', itemId: item.id });
       showSuccessModal('Failed to reject item: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router]);
+  }, [showSuccessModal, fetchApprovals, router, dispatch]);
 
   // Bulk action handlers
   const handleBulkApprove = useCallback(async (uniqueKeys) => {
@@ -705,9 +736,21 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk approval failed');
       }
 
-      // Invalidate and refetch highlights cache if any highlights were approved
-      // Check if any of the approved items were highlights
+      // Invalidate cache to update sidebar counts immediately
       try {
+        // CRITICAL: Invalidate Dashboard tag to update pending approvals count in sidebar
+        dispatch(dashboardApi.util.invalidateTags(['Dashboard']));
+        
+        // CRITICAL: Invalidate SWR cache for submissions to update admin sidebar count
+        // Invalidate all submission caches (for all organizations)
+        mutate(
+          (key) => typeof key === 'string' && key.includes('/api/submissions/'),
+          undefined,
+          { revalidate: true }
+        );
+        
+        // Invalidate and refetch highlights cache if any highlights were approved
+        // Check if any of the approved items were highlights
         const approvedItems = approvals.filter(approval => 
           originalIds.includes(approval.id.toString()) && approval.section === 'highlights'
         );
@@ -815,9 +858,21 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk deletion failed');
       }
 
-      // Invalidate and refetch highlights cache if any highlights were deleted
-      // Check if any of the deleted items were highlights
+      // Invalidate cache to update sidebar counts immediately
       try {
+        // CRITICAL: Invalidate Dashboard tag to update pending approvals count in sidebar
+        dispatch(dashboardApi.util.invalidateTags(['Dashboard']));
+        
+        // CRITICAL: Invalidate SWR cache for submissions to update admin sidebar count
+        // Invalidate all submission caches (for all organizations)
+        mutate(
+          (key) => typeof key === 'string' && key.includes('/api/submissions/'),
+          undefined,
+          { revalidate: true }
+        );
+        
+        // Invalidate and refetch highlights cache if any highlights were deleted
+        // Check if any of the deleted items were highlights
         const deletedItems = approvals.filter(approval => 
           originalIds.includes(approval.id.toString()) && approval.section === 'highlights'
         );
@@ -989,9 +1044,21 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Deletion failed');
       }
 
-      // Invalidate and refetch highlights cache if this was a highlight deletion
-      // This ensures the Highlights management page shows updated data
+      // Invalidate cache to update sidebar counts immediately
       try {
+        // CRITICAL: Invalidate Dashboard tag to update pending approvals count in sidebar
+        dispatch(dashboardApi.util.invalidateTags(['Dashboard']));
+        
+        // CRITICAL: Invalidate SWR cache for submissions to update admin sidebar count
+        // Invalidate all submission caches (for all organizations)
+        mutate(
+          (key) => typeof key === 'string' && key.includes('/api/submissions/'),
+          undefined,
+          { revalidate: true }
+        );
+        
+        // Invalidate and refetch highlights cache if this was a highlight deletion
+        // This ensures the Highlights management page shows updated data
         if (selectedItemForAction.section === 'highlights') {
           // Invalidate all highlight queries to force refetch
           dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));

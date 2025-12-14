@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
 import { SuccessModal, ConfirmationModal, ErrorBoundary } from '@/components'
 import { useAdminVolunteers, useAdminPrograms } from '@/hooks/admin/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
+import { volunteersApi } from '@/rtk/admin/volunteersApi'
 import { SkeletonLoader } from '../components'
 import { checkAdminAuthOrRedirect } from '@/utils/admin/tokenManager';
 import { handleApiError } from '@/utils/admin/errorHandler';
@@ -50,6 +51,7 @@ class RateLimiter {
 export default function VolunteersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const dispatch = useDispatch()
   
   // Get current admin data from Redux store
   const currentAdmin = useSelector(selectCurrentAdmin)
@@ -177,6 +179,17 @@ export default function VolunteersPage() {
       // Reset rate limiter on success
       rateLimiter.current.reset(rateLimitKey);
       
+      // CRITICAL: Invalidate RTK Query cache to update sidebar count immediately
+      try {
+        dispatch(volunteersApi.util.invalidateTags([
+          { type: "Volunteer", id: `admin-${currentAdmin?.id}` },
+          "Volunteer"
+        ]));
+      } catch (cacheError) {
+        // Don't fail the update if cache invalidation fails
+        console.error('Failed to invalidate cache:', cacheError);
+      }
+      
       // Show success message based on status
       const actionText = newStatus === 'Approved' ? 'approved' : 'declined';
       setSuccessMessage(`Volunteer ${volunteerName} has been successfully ${actionText}.`);
@@ -192,7 +205,7 @@ export default function VolunteersPage() {
     } finally {
       setIsUpdatingStatus(false);
     }
-  }, [refreshVolunteers, currentAdmin?.id, showToast, volunteersData])
+  }, [refreshVolunteers, currentAdmin?.id, showToast, volunteersData, dispatch])
 
   // Enhanced bulk status update with validation
   const handleBulkStatusUpdate = useCallback(async (volunteerIds, newStatus, rejectionComment) => {
@@ -244,6 +257,19 @@ export default function VolunteersPage() {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
       
+      // CRITICAL: Invalidate RTK Query cache to update sidebar count immediately (only if at least one succeeded)
+      if (successful > 0) {
+        try {
+          dispatch(volunteersApi.util.invalidateTags([
+            { type: "Volunteer", id: `admin-${currentAdmin?.id}` },
+            "Volunteer"
+          ]));
+        } catch (cacheError) {
+          // Don't fail the update if cache invalidation fails
+          console.error('Failed to invalidate cache:', cacheError);
+        }
+      }
+      
       // Show success message
       const actionText = newStatus === 'Approved' ? 'approved' : 'declined';
       if (failed === 0) {
@@ -271,7 +297,7 @@ export default function VolunteersPage() {
     } finally {
       setIsBulkUpdatingStatus(false);
     }
-  }, [refreshVolunteers, showToast])
+  }, [refreshVolunteers, showToast, dispatch, currentAdmin?.id])
 
   // Enhanced soft delete with rate limiting
   const handleSoftDelete = useCallback(async (id, volunteerName) => {
@@ -331,6 +357,17 @@ export default function VolunteersPage() {
       // Reset rate limiter on success
       rateLimiter.current.reset(rateLimitKey);
       
+      // CRITICAL: Invalidate RTK Query cache to update sidebar count immediately
+      try {
+        dispatch(volunteersApi.util.invalidateTags([
+          { type: "Volunteer", id: `admin-${currentAdmin?.id}` },
+          "Volunteer"
+        ]));
+      } catch (cacheError) {
+        // Don't fail the delete if cache invalidation fails
+        console.error('Failed to invalidate cache:', cacheError);
+      }
+      
       // Close delete modal
       setShowDeleteModal(false);
       setVolunteerToDelete(null);
@@ -350,7 +387,7 @@ export default function VolunteersPage() {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshVolunteers, currentAdmin?.id, showToast])
+  }, [refreshVolunteers, currentAdmin?.id, showToast, dispatch])
 
   // Handle delete cancellation
   const handleCancelDelete = useCallback(() => {
@@ -404,6 +441,17 @@ export default function VolunteersPage() {
 
       await Promise.all(deletePromises);
       
+      // CRITICAL: Invalidate RTK Query cache to update sidebar count immediately
+      try {
+        dispatch(volunteersApi.util.invalidateTags([
+          { type: "Volunteer", id: `admin-${currentAdmin?.id}` },
+          "Volunteer"
+        ]));
+      } catch (cacheError) {
+        // Don't fail the delete if cache invalidation fails
+        console.error('Failed to invalidate cache:', cacheError);
+      }
+      
       // Show success message
       setSuccessMessage(`${volunteerIds.length} volunteer${volunteerIds.length !== 1 ? 's' : ''} have been successfully deleted from the volunteer list.`);
       setSuccessModalType('success');
@@ -418,7 +466,7 @@ export default function VolunteersPage() {
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshVolunteers])
+  }, [refreshVolunteers, dispatch, currentAdmin?.id])
 
   function capitalizeFirstLetter(str) {
     if (!str) return '';

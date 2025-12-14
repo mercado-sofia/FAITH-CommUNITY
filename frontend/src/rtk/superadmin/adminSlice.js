@@ -26,8 +26,8 @@ const adminSlice = createSlice({
       state.admin = action.payload.superadmin || {
         email: "faithcommunityfaces@gmail.com",
         role: "superadmin",
-        org: "FAITH",
-        orgName: "FAITH Community System",
+        org: "FACES",
+        orgName: "FACES Community System",
       }
       state.userType = "superadmin"
       state.error = null

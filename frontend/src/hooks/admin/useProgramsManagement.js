@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { mutate } from 'swr';
 import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG } from '@/utils/admin/constants';
 
@@ -312,11 +313,11 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
       refreshPrograms();
       
-      // Also refresh submissions data if available
-      if (typeof window !== 'undefined' && window.swrCache) {
-        // Invalidate submissions cache to refresh submissions page
+      // CRITICAL: Invalidate SWR cache for submissions to update submissions table immediately
+      // This ensures the new submission appears in the submissions page without refresh
+      if (currentAdmin?.org) {
         const submissionsKey = `${API_CONFIG.BASE_URL}/api/submissions/${currentAdmin.org}`;
-        window.swrCache.delete(submissionsKey);
+        mutate(submissionsKey, undefined, { revalidate: true });
       }
       
       // Reset page mode to list after successful submission

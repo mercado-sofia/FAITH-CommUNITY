@@ -1,6 +1,4 @@
 import db from '../src/database.js';
-import bcrypt from 'bcrypt';
-import { LoginAttemptTracker } from '../src/utils/loginAttemptTracker.js';
 
 // Environment check
 const isProduction = process.env.NODE_ENV === 'production';
@@ -8,9 +6,6 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Production-safe commands
 const productionSafeCommands = [
-  'create-superadmin',
-  'reset-superadmin-password',
-  'check-superadmin',
   'check-data', 
   'fix-missing-data',
   'production-health-check',
@@ -22,177 +17,9 @@ const developmentOnlyCommands = [
   'debug-collaborations'
 ];
 
-/**
- * Creates the initial superadmin account
- * Usage: node scripts/utilities.js create-superadmin
- */
-async function createSuperadmin() {
-  try {
-    console.log('🔧 Creating/updating superadmin account...');
-    
-    // Get superadmin credentials from environment variables
-    const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
-    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
-    
-    // In production, require environment variables
-    if (isProduction && (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD)) {
-      console.error('❌ ERROR: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in environment variables for production');
-      process.exit(1);
-    }
-    
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
-    
-    // Check if superadmin exists
-    const [existing] = await db.execute('SELECT id, username, password FROM superadmin WHERE id = 1');
-    
-    if (existing.length === 0) {
-      // Insert new superadmin account
-      await db.execute(`
-        INSERT INTO superadmin (id, username, password, password_changed_at, twofa_enabled, twofa_secret, created_at, updated_at)
-        VALUES (1, ?, ?, NOW(), FALSE, NULL, NOW(), NOW())
-      `, [superadminEmail, hashedPassword]);
-      
-      console.log('✅ Superadmin account created successfully!');
-      console.log(`📧 Email: ${superadminEmail}`);
-      console.log(`🔑 Password: ${superadminPassword}`);
-      console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-      console.log('⚠️  Please change the password after first login!');
-    } else {
-      // Update existing superadmin account
-      const existingAccount = existing[0];
-      
-      // Update password if it's NULL or empty, or if username doesn't match
-      if (!existingAccount.password || existingAccount.password.trim() === '' || existingAccount.username !== superadminEmail) {
-        await db.execute(`
-          UPDATE superadmin 
-          SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW()
-          WHERE id = 1
-        `, [superadminEmail, hashedPassword]);
-        
-        // Clear all failed login attempts for this email (allows immediate login after reset)
-        await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'superadmin');
-        await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'admin');
-        // Also clear by email only (all IPs) to be thorough
-        await db.execute(
-          'DELETE FROM login_attempts WHERE identifier = ? AND user_type IN (?, ?) AND attempt_type = ?',
-          [superadminEmail, 'superadmin', 'admin', 'failed']
-        );
-        
-        console.log('✅ Superadmin account updated successfully!');
-        console.log(`📧 Email: ${superadminEmail}`);
-        console.log(`🔑 Password: ${superadminPassword}`);
-        console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-        console.log('✅ All failed login attempts have been cleared. You can now log in immediately.');
-      } else {
-        console.log('✅ Superadmin account already exists!');
-        console.log(`📧 Email: ${existingAccount.username}`);
-        console.log('⚠️  Account already has a password set.');
-        console.log('💡 To reset password, use: node scripts/utilities.js reset-superadmin-password');
-        console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ Error creating/updating superadmin:', error.message);
-    console.error('Full error:', error);
-  }
-}
-
-/**
- * Resets the superadmin password to default
- * Usage: node scripts/utilities.js reset-superadmin-password
- */
-async function resetSuperadminPassword() {
-  try {
-    console.log('🔧 Resetting superadmin password...');
-    
-    // Get superadmin credentials from environment variables
-    const superadminEmail = process.env.SUPERADMIN_EMAIL || 'faithcommunityfaces@gmail.com';
-    const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
-    
-    // In production, require environment variables
-    if (isProduction && (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD)) {
-      console.error('❌ ERROR: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in environment variables for production');
-      process.exit(1);
-    }
-    
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
-    
-    // Check if superadmin exists
-    const [existing] = await db.execute('SELECT id, username FROM superadmin WHERE id = 1');
-    
-    if (existing.length === 0) {
-      console.log('❌ Superadmin account does not exist!');
-      console.log('💡 Run: node scripts/utilities.js create-superadmin');
-      return;
-    }
-    
-    // Force update password and email
-    await db.execute(`
-      UPDATE superadmin 
-      SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW()
-      WHERE id = 1
-    `, [superadminEmail, hashedPassword]);
-    
-    // Clear all failed login attempts for this email (allows immediate login after reset)
-    // Clear attempts for all user types (admin, superadmin) in case they tried wrong endpoint
-    await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'superadmin');
-    await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'admin');
-    // Also clear by email only (all IPs) to be thorough
-    await db.execute(
-      'DELETE FROM login_attempts WHERE identifier = ? AND user_type IN (?, ?) AND attempt_type = ?',
-      [superadminEmail, 'superadmin', 'admin', 'failed']
-    );
-    
-    console.log('✅ Superadmin password reset successfully!');
-    console.log(`📧 Email: ${superadminEmail}`);
-    console.log(`🔑 Password: ${superadminPassword}`);
-    console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-    console.log('✅ All failed login attempts have been cleared. You can now log in immediately.');
-    
-  } catch (error) {
-    console.error('❌ Error resetting superadmin password:', error.message);
-    console.error('Full error:', error);
-  }
-}
-
-/**
- * Checks superadmin account status
- * Usage: node scripts/utilities.js check-superadmin
- */
-async function checkSuperadmin() {
-  try {
-    console.log('🔍 Checking superadmin account...\n');
-    
-    const [existing] = await db.execute('SELECT id, username, password, twofa_enabled, created_at, updated_at, password_changed_at FROM superadmin WHERE id = 1');
-    
-    if (existing.length === 0) {
-      console.log('❌ Superadmin account does not exist!');
-      console.log('💡 Run: node scripts/utilities.js create-superadmin');
-      return;
-    }
-    
-    const account = existing[0];
-    console.log('✅ Superadmin account found:');
-    console.log(`   ID: ${account.id}`);
-    console.log(`   Email: ${account.username}`);
-    console.log(`   Password: ${account.password ? '✅ Set' : '❌ Not set'}`);
-    console.log(`   2FA Enabled: ${account.twofa_enabled ? 'Yes' : 'No'}`);
-    console.log(`   Created: ${account.created_at}`);
-    console.log(`   Updated: ${account.updated_at}`);
-    console.log(`   Password Changed: ${account.password_changed_at || 'Never'}`);
-    console.log('\n📝 Login Credentials:');
-    console.log(`   Email: ${account.username}`);
-    console.log(`   Password: admin123 (if not changed)`);
-    console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-    
-  } catch (error) {
-    console.error('❌ Error checking superadmin:', error.message);
-    console.error('Full error:', error);
-  }
-}
+// Note: Superadmin initialization is now handled via the API endpoint
+// Use: node scripts/initialize-superadmin.js (calls /api/superadmin/auth/initialize)
+// Or see: backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md
 
 /**
  * Checks all database data and shows summary
@@ -262,15 +89,15 @@ async function checkAllData() {
     const [subscribers] = await db.execute('SELECT COUNT(*) as count FROM subscribers');
     console.log(`📧 Subscribers: ${subscribers[0].count}`);
     
-    // Check superadmin
-    const [superadmin] = await db.execute('SELECT COUNT(*) as count FROM superadmin');
+    // Check superadmin (using unified users table)
+    const [superadmin] = await db.execute("SELECT COUNT(*) as count FROM users WHERE role = 'superadmin'");
     console.log(`🔐 Superadmin: ${superadmin[0].count}`);
     
     if (superadmin[0].count > 0) {
-      const [superadminDetails] = await db.execute('SELECT id, username FROM superadmin');
+      const [superadminDetails] = await db.execute("SELECT id, email FROM users WHERE role = 'superadmin'");
       console.log('   Superadmin account:');
       superadminDetails.forEach(sa => {
-        console.log(`   - ${sa.username}`);
+        console.log(`   - ${sa.email}`);
       });
     }
     
@@ -326,7 +153,7 @@ async function fixMissingData() {
       'advocacies', 'competencies', 'organization_heads', 'heads_faces',
       'branding', 'site_name', 'footer_content', 'hero_section', 'hero_section_images',
       'about_us', 'mission_vision', 'password_reset_tokens', 'refresh_tokens',
-      'superadmin', 'email_change_otps', 'login_attempts',
+      'email_change_otps', 'login_attempts',
       'security_logs', 'migrations'
     ];
     
@@ -513,7 +340,7 @@ async function productionHealthCheck() {
     const existingTables = tables.map(table => Object.values(table)[0]);
     
     const criticalTables = [
-      'users', 'admins', 'superadmin', 'organizations', 
+      'users', 'admins', 'organizations', 
       'programs_projects', 'news', 'submissions'
     ];
     
@@ -527,9 +354,9 @@ async function productionHealthCheck() {
     
     // Check data counts (without exposing sensitive data)
     console.log('📊 Checking data health...');
-    const [userCount] = await db.execute('SELECT COUNT(*) as count FROM users');
-    const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM admins');
-    const [superadminCount] = await db.execute('SELECT COUNT(*) as count FROM superadmin');
+    const [userCount] = await db.execute("SELECT COUNT(*) as count FROM users WHERE role = 'user'");
+    const [adminCount] = await db.execute("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
+    const [superadminCount] = await db.execute("SELECT COUNT(*) as count FROM users WHERE role = 'superadmin'");
     const [orgCount] = await db.execute('SELECT COUNT(*) as count FROM organizations');
     
     console.log(`   Users: ${userCount[0].count}`);
@@ -539,7 +366,8 @@ async function productionHealthCheck() {
     
     // Check superadmin exists
     if (superadminCount[0].count === 0) {
-      console.log('⚠️  No superadmin account found - run create-superadmin');
+      console.log('⚠️  No superadmin account found');
+      console.log('💡 Use: node scripts/initialize-superadmin.js (see backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md)');
     } else {
       console.log('✅ Superadmin account exists');
     }
@@ -658,24 +486,22 @@ function showHelp() {
     console.log('🏭 PRODUCTION MODE - Limited commands available:');
     console.log('');
     console.log('Production-safe commands:');
-    console.log('  create-superadmin        Create/update the superadmin account');
-    console.log('  reset-superadmin-password Reset superadmin password to default');
-    console.log('  check-superadmin         Check superadmin account status');
     console.log('  check-data              Check all database data and show summary');
     console.log('  fix-missing-data        Check and fix all missing tables and data');
     console.log('  production-health-check Production health check (recommended)');
     console.log('  help                    Show this help message');
     console.log('');
     console.log('Examples:');
-    console.log('  node scripts/utilities.js create-superadmin');
     console.log('  node scripts/utilities.js production-health-check');
+    console.log('  node scripts/utilities.js check-data');
+    console.log('');
+    console.log('💡 Note: Superadmin initialization is handled via API endpoint');
+    console.log('   Use: node scripts/initialize-superadmin.js');
+    console.log('   See: backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md');
   } else {
     console.log('🛠️  DEVELOPMENT MODE - All commands available:');
     console.log('');
     console.log('Production-safe commands:');
-    console.log('  create-superadmin        Create/update the superadmin account');
-    console.log('  reset-superadmin-password Reset superadmin password to default');
-    console.log('  check-superadmin         Check superadmin account status');
     console.log('  check-data              Check all database data and show summary');
     console.log('  fix-missing-data        Check and fix all missing tables and data');
     console.log('  production-health-check Production health check');
@@ -687,8 +513,12 @@ function showHelp() {
     console.log('  help                    Show this help message');
     console.log('');
     console.log('Examples:');
-    console.log('  node scripts/utilities.js create-superadmin');
+    console.log('  node scripts/utilities.js check-data');
     console.log('  node scripts/utilities.js debug-collaborations');
+    console.log('');
+    console.log('💡 Note: Superadmin initialization is handled via API endpoint');
+    console.log('   Use: node scripts/initialize-superadmin.js');
+    console.log('   See: backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md');
   }
   
   console.log('');
@@ -712,15 +542,6 @@ if (isProduction && developmentOnlyCommands.includes(command)) {
 }
 
 switch (command) {
-  case 'create-superadmin':
-    await createSuperadmin();
-    break;
-  case 'reset-superadmin-password':
-    await resetSuperadminPassword();
-    break;
-  case 'check-superadmin':
-    await checkSuperadmin();
-    break;
   case 'check-data':
     await checkAllData();
     break;

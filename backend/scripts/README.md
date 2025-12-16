@@ -5,6 +5,7 @@ This directory contains essential utility scripts for database management and de
 ## Available Scripts
 
 - `utilities.js` - Consolidated utility script with multiple functions (production-safe)
+- `initialize-superadmin.js` - Initialize superadmin account via API endpoint (for production/deployed environments)
 - `databaseMerger.js` - Database merger class
 - `mergeDatabases.js` - Interactive database merger tool
 
@@ -18,22 +19,18 @@ node scripts/utilities.js <command>
 ```
 
 **Available Commands:**
-- `create-superadmin` - Create/update the superadmin account
-- `reset-superadmin-password` - Reset superadmin password to default
-- `check-superadmin` - Check superadmin account status
 - `check-data` - Check all database data and show summary
 - `fix-missing-data` - Check and fix all missing tables and data
 - `production-health-check` - Production health monitoring (recommended for production)
 - `debug-collaborations` - Debug collaboration data and relationships (development only)
 - `help` - Show help message
 
+**Note:** Superadmin initialization is now handled via the API endpoint. Use `initialize-superadmin.js` instead.
+
 **Examples:**
 ```bash
 # Show help and available commands
 node scripts/utilities.js help
-
-# Create superadmin account
-node scripts/utilities.js create-superadmin
 
 # Check all database data
 node scripts/utilities.js check-data
@@ -46,13 +43,15 @@ node scripts/utilities.js production-health-check
 
 # Debug collaboration data (development only)
 node scripts/utilities.js debug-collaborations
+
+# Initialize superadmin account (for production/deployed environments)
+BACKEND_URL=https://your-backend.railway.app JWT_SECRET=your-secret node scripts/initialize-superadmin.js
 ```
 
 ## Environment-Based Commands
 
 ### 🏭 Production Mode (`NODE_ENV=production`)
 **Safe commands only:**
-- `create-superadmin` - Create initial superadmin account
 - `check-data` - Database health check and overview
 - `fix-missing-data` - Database repair and maintenance
 - `production-health-check` - Production health monitoring
@@ -61,36 +60,25 @@ node scripts/utilities.js debug-collaborations
 **Blocked commands:**
 - `debug-collaborations` - Not available in production
 
+**Note:** For superadmin initialization in production, use `initialize-superadmin.js` which calls the API endpoint.
+
 ### 🛠️ Development Mode (`NODE_ENV=development`)
 **All commands available:**
 - All production-safe commands
 - `debug-collaborations` - Development debugging
 
+## Superadmin Initialization
+
+**Important:** Superadmin initialization is now handled via the API endpoint, not through `utilities.js`.
+
+### Using `initialize-superadmin.js` (Recommended for Production)
+- **Purpose**: Initialize/reset superadmin account via API endpoint (works with deployed backends)
+- **Usage**: `BACKEND_URL=https://your-backend.railway.app JWT_SECRET=your-secret node scripts/initialize-superadmin.js`
+- **Output**: Initializes superadmin with credentials from environment variables
+- **Notes**: Works with deployed backends, uses the unified `users` table with `role='superadmin'`
+- **See**: `backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md` for complete documentation
+
 ## Available Commands
-
-### `create-superadmin`
-Creates/updates the superadmin account for system setup.
-- **Purpose**: Essential for initial system setup and fresh deployments
-- **Usage**: `node scripts/utilities.js create-superadmin`
-- **Output**: Creates/updates superadmin with email `faithcommunityfaces@gmail.com` and password `admin123`
-- **Notes**: Checks if superadmin already exists before creating, updates if email doesn't match
-- **Environment**: ✅ Production-safe
-
-### `reset-superadmin-password`
-Resets the superadmin password to default.
-- **Purpose**: Reset superadmin password when you can't log in
-- **Usage**: `node scripts/utilities.js reset-superadmin-password`
-- **Output**: Resets password to `admin123` and email to `faithcommunityfaces@gmail.com`
-- **Notes**: Only works if superadmin account exists
-- **Environment**: ✅ Production-safe
-
-### `check-superadmin`
-Checks the current superadmin account status.
-- **Purpose**: Verify superadmin account exists and view its details
-- **Usage**: `node scripts/utilities.js check-superadmin`
-- **Output**: Shows account details including email, password status, 2FA status
-- **Notes**: Useful for troubleshooting login issues
-- **Environment**: ✅ Production-safe
 
 ### `check-data`
 Checks all database data and shows a comprehensive summary.
@@ -142,8 +130,8 @@ export NODE_ENV=production
 # Run production health check
 node scripts/utilities.js production-health-check
 
-# Create superadmin if needed
-node scripts/utilities.js create-superadmin
+# Initialize superadmin if needed (via API endpoint)
+BACKEND_URL=https://your-backend.railway.app JWT_SECRET=your-secret node scripts/initialize-superadmin.js
 
 # Fix any missing data
 node scripts/utilities.js fix-missing-data
@@ -307,6 +295,7 @@ node scripts/utilities.js help
 backend/scripts/
 ├── README.md                        # This file
 ├── utilities.js                     # Main utility script
+├── initialize-superadmin.js         # Superadmin initialization via API endpoint
 ├── databaseMerger.js                # Database merger class
 ├── mergeDatabases.js                # Interactive merger tool
 └── backups/                         # Backup files and merge reports (created by databaseMerger)
@@ -330,6 +319,6 @@ MYSQL_DATABASE=db_community
 - Scripts will automatically exit after completion
 - Check the console output for success/error messages
 - Use `help` command to see available options for your environment
-- The superadmin script is essential for initial system setup
+- For superadmin initialization, use `initialize-superadmin.js` (see `backend/docs/04-deployment/INITIALIZE_SUPERADMIN.md`)
 - The production-health-check script is recommended for production monitoring
 - Debug commands are automatically blocked in production environments

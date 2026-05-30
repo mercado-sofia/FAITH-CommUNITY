@@ -45,9 +45,9 @@ export const SAMPLE_HEAD_PHOTOS = [
 
 /** Hero carousel stills for fallback API hero-section data only */
 export const HERO_CAROUSEL_IMAGES = [
-  '/samples/programs/2.jpg',
-  '/samples/programs/8.jpg',
-  '/samples/programs/3.jpeg',
+  '/samples/sample2.jpg',
+  '/samples/sample8.jpg',
+  '/samples/sample3.jpg',
 ];
 
 /** About-us image for fallback API data only */

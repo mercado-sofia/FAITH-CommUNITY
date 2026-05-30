@@ -15,10 +15,10 @@ export const organizationsApi = createApi({
         if (response.success && Array.isArray(response.data)) {
           return response.data.map(org => ({
             id: org.id,
-            acronym: org.acronym, // This is the 'org' field from DB
-            name: org.name, // This is the 'orgName' field from DB
+            acronym: org.acronym || org.org,
+            name: org.name || org.orgName,
             logo: org.logo,
-            color: org.color || null // Organization color
+            color: org.color || org.org_color || null,
           }))
         }
         return []

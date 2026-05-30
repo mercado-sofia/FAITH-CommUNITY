@@ -26,3 +26,14 @@ export function getOrganizationByAcronym(acronym) {
 export function getOrganizationsApiResponse() {
   return { success: true, data: SAMPLE_ORGANIZATIONS };
 }
+
+/** Dropdown options for FloatingMessage and other public selectors */
+export function getOrganizationsDropdownOptions() {
+  return SAMPLE_ORGANIZATIONS.map((org) => ({
+    id: org.id,
+    acronym: org.acronym,
+    name: org.name,
+    logo: org.logo,
+    color: org.color,
+  }));
+}

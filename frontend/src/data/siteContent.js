@@ -3,9 +3,8 @@ import {
   HERO_CAROUSEL_IMAGES,
   SAMPLE_HEAD_PHOTOS,
   SAMPLE_HERO_VIDEO,
-  logoForAcronym,
 } from './assets';
-import { FALLBACK_FAVICON_URL } from '@/utils/shared/brandingDefaults';
+import { FALLBACK_FAVICON_URL, FALLBACK_TEXT_LOGO_URL, FALLBACK_ICON_LOGO_URL } from '@/utils/shared/brandingDefaults';
 
 export function getHeroSectionApiResponse() {
   return {
@@ -94,8 +93,8 @@ export function getBrandingPublicApiResponse() {
   return {
     success: true,
     data: {
-      logo_url: logoForAcronym('FAHSS'),
-      name_url: null,
+      logo_url: FALLBACK_ICON_LOGO_URL,
+      name_url: FALLBACK_TEXT_LOGO_URL,
       favicon_url: FALLBACK_FAVICON_URL,
     },
   };
@@ -110,6 +109,33 @@ export function getSiteNamePublicApiResponse() {
   };
 }
 
+/** Extension category checklist items for About Us (public fallback) */
+export const SAMPLE_EXTENSION_CATEGORIES = [
+  { name: 'Education', color: 'green' },
+  { name: 'Environment', color: 'teal' },
+  { name: 'Health', color: 'red' },
+  { name: 'Outreach', color: 'orange' },
+  { name: 'Skills Development', color: 'blue' },
+  { name: 'Youth', color: 'purple' },
+];
+
+export function normalizeExtensionCategories(categories) {
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return SAMPLE_EXTENSION_CATEGORIES;
+  }
+
+  return categories.map((category, index) => {
+    if (typeof category === 'string') {
+      const fallback = SAMPLE_EXTENSION_CATEGORIES[index % SAMPLE_EXTENSION_CATEGORIES.length];
+      return { name: category, color: fallback?.color || 'green' };
+    }
+    return {
+      name: category.name || '',
+      color: category.color || 'green',
+    };
+  }).filter((category) => category.name);
+}
+
 export function getAboutUsPublicApiResponse() {
   return {
     success: true,
@@ -117,14 +143,7 @@ export function getAboutUsPublicApiResponse() {
       description:
         'FAITH CommUNITY brings together student organizations, volunteers, and partners to plan, run, and showcase community extension programs in one place.',
       image_url: DEFAULT_ABOUT_IMAGE,
-      extension_categories: [
-        'Education',
-        'Environment',
-        'Health',
-        'Outreach',
-        'Skills Development',
-        'Youth',
-      ],
+      extension_categories: SAMPLE_EXTENSION_CATEGORIES,
     },
   };
 }
@@ -172,6 +191,39 @@ export function getOrganizationAdvisersApiResponse() {
         organization_acronym: 'FACTS',
         organization_name: 'FAITH Computer and Technology Society',
         display_order: 2,
+      },
+      {
+        id: 3,
+        name: 'Prof. Elena Mendoza',
+        role: 'Organization Adviser',
+        photo: SAMPLE_HEAD_PHOTOS[0],
+        email: 'elena.mendoza@faith.edu.ph',
+        facebook: null,
+        organization_acronym: 'FABCOMMS',
+        organization_name: 'FAITH Broadcasting & Communications Society',
+        display_order: 3,
+      },
+      {
+        id: 4,
+        name: 'Prof. Miguel Torres',
+        role: 'Organization Adviser',
+        photo: SAMPLE_HEAD_PHOTOS[1],
+        email: 'miguel.torres@faith.edu.ph',
+        facebook: null,
+        organization_acronym: 'FAICES',
+        organization_name: 'FAITH Computer Engineering Society',
+        display_order: 4,
+      },
+      {
+        id: 5,
+        name: 'Prof. Sarah Aquino',
+        role: 'Organization Adviser',
+        photo: SAMPLE_HEAD_PHOTOS[2],
+        email: 'sarah.aquino@faith.edu.ph',
+        facebook: null,
+        organization_acronym: 'JPIA',
+        organization_name: 'Junior Philippine Institute of Accountants',
+        display_order: 5,
       },
     ],
   };

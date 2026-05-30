@@ -1,12 +1,40 @@
 import styles from './aboutMore.module.css';
 import Image from "next/image";
+import { useMemo } from 'react';
 import { FaCheck } from 'react-icons/fa';
 import { usePublicAboutUs } from '@/hooks/(public)/usePublicData';
 import { Loader } from '@/components';
 import { getImageUrl } from '@/utils/shared/uploadPaths';
+import { normalizeExtensionCategories, SAMPLE_EXTENSION_CATEGORIES } from '@/data/siteContent';
+
+const CATEGORY_COLORS = {
+  green: '#1A685B',
+  red: '#E74C3C',
+  orange: '#FFAC00',
+  blue: '#3B82F6',
+  purple: '#8B5CF6',
+  yellow: '#F59E0B',
+  pink: '#EC4899',
+  teal: '#14B8A6',
+  indigo: '#6366F1',
+  gray: '#6B7280',
+  emerald: '#10B981',
+  rose: '#F43F5E',
+  cyan: '#06B6D4',
+  lime: '#84CC16',
+  amber: '#F59E0B',
+};
 
 export default function AboutMore() {
   const { aboutUsData, isLoading } = usePublicAboutUs();
+
+  const extensionCategories = useMemo(() => {
+    const fromApi = aboutUsData?.extension_categories;
+    if (fromApi?.length > 0) {
+      return normalizeExtensionCategories(fromApi);
+    }
+    return SAMPLE_EXTENSION_CATEGORIES;
+  }, [aboutUsData?.extension_categories]);
 
   if (isLoading) {
     return (
@@ -47,7 +75,7 @@ export default function AboutMore() {
           </p>
 
           <div className={styles.aboutMoreIcons}>
-            {aboutUsData?.extension_categories?.map((category, index) => (
+            {extensionCategories.map((category, index) => (
               <div 
                 key={index}
                 className={styles.fadeIn}
@@ -59,21 +87,7 @@ export default function AboutMore() {
                 <span 
                   className={styles.checkCircle} 
                   style={{ 
-                    backgroundColor: category.color === 'green' ? '#1A685B' : 
-                                   category.color === 'red' ? '#E74C3C' : 
-                                   category.color === 'orange' ? '#FFAC00' : 
-                                   category.color === 'blue' ? '#3B82F6' :
-                                   category.color === 'purple' ? '#8B5CF6' :
-                                   category.color === 'yellow' ? '#F59E0B' :
-                                   category.color === 'pink' ? '#EC4899' :
-                                   category.color === 'teal' ? '#14B8A6' :
-                                   category.color === 'indigo' ? '#6366F1' :
-                                   category.color === 'gray' ? '#6B7280' :
-                                   category.color === 'emerald' ? '#10B981' :
-                                   category.color === 'rose' ? '#F43F5E' :
-                                   category.color === 'cyan' ? '#06B6D4' :
-                                   category.color === 'lime' ? '#84CC16' :
-                                   category.color === 'amber' ? '#F59E0B' : '#134E4A' 
+                    backgroundColor: CATEGORY_COLORS[category.color] || '#134E4A',
                   }}
                 >
                   <FaCheck />

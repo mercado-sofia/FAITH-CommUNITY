@@ -2,6 +2,7 @@
 
 import { Navbar, Footer, FloatingMessage, ToastContainer, GlobalLoginModal } from './components';
 import { Loader, PagePreloader, DynamicFavicon } from '@/components';
+import DemoModeBanner from '@/components/layout/DemoModeBanner';
 import '../globals.css';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
@@ -23,7 +24,7 @@ export default function PublicLayout({ children }) {
         '/assets/icons/placeholder.svg',
         '/samples/sample2.jpg',
         '/samples/sample8.jpg',
-        '/samples/sample3.jpeg'
+        '/samples/sample3.jpeg',
       ];
 
       criticalImages.forEach(src => {
@@ -35,8 +36,7 @@ export default function PublicLayout({ children }) {
           document.head.appendChild(link);
         }
       });
-      
-      // Preload sample4.jpg
+
       const preloadLink = document.createElement('link');
       preloadLink.rel = 'preload';
       preloadLink.href = '/samples/sample4.jpg';
@@ -111,6 +111,7 @@ export default function PublicLayout({ children }) {
 
   return (
     <>
+      <DemoModeBanner />
       {/* Dynamic Favicon - uses client-side DOM manipulation for App Router */}
       <DynamicFavicon />
       

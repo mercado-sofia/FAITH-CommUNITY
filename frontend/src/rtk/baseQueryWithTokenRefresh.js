@@ -6,16 +6,60 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getValidAccessToken, isRefreshTokenExpired } from '@/utils/shared/tokenRefresh';
 import { getBaseUrl } from '@/utils/getBaseUrl';
+import {
+  isForceFallback,
+  markFallbackUsed,
+  shouldFallbackOnError,
+} from '@/config/fallback';
+import { normalizeFallbackPath, resolveFallbackApi } from '@/data';
+
+function getFallbackLookupUrl(basePath, args) {
+  const path = typeof args === 'string' ? args : args?.url || '';
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const baseUrl = getBaseUrl(basePath);
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+    try {
+      return new URL(normalizedPath, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).href;
+    } catch {
+      return `${baseUrl}${normalizedPath}`.replace(/([^:]\/)\/+/g, '$1');
+    }
+  }
+  const combined = `${baseUrl}${normalizedPath}`.replace(/\/+/g, '/');
+  return combined.startsWith('/') ? combined : `/${combined}`;
+}
+
+function applyGetFallback(basePath, args) {
+  const method = (typeof args === 'string' ? 'GET' : args?.method || 'GET').toUpperCase();
+  if (method !== 'GET') return null;
+
+  const lookupUrl = getFallbackLookupUrl(basePath, args);
+  const fallback = resolveFallbackApi(lookupUrl, { method });
+  if (fallback === null) return null;
+
+  const path = normalizeFallbackPath(lookupUrl);
+  if (!path.startsWith('/api/')) return null;
+
+  markFallbackUsed();
+  return { data: fallback };
+}
 
 /**
  * Internal helper that handles 401 responses and retries with refreshed token
  * Tokens are now in httpOnly cookies, so refresh happens server-side
  * Handles 401s silently - only propagates error if refresh token is expired
  */
-const createReauthWrapper = (baseQuery) => {
+const createReauthWrapper = (baseQuery, basePath) => {
   return async (args, api, extraOptions) => {
+    if (isForceFallback()) {
+      const forced = applyGetFallback(basePath, args);
+      if (forced) return forced;
+    }
+
     let result = await baseQuery(args, api, extraOptions);
-    
+
     // If we get a 401, silently try refreshing token (works for all roles now!)
     if (result?.error?.status === 401) {
       // Silently attempt to refresh the token (token is in httpOnly cookie)
@@ -49,7 +93,12 @@ const createReauthWrapper = (baseQuery) => {
         }
       }
     }
-    
+
+    if (result?.error && shouldFallbackOnError(result.error)) {
+      const fallbackResult = applyGetFallback(basePath, args);
+      if (fallbackResult) return fallbackResult;
+    }
+
     return result;
   };
 };
@@ -60,6 +109,24 @@ const createReauthWrapper = (baseQuery) => {
  * @param {boolean} useTokenRefresh - Whether to use token refresh wrapper (default: false)
  * @returns {Function} Configured base query function
  */
+const createFallbackWrapper = (baseQuery, basePath) => {
+  return async (args, api, extraOptions) => {
+    if (isForceFallback()) {
+      const forced = applyGetFallback(basePath, args);
+      if (forced) return forced;
+    }
+
+    const result = await baseQuery(args, api, extraOptions);
+
+    if (result?.error && shouldFallbackOnError(result.error)) {
+      const fallbackResult = applyGetFallback(basePath, args);
+      if (fallbackResult) return fallbackResult;
+    }
+
+    return result;
+  };
+};
+
 export const createBaseQuery = (basePath = '/api', useTokenRefresh = false) => {
   const baseQuery = fetchBaseQuery({
     baseUrl: getBaseUrl(basePath),
@@ -71,12 +138,11 @@ export const createBaseQuery = (basePath = '/api', useTokenRefresh = false) => {
     },
   });
 
-  // Return with or without token refresh wrapper
   if (useTokenRefresh) {
-    return createReauthWrapper(baseQuery);
+    return createReauthWrapper(baseQuery, basePath);
   }
 
-  return baseQuery;
+  return createFallbackWrapper(baseQuery, basePath);
 };
 
 /**

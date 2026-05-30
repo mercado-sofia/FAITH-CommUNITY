@@ -302,73 +302,9 @@ export const usePublicFAQs = () => {
 // Custom hook for approved upcoming programs (for apply form)
 // This endpoint is public and does not require authentication
 export const usePublicApprovedPrograms = () => {
-  // Public fetcher (no authentication required)
-  const publicFetcher = async (url) => {
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include', // Include cookies for CORS
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-        error.status = response.status;
-        error.statusText = response.statusText;
-        error._alreadyLogged = true; // Mark as already logged
-        logger.apiError(url, error, { status: response.status });
-        throw error;
-      }
-
-      // Parse JSON with error handling
-      try {
-        const result = await response.json();
-        // Unwrap { success: true, data: [...] } to just the data array
-        if (result && typeof result === 'object' && 'data' in result && 'success' in result) {
-          return result.data;
-        }
-        return result;
-      } catch (parseError) {
-        const error = new Error('Invalid JSON response from server');
-        error.originalError = parseError;
-        error._alreadyLogged = true; // Mark as already logged
-        logger.apiError(url, error, { parseError: parseError.message });
-        throw error;
-      }
-    } catch (error) {
-      // Skip logging if error was already logged
-      if (error._alreadyLogged) {
-        throw error;
-      }
-      
-      // Handle network errors (connection refused, CORS, timeout, etc.)
-      if (
-        error instanceof TypeError || 
-        error.name === 'NetworkError' ||
-        error.message.includes('fetch') ||
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('NetworkError') ||
-        error.message.includes('Network request failed')
-      ) {
-        const networkError = new Error(`Network error: Unable to connect to ${url}`);
-        networkError.originalError = error;
-        networkError.isNetworkError = true;
-        networkError.name = error.name || 'NetworkError';
-        networkError.message = error.message || networkError.message;
-        throw networkError;
-      }
-      
-      // For other unexpected errors, log them
-      logger.apiError(url, error);
-      throw error;
-    }
-  };
-
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL || ''}/api/programs/approved/upcoming`,
-    publicFetcher,
+    fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
@@ -675,37 +611,7 @@ export const usePublicMissionVision = () => {
 export const usePublicAboutUs = () => {
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL || ''}/api/superadmin/about-us/public`,
-    async (url) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          const error = new Error(`HTTP error! status: ${response.status}`);
-          error.status = response.status;
-          error.statusText = response.statusText;
-          throw error;
-        }
-        const result = await response.json();
-        return result.data;
-      } catch (error) {
-        // Handle network errors
-        if (
-          error instanceof TypeError || 
-          error.name === 'NetworkError' ||
-          error.message.includes('fetch') ||
-          error.message.includes('Failed to fetch') ||
-          error.message.includes('NetworkError') ||
-          error.message.includes('Network request failed')
-        ) {
-          const networkError = new Error(`Network error: Unable to connect to ${url}`);
-          networkError.originalError = error;
-          networkError.isNetworkError = true;
-          networkError.name = error.name || 'NetworkError';
-          networkError.message = error.message || networkError.message;
-          throw networkError;
-        }
-        throw error;
-      }
-    },
+    fetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,

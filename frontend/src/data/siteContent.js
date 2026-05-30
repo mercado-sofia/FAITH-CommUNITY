@@ -5,6 +5,7 @@ import {
   SAMPLE_HERO_VIDEO,
   logoForAcronym,
 } from './assets';
+import { FALLBACK_FAVICON_URL } from '@/utils/shared/brandingDefaults';
 
 export function getHeroSectionApiResponse() {
   return {
@@ -95,7 +96,7 @@ export function getBrandingPublicApiResponse() {
     data: {
       logo_url: logoForAcronym('FAHSS'),
       name_url: null,
-      favicon_url: null,
+      favicon_url: FALLBACK_FAVICON_URL,
     },
   };
 }
@@ -135,8 +136,11 @@ export function getHeadsFacesApiResponse() {
       {
         id: 1,
         name: 'Dr. Elena Mendoza',
-        title: 'Director of Community Extension',
-        photo_url: SAMPLE_HEAD_PHOTOS[3],
+        position: 'Director of Community Extension',
+        description:
+          'Leading FAITH CommUNITY initiatives that connect student organizations with communities through meaningful extension programs.',
+        image_url: SAMPLE_HEAD_PHOTOS[3],
+        status: 'ACTIVE',
         display_order: 1,
       },
     ],
@@ -149,17 +153,25 @@ export function getOrganizationAdvisersApiResponse() {
     data: [
       {
         id: 1,
+        name: 'Prof. Ricardo Gomez',
+        role: 'Organization Adviser',
+        photo: SAMPLE_HEAD_PHOTOS[4],
+        email: 'ricardo.gomez@faith.edu.ph',
+        facebook: null,
         organization_acronym: 'FAHSS',
         organization_name: 'FAITH Arts, Humanities and Social Sciences',
-        adviser_name: 'Prof. Ricardo Gomez',
-        photo_url: SAMPLE_HEAD_PHOTOS[4],
+        display_order: 1,
       },
       {
         id: 2,
+        name: 'Prof. Lisa Fernandez',
+        role: 'Organization Adviser',
+        photo: SAMPLE_HEAD_PHOTOS[5],
+        email: 'lisa.fernandez@faith.edu.ph',
+        facebook: null,
         organization_acronym: 'FACTS',
         organization_name: 'FAITH Computer and Technology Society',
-        adviser_name: 'Prof. Lisa Fernandez',
-        photo_url: SAMPLE_HEAD_PHOTOS[5],
+        display_order: 2,
       },
     ],
   };

@@ -35,4 +35,22 @@ export const SAMPLE_FAQS = [
     created_at: '2025-01-18T00:00:00.000Z',
     updated_at: '2025-01-18T00:00:00.000Z',
   },
+  {
+    id: 5,
+    question: 'What is FAITHree?',
+    answer:
+      'FAITHree is an interactive showcase of community extension highlights. Select an organization to explore their impact stars and featured outreach stories.',
+    status: 'active',
+    created_at: '2025-01-19T00:00:00.000Z',
+    updated_at: '2025-01-19T00:00:00.000Z',
+  },
+  {
+    id: 6,
+    question: 'Can organizations post news and announcements?',
+    answer:
+      'Yes. Approved student organizations can publish news through the admin portal. Published announcements appear on the homepage and the News page.',
+    status: 'active',
+    created_at: '2025-01-20T00:00:00.000Z',
+    updated_at: '2025-01-20T00:00:00.000Z',
+  },
 ];

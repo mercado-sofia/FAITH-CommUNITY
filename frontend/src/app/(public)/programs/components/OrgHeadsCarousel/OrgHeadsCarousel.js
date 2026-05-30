@@ -5,7 +5,8 @@ import styles from './OrgHeadsCarousel.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
+import { resolveDisplayImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
+import { SAMPLE_HEAD_PHOTOS } from '@/data/assets';
 import { UnavailableImagePlaceholder } from '@/components';
 import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
@@ -73,7 +74,10 @@ export default function OrgHeadsCarousel({ heads }) {
                     <div className={styles.imageContainer}>
                       {head.photo ? (
                         (() => {
-                          const headImageUrl = getOrganizationImageUrl(head.photo, 'head');
+                          const headImageUrl = resolveDisplayImageUrl(head.photo, {
+                            kind: 'head',
+                            fallback: SAMPLE_HEAD_PHOTOS[0],
+                          });
                           if (isUnavailableImage(headImageUrl)) {
                             return (
                               <UnavailableImagePlaceholder 
@@ -91,6 +95,9 @@ export default function OrgHeadsCarousel({ heads }) {
                               width={240}
                               height={280}
                               className={styles.headImage}
+                              onError={(e) => {
+                                e.target.src = SAMPLE_HEAD_PHOTOS[0];
+                              }}
                             />
                           );
                         })()

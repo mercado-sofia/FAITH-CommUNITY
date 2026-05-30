@@ -3,6 +3,8 @@ import useSWR from 'swr';
 import logger from '@/utils/shared/logger';
 import { swrConfig } from '@/utils/(public)/swrConfig';
 import { API_BASE_URL } from '@/config/api';
+import { FALLBACK_FAVICON_URL } from '@/utils/shared/brandingDefaults';
+import { logoForAcronym } from '@/data/assets';
 
 // Use the global fetcher from swrConfig
 const fetcher = swrConfig.fetcher;
@@ -92,7 +94,7 @@ export const usePublicOrganizationData = (orgID) => {
     description: data.description || '',
     facebook: data.facebook || '',
     email: data.email || '',
-    logo: data.logo || '/assets/icons/placeholder.svg',
+    logo: data.logo || (data.org || orgID ? logoForAcronym(data.org || orgID) : '/assets/icons/placeholder.svg'),
     advocacies: normalizeTextData(data.advocacies) || '', // Normalize to string
     competencies: normalizeTextData(data.competencies) || '', // Normalize to string
     heads: sortHeadsByOrder(data.heads || []), // Apply same sorting as admin section
@@ -368,7 +370,11 @@ export const usePublicBranding = () => {
   // Handle the case where fetcher returns null (when backend returns { success: true, data: null })
   if (unwrappedData === null) {
     return {
-      brandingData: null,
+      brandingData: {
+        logo_url: null,
+        name_url: null,
+        favicon_url: FALLBACK_FAVICON_URL,
+      },
       isLoading,
       error,
     };
@@ -379,7 +385,9 @@ export const usePublicBranding = () => {
   const brandingData = unwrappedData && typeof unwrappedData === 'object' ? {
     logo_url: (unwrappedData.logo_url && typeof unwrappedData.logo_url === 'string' && unwrappedData.logo_url.trim() !== '') ? unwrappedData.logo_url : null,
     name_url: (unwrappedData.name_url && typeof unwrappedData.name_url === 'string' && unwrappedData.name_url.trim() !== '') ? unwrappedData.name_url : null,
-    favicon_url: (unwrappedData.favicon_url && typeof unwrappedData.favicon_url === 'string' && unwrappedData.favicon_url.trim() !== '') ? unwrappedData.favicon_url : null,
+    favicon_url: (unwrappedData.favicon_url && typeof unwrappedData.favicon_url === 'string' && unwrappedData.favicon_url.trim() !== '')
+      ? unwrappedData.favicon_url
+      : FALLBACK_FAVICON_URL,
   } : null;
 
   return {

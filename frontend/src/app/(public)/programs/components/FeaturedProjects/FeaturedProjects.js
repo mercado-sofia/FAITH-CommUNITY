@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { usePublicPrograms } from '@/hooks/(public)/usePublicData';
-import { getProgramImageUrl } from '@/utils/shared/uploadPaths';
+import { resolveDisplayImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
 import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 import styles from './FeaturedProjects.module.css';
 
@@ -77,12 +77,12 @@ export default function FeaturedProjects({ orgID }) {
   };
 
 
-  // Get image URL for program
+  // Get image URL for program — prefer local sample assets from fallback data
   const getProgramImage = (program) => {
-    if (program.image) {
-      return getProgramImageUrl(program.image);
-    }
-    return '/samples/sample2.jpg'; // Default image
+    const fallback = '/samples/sample2.jpg';
+    if (!program.image) return fallback;
+    const resolved = resolveDisplayImageUrl(program.image, { kind: 'program', fallback });
+    return isUnavailableImage(resolved) ? fallback : resolved;
   };
 
   if (isLoading) {

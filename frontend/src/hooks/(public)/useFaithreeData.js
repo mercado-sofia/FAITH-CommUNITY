@@ -4,11 +4,27 @@ import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/config/api';
 import { API_TIMEOUT } from '@/app/(public)/faithree/constants';
 import { fetchPublicWithFallback } from '@/utils/shared/fetchPublicWithFallback';
+import { resolveFallbackApi } from '@/data';
+import { getOrganizationsApiResponse } from '@/data/organizations';
+import { getFaithreeFeaturedHighlightsResponse } from '@/data/faithree';
+
+function parseOrganizationsResponse(data) {
+  if (data?.success && Array.isArray(data.data)) {
+    return data.data;
+  }
+  return [];
+}
+
+function parseHighlightsResponse(data) {
+  if (data?.highlights && Array.isArray(data.highlights)) {
+    return data.highlights;
+  }
+  return [];
+}
 
 /**
- * Custom hook for fetching FAITHree data
- * Handles fetching organizations and featured highlights
- * @returns {Object} Data and loading states
+ * FAITHree data hook — organizations + featured highlights with static fallback
+ * for live demo when the API is unavailable (see frontend/src/data/faithree.js).
  */
 export function useFaithreeData() {
   const [allOrganizations, setAllOrganizations] = useState([]);
@@ -22,19 +38,24 @@ export function useFaithreeData() {
           return;
         }
 
-        const data = await fetchPublicWithFallback(`${API_BASE_URL || ''}/api/organizations`, {
+        const url = `${API_BASE_URL || ''}/api/organizations`;
+        const data = await fetchPublicWithFallback(url, {
           signal: AbortSignal.timeout(API_TIMEOUT),
         });
 
-        const organizations = data?.success && Array.isArray(data.data) ? data.data : [];
+        let organizations = parseOrganizationsResponse(data);
+        if (organizations.length === 0) {
+          organizations = parseOrganizationsResponse(getOrganizationsApiResponse());
+        }
 
-        const sortedOrgs = organizations.sort((a, b) =>
-          (a.acronym || '').localeCompare(b.acronym || '')
+        setAllOrganizations(
+          [...organizations].sort((a, b) => (a.acronym || '').localeCompare(b.acronym || ''))
         );
-
-        setAllOrganizations(sortedOrgs);
       } catch {
-        setAllOrganizations([]);
+        const fallback = parseOrganizationsResponse(getOrganizationsApiResponse());
+        setAllOrganizations(
+          [...fallback].sort((a, b) => (a.acronym || '').localeCompare(b.acronym || ''))
+        );
       }
     };
 
@@ -42,6 +63,8 @@ export function useFaithreeData() {
   }, []);
 
   useEffect(() => {
+    const highlightsUrl = `${API_BASE_URL || ''}/api/highlights/public/featured`;
+
     const fetchFeaturedHighlights = async () => {
       try {
         if (typeof window === 'undefined') {
@@ -49,18 +72,22 @@ export function useFaithreeData() {
           return;
         }
 
-        const data = await fetchPublicWithFallback(
-          `${API_BASE_URL || ''}/api/highlights/public/featured`,
-          {
-            signal: AbortSignal.timeout(API_TIMEOUT),
-          }
-        );
+        const data = await fetchPublicWithFallback(highlightsUrl, {
+          signal: AbortSignal.timeout(API_TIMEOUT),
+        });
 
-        const highlights = data?.highlights || [];
-        const reversedHighlights = [...highlights].reverse();
-        setFeaturedHighlights(reversedHighlights);
+        let highlights = parseHighlightsResponse(data);
+        if (highlights.length === 0) {
+          highlights = parseHighlightsResponse(getFaithreeFeaturedHighlightsResponse());
+        }
+
+        setFeaturedHighlights([...highlights].reverse());
       } catch {
-        setFeaturedHighlights([]);
+        const apiFallback = resolveFallbackApi(highlightsUrl, { method: 'GET' });
+        const highlights = parseHighlightsResponse(
+          apiFallback || getFaithreeFeaturedHighlightsResponse()
+        );
+        setFeaturedHighlights([...highlights].reverse());
       }
     };
 

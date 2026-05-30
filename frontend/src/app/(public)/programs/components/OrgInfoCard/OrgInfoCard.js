@@ -3,7 +3,8 @@
 import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
-import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
+import { resolveDisplayImageUrl, isUnavailableImage } from '@/utils/shared/uploadPaths';
+import { logoForAcronym } from '@/data/assets';
 import { UnavailableImagePlaceholder } from '@/components';
 import { useFadeIn } from '@/hooks/(public)/useFadeIn';
 
@@ -12,36 +13,35 @@ export default function OrgInfoCard({ data }) {
   const { ref: sectionRef, isVisible: isSectionVisible } = useFadeIn();
   const { ref: cardRef, isVisible: isCardVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
 
+  const orgImageUrl = resolveDisplayImageUrl(logo, {
+    kind: 'logo',
+    fallback: acronym ? logoForAcronym(acronym) : '',
+  });
+
   return (
     <section ref={sectionRef} className={`${styles.orgSection} ${isSectionVisible ? styles.fadeIn : ''}`}>
       <div ref={cardRef} className={`${styles.orgCard} ${isCardVisible ? styles.fadeIn : ''}`}>
         <div className={styles.logoWrapper}>
-          {(() => {
-            const orgImageUrl = getOrganizationImageUrl(logo, 'logo');
-            if (isUnavailableImage(orgImageUrl)) {
-              return (
-                <UnavailableImagePlaceholder 
-                  width="220px" 
-                  height="220px" 
-                  text="Logo Unavailable"
-                  className={styles.orgLogo}
-                />
-              );
-            }
-            return (
-              <Image
-                src={orgImageUrl}
-                alt={`${name} Logo`}
-                width={220}
-                height={220}
-                className={styles.orgLogo}
-                priority
-                onError={(e) => {
-                  e.target.src = '/defaults/default.png';
-                }}
-              />
-            );
-          })()}
+          {isUnavailableImage(orgImageUrl) ? (
+            <UnavailableImagePlaceholder 
+              width="220px" 
+              height="220px" 
+              text="Logo Unavailable"
+              className={styles.orgLogo}
+            />
+          ) : (
+            <Image
+              src={orgImageUrl}
+              alt={`${name} Logo`}
+              width={220}
+              height={220}
+              className={styles.orgLogo}
+              priority
+              onError={(e) => {
+                e.target.src = acronym ? logoForAcronym(acronym) : '/defaults/default.png';
+              }}
+            />
+          )}
         </div>
         <div className={styles.orgText}>
           <p className={styles.orgTag}>{acronym}</p>

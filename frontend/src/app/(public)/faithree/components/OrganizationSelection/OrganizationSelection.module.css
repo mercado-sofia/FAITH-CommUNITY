@@ -62,8 +62,8 @@
 /* === Organization Filter Container === */
 /* Completely separate from Filters component - own styling */
 .organizationFilterContainer {
-  width: auto;
-  max-width: 600px;
+  width: 100%;
+  max-width: 960px;
   margin: 0 auto;
   background: #ffffff;
   backdrop-filter: blur(20px);

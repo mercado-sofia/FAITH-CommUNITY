@@ -4,7 +4,7 @@ import {
   SAMPLE_HEAD_PHOTOS,
   SAMPLE_HERO_VIDEO,
 } from './assets';
-import { FALLBACK_FAVICON_URL, FALLBACK_TEXT_LOGO_URL, FALLBACK_ICON_LOGO_URL } from '@/utils/shared/brandingDefaults';
+import { FALLBACK_FAVICON_URL, FALLBACK_TEXT_LOGO_URL } from '@/utils/shared/brandingDefaults';
 
 export function getHeroSectionApiResponse() {
   return {
@@ -93,7 +93,7 @@ export function getBrandingPublicApiResponse() {
   return {
     success: true,
     data: {
-      logo_url: FALLBACK_ICON_LOGO_URL,
+      logo_url: null,
       name_url: FALLBACK_TEXT_LOGO_URL,
       favicon_url: FALLBACK_FAVICON_URL,
     },
@@ -111,12 +111,11 @@ export function getSiteNamePublicApiResponse() {
 
 /** Extension category checklist items for About Us (public fallback) */
 export const SAMPLE_EXTENSION_CATEGORIES = [
-  { name: 'Education', color: 'green' },
-  { name: 'Environment', color: 'teal' },
-  { name: 'Health', color: 'red' },
-  { name: 'Outreach', color: 'orange' },
-  { name: 'Skills Development', color: 'blue' },
-  { name: 'Youth', color: 'purple' },
+  { name: 'Give Donation', color: 'orange' },
+  { name: 'Education Support', color: 'green' },
+  { name: 'Food Support', color: 'amber' },
+  { name: 'Health Support', color: 'red' },
+  { name: 'Our Campaign', color: 'blue' },
 ];
 
 export function normalizeExtensionCategories(categories) {
@@ -176,7 +175,7 @@ export function getOrganizationAdvisersApiResponse() {
         role: 'Organization Adviser',
         photo: SAMPLE_HEAD_PHOTOS[4],
         email: 'ricardo.gomez@faith.edu.ph',
-        facebook: null,
+        facebook: 'https://www.facebook.com/FAHSS.FAITH',
         organization_acronym: 'FAHSS',
         organization_name: 'FAITH Arts, Humanities and Social Sciences',
         display_order: 1,
@@ -187,7 +186,7 @@ export function getOrganizationAdvisersApiResponse() {
         role: 'Organization Adviser',
         photo: SAMPLE_HEAD_PHOTOS[5],
         email: 'lisa.fernandez@faith.edu.ph',
-        facebook: null,
+        facebook: 'https://www.facebook.com/FACTS.FAITH',
         organization_acronym: 'FACTS',
         organization_name: 'FAITH Computer and Technology Society',
         display_order: 2,
@@ -198,7 +197,7 @@ export function getOrganizationAdvisersApiResponse() {
         role: 'Organization Adviser',
         photo: SAMPLE_HEAD_PHOTOS[0],
         email: 'elena.mendoza@faith.edu.ph',
-        facebook: null,
+        facebook: 'https://www.facebook.com/FABCOMMS.FAITH',
         organization_acronym: 'FABCOMMS',
         organization_name: 'FAITH Broadcasting & Communications Society',
         display_order: 3,
@@ -209,7 +208,7 @@ export function getOrganizationAdvisersApiResponse() {
         role: 'Organization Adviser',
         photo: SAMPLE_HEAD_PHOTOS[1],
         email: 'miguel.torres@faith.edu.ph',
-        facebook: null,
+        facebook: 'https://www.facebook.com/FAICES.FAITH',
         organization_acronym: 'FAICES',
         organization_name: 'FAITH Computer Engineering Society',
         display_order: 4,
@@ -220,7 +219,7 @@ export function getOrganizationAdvisersApiResponse() {
         role: 'Organization Adviser',
         photo: SAMPLE_HEAD_PHOTOS[2],
         email: 'sarah.aquino@faith.edu.ph',
-        facebook: null,
+        facebook: 'https://www.facebook.com/JPIA.FAITH',
         organization_acronym: 'JPIA',
         organization_name: 'Junior Philippine Institute of Accountants',
         display_order: 5,

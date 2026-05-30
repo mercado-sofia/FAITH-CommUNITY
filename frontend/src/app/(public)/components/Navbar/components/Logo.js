@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePublicBranding } from '@/hooks/(public)/usePublicData';
 import { getBrandingImageUrl, isLocalPublicPath } from '@/utils/shared/uploadPaths';
-import { FALLBACK_ICON_LOGO_URL, FALLBACK_TEXT_LOGO_URL } from '@/utils/shared/brandingDefaults';
+import { FALLBACK_TEXT_LOGO_URL } from '@/utils/shared/brandingDefaults';
 import styles from './styles/Logo.module.css';
 
 function resolveBrandingUrl(url, type) {
@@ -24,27 +24,24 @@ export default function Logo() {
     return null;
   }
 
-  const logoUrl = brandingData.logo_url
-    ? resolveBrandingUrl(brandingData.logo_url, 'logo')
-    : FALLBACK_ICON_LOGO_URL;
   const nameUrl = resolveBrandingUrl(
     brandingData.name_url || FALLBACK_TEXT_LOGO_URL,
     'name'
   );
+  const hasIconLogo = Boolean(brandingData.logo_url);
 
   return (
     <Link href="/" className={styles.logoContainer}>
-      <Image
-        src={logoUrl}
-        alt="FAITH CommUNITY Logo"
-        width={45}
-        height={45}
-        priority
-        className={styles.logoImage}
-        onError={(e) => {
-          e.currentTarget.src = FALLBACK_ICON_LOGO_URL;
-        }}
-      />
+      {hasIconLogo && (
+        <Image
+          src={resolveBrandingUrl(brandingData.logo_url, 'logo')}
+          alt="FAITH CommUNITY Logo"
+          width={45}
+          height={45}
+          priority
+          className={styles.logoImage}
+        />
+      )}
 
       <div className={styles.logoNameImage}>
         <Image

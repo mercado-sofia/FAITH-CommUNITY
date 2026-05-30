@@ -3,7 +3,8 @@ import useSWR from 'swr';
 import logger from '@/utils/shared/logger';
 import { swrConfig } from '@/utils/(public)/swrConfig';
 import { API_BASE_URL } from '@/config/api';
-import { FALLBACK_FAVICON_URL } from '@/utils/shared/brandingDefaults';
+import { FALLBACK_FAVICON_URL, FALLBACK_TEXT_LOGO_URL } from '@/utils/shared/brandingDefaults';
+import { normalizeExtensionCategories } from '@/data/siteContent';
 import { logoForAcronym } from '@/data/assets';
 
 // Use the global fetcher from swrConfig
@@ -372,7 +373,7 @@ export const usePublicBranding = () => {
     return {
       brandingData: {
         logo_url: null,
-        name_url: null,
+        name_url: FALLBACK_TEXT_LOGO_URL,
         favicon_url: FALLBACK_FAVICON_URL,
       },
       isLoading,
@@ -384,11 +385,17 @@ export const usePublicBranding = () => {
   // Preserve non-empty strings, convert empty strings and undefined to null
   const brandingData = unwrappedData && typeof unwrappedData === 'object' ? {
     logo_url: (unwrappedData.logo_url && typeof unwrappedData.logo_url === 'string' && unwrappedData.logo_url.trim() !== '') ? unwrappedData.logo_url : null,
-    name_url: (unwrappedData.name_url && typeof unwrappedData.name_url === 'string' && unwrappedData.name_url.trim() !== '') ? unwrappedData.name_url : null,
+    name_url: (unwrappedData.name_url && typeof unwrappedData.name_url === 'string' && unwrappedData.name_url.trim() !== '')
+      ? unwrappedData.name_url
+      : FALLBACK_TEXT_LOGO_URL,
     favicon_url: (unwrappedData.favicon_url && typeof unwrappedData.favicon_url === 'string' && unwrappedData.favicon_url.trim() !== '')
       ? unwrappedData.favicon_url
       : FALLBACK_FAVICON_URL,
-  } : null;
+  } : (!isLoading ? {
+    logo_url: null,
+    name_url: FALLBACK_TEXT_LOGO_URL,
+    favicon_url: FALLBACK_FAVICON_URL,
+  } : null);
 
   return {
     brandingData,
@@ -645,7 +652,7 @@ export const usePublicAboutUs = () => {
   const aboutUsData = data ? {
     description: data.description || null,
     image_url: data.image_url || null,
-    extension_categories: data.extension_categories || []
+    extension_categories: normalizeExtensionCategories(data.extension_categories),
   } : null;
 
   return {

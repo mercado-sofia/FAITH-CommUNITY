@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./FloatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
@@ -8,6 +8,9 @@ import { FaChevronRight, FaSpinner } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { useGetAllOrganizationsQuery } from "../../../../rtk/(public)/organizationsApi";
 import { useSubmitMessageMutation } from "../../../../rtk/(public)/messagesApi";
+import { getOrganizationsDropdownOptions } from "@/data/organizations";
+
+const FALLBACK_ORGANIZATIONS = getOrganizationsDropdownOptions();
 
 export default function FloatingMessage() {
   const pathname = usePathname();
@@ -92,9 +95,15 @@ export default function FloatingMessage() {
   // Fetch organizations from API
   const { 
     data: organizations = [], 
-    isLoading: orgsLoading, 
-    error: orgsError 
+    isLoading: orgsLoading,
   } = useGetAllOrganizationsQuery();
+
+  // Use sample orgs when API is unavailable or returns empty (demo / backend down)
+  const displayOrganizations = useMemo(() => {
+    if (organizations.length > 0) return organizations;
+    if (!orgsLoading) return FALLBACK_ORGANIZATIONS;
+    return [];
+  }, [organizations, orgsLoading]);
 
   // Submit message mutation
   const [submitMessage] = useSubmitMessageMutation();
@@ -245,7 +254,7 @@ export default function FloatingMessage() {
     }
 
     // Validate organizations are loaded
-    if (!organizations || organizations.length === 0) {
+    if (!displayOrganizations || displayOrganizations.length === 0) {
       setEmailError("Organizations are still loading. Please wait a moment and try again.");
       return;
     }
@@ -255,7 +264,7 @@ export default function FloatingMessage() {
 
     try {
       // Find the selected organization by acronym
-      const selectedOrg = organizations.find(organization => organization.acronym === org);
+      const selectedOrg = displayOrganizations.find(organization => organization.acronym === org);
       
       if (!selectedOrg) {
         throw new Error("Selected organization not found");
@@ -339,16 +348,12 @@ export default function FloatingMessage() {
                     <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#666' }}>
                       Loading organizations...
                     </li>
-                  ) : orgsError ? (
-                    <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#dc3545' }}>
-                      Error loading organizations
-                    </li>
-                  ) : organizations.length === 0 ? (
+                  ) : displayOrganizations.length === 0 ? (
                     <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#666' }}>
                       No organizations available
                     </li>
                   ) : (
-                    organizations.map((organization) => (
+                    displayOrganizations.map((organization) => (
                       <li
                         key={organization.id}
                         className={styles.dropdownItem}

@@ -1,7 +1,50 @@
 import logger from './logger';
+import { FALLBACK_FAVICON_URL } from './brandingDefaults';
 
 // Upload path utility for consistent image URL handling
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
+/** Static assets served from `public/` (fallback sample data, defaults, branding). */
+export function isLocalPublicPath(imagePath) {
+  return typeof imagePath === 'string' && imagePath.startsWith('/') && !imagePath.startsWith('//');
+}
+
+/**
+ * Resolve an image path for display, preferring local public sample assets.
+ * @param {string} imagePath - Raw path from API or fallback data
+ * @param {{ kind?: 'program'|'logo'|'head', fallback?: string }} options
+ */
+export function resolveDisplayImageUrl(imagePath, { kind = 'program', fallback = '' } = {}) {
+  const trimmed = typeof imagePath === 'string' ? imagePath.trim() : '';
+
+  if (trimmed && isLocalPublicPath(trimmed)) {
+    return trimmed;
+  }
+
+  let resolved;
+  switch (kind) {
+    case 'logo':
+      resolved = getOrganizationImageUrl(imagePath, 'logo');
+      break;
+    case 'head':
+      resolved = getProfilePhotoUrl(imagePath);
+      break;
+    case 'program':
+    default:
+      resolved = getProgramImageUrl(imagePath);
+      break;
+  }
+
+  if (!trimmed) {
+    return fallback || resolved;
+  }
+
+  if (isUnavailableImage(resolved)) {
+    return fallback || trimmed;
+  }
+
+  return resolved;
+}
 
 /**
  * Get the full URL for an uploaded image
@@ -27,6 +70,10 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
     
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+
+    if (isLocalPublicPath(imagePath)) {
       return imagePath;
     }
     
@@ -69,6 +116,10 @@ export const getProgramImageUrl = (imagePath, subType = 'main') => {
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
       return imagePath;
     }
+
+    if (isLocalPublicPath(imagePath)) {
+      return imagePath;
+    }
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
@@ -97,8 +148,21 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
       return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
     }
     
+    if (typeof imagePath !== 'string') {
+      return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
+    }
+
+    imagePath = imagePath.trim();
+    if (!imagePath) {
+      return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
+    }
+
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+
+    if (isLocalPublicPath(imagePath)) {
       return imagePath;
     }
     
@@ -140,6 +204,10 @@ export const getProfilePhotoUrl = (imagePath) => {
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
       return imagePath;
     }
+
+    if (isLocalPublicPath(imagePath)) {
+      return imagePath;
+    }
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
@@ -171,7 +239,7 @@ export const getBrandingImageUrl = (imagePath, type = 'logo') => {
         case 'name':
           return '/assets/logos/text-logo.png';
         case 'favicon':
-          return '/favicon.ico';
+          return FALLBACK_FAVICON_URL;
         default:
           return '/assets/logos/faith_logo.png';
       }
@@ -195,7 +263,7 @@ export const getBrandingImageUrl = (imagePath, type = 'logo') => {
       case 'name':
         return '/assets/logos/text-logo.png';
       case 'favicon':
-        return '/favicon.ico';
+        return FALLBACK_FAVICON_URL;
       default:
         return '/assets/logos/faith_logo.png';
     }
@@ -222,7 +290,12 @@ export const getFeaturedProjectImageUrl = (imagePath) => {
  */
 export const isValidImageUrl = (url) => {
   if (!url) return false;
-  return url.startsWith('http') || url.startsWith('data:') || url.includes('faith-community/');
+  return (
+    url.startsWith('http') ||
+    url.startsWith('data:') ||
+    url.includes('faith-community/') ||
+    isLocalPublicPath(url)
+  );
 };
 
 /**

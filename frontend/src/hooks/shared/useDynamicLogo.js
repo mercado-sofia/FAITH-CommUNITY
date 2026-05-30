@@ -22,32 +22,23 @@ export const useDynamicLogo = () => {
         
         const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
-        const response = await fetch(`${baseUrl}/api/superadmin/branding/public`, {
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-        })
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch branding: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        
-        if (data.success && data.data) {
+        const { fetchPublicWithFallback } = await import('@/utils/shared/fetchPublicWithFallback');
+        const data = await fetchPublicWithFallback(`${baseUrl}/api/superadmin/branding/public`);
+
+        if (data?.success && data.data) {
           setLogoUrl(getBrandingImageUrl(data.data.logo_url, 'logo'))
           setLogoNameUrl(getBrandingImageUrl(data.data.name_url, 'name'))
           setFaviconUrl(getBrandingImageUrl(data.data.favicon_url, 'favicon'))
         } else {
-          // If no branding data, don't set any logo
           setLogoUrl(null)
           setLogoNameUrl(null)
-          setFaviconUrl(null)
+          setFaviconUrl(getBrandingImageUrl(null, 'favicon'))
         }
       } catch (err) {
         setError(err.message)
-        // Don't set any logo on error
         setLogoUrl(null)
         setLogoNameUrl(null)
-        setFaviconUrl(null)
+        setFaviconUrl(getBrandingImageUrl(null, 'favicon'))
       } finally {
         setIsLoading(false)
       }

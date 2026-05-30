@@ -4,49 +4,21 @@ import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import logger from '@/utils/shared/logger';
 import { API_BASE_URL } from '@/config/api';
+import { swrFetcherWithFallback } from '@/utils/shared/swrFetcherWithFallback';
+import { FALLBACK_FAVICON_URL } from '@/utils/shared/brandingDefaults';
 
-// Simple fetcher for public branding API with improved error handling
-const fetcher = async (url) => {
-  try {
-    const response = await fetch(url, {
-      credentials: 'include', // CRITICAL: Include httpOnly cookies
-    });
-    if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      error.status = response.status;
-      error.statusText = response.statusText;
-      throw error;
-    }
-    
-    // Parse JSON with error handling
-    try {
-      return await response.json();
-    } catch (parseError) {
-      const error = new Error('Invalid JSON response from server');
-      error.originalError = parseError;
-      throw error;
-    }
-  } catch (error) {
-    // Handle network errors (connection refused, CORS, timeout, etc.)
-    if (
-      error instanceof TypeError || 
-      error.name === 'NetworkError' ||
-      error.message.includes('fetch') ||
-      error.message.includes('Failed to fetch') ||
-      error.message.includes('NetworkError') ||
-      error.message.includes('Network request failed')
-    ) {
-      const networkError = new Error(`Network error: Unable to connect to ${url}`);
-      networkError.originalError = error;
-      networkError.isNetworkError = true;
-      networkError.name = error.name || 'NetworkError';
-      networkError.message = error.message || networkError.message;
-      throw networkError;
-    }
-    // Re-throw other errors
-    throw error;
+function resolveFaviconHref(faviconUrl) {
+  if (faviconUrl && typeof faviconUrl === 'string' && faviconUrl.trim() !== '') {
+    return faviconUrl.trim();
   }
-};
+  return FALLBACK_FAVICON_URL;
+}
+
+function faviconMimeType(url) {
+  if (url.endsWith('.png')) return 'image/png';
+  if (url.endsWith('.svg')) return 'image/svg+xml';
+  return 'image/x-icon';
+}
 
 /**
  * DynamicFavicon component that updates the favicon based on branding data
@@ -54,29 +26,25 @@ const fetcher = async (url) => {
  * Optimized to only update when favicon actually changes to prevent navigation delays
  */
 export default function DynamicFavicon() {
-  // Use SWR directly with optimized settings to prevent navigation delays
   const { data, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/branding/public`,
-    fetcher,
+    `${API_BASE_URL || ''}/api/superadmin/branding/public`,
+    swrFetcherWithFallback,
     {
-      dedupingInterval: 300000, // Cache for 5 minutes (branding doesn't change often)
-      revalidateOnFocus: false, // Don't revalidate on window focus
-      revalidateOnReconnect: false, // Don't revalidate on reconnect
-      revalidateIfStale: false, // Don't revalidate if stale
-      shouldRetryOnError: false, // Don't retry on error to prevent spam
+      dedupingInterval: 300000,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      shouldRetryOnError: false,
       onError: (error) => {
-        // Only log non-network errors or provide more context for network errors
         if (error.isNetworkError) {
-          // Log network errors with more context but less verbosity
           logger.warn(`Failed to fetch branding data: ${error.message}`, {
             endpoint: `${API_BASE_URL}/api/superadmin/branding/public`,
-            type: 'network_error'
+            type: 'network_error',
           });
         } else {
-          // Log other errors normally
           logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
         }
-      }
+      },
     }
   );
 
@@ -85,38 +53,28 @@ export default function DynamicFavicon() {
   const isUpdating = useRef(false);
 
   useEffect(() => {
-    // Check for document to avoid SSR errors
     if (typeof document === 'undefined' || !document.head) {
       return;
     }
 
-    // Don't do anything while loading or if already updating
     if (isLoading || isUpdating.current) return;
 
-    const faviconUrl = data?.data?.favicon_url;
-    const currentFaviconUrl = faviconUrl || '/assets/icons/favicon.ico';
-    
-    // Only update if favicon URL actually changed
+    const currentFaviconUrl = resolveFaviconHref(data?.favicon_url);
+
     if (previousFaviconUrl.current === currentFaviconUrl) {
       return;
     }
 
-    // Store previous URL and set updating flag
     previousFaviconUrl.current = currentFaviconUrl;
     isUpdating.current = true;
 
-    // Use setTimeout with 0 delay to defer DOM updates after navigation completes
-    // This ensures navigation is not blocked
     const updateTimer = setTimeout(() => {
       try {
-        // Check for document again inside setTimeout (SSR safety)
         if (typeof document === 'undefined' || !document.head) {
           isUpdating.current = false;
           return;
         }
 
-        // Remove only the favicon links we created, not all icon links
-        // This prevents interfering with other icon links
         if (faviconElements.current.icon && faviconElements.current.icon.parentNode) {
           faviconElements.current.icon.remove();
         }
@@ -124,39 +82,33 @@ export default function DynamicFavicon() {
           faviconElements.current.appleTouch.remove();
         }
 
-        // Create new favicon link
+        const mime = faviconMimeType(currentFaviconUrl);
+
         const faviconLink = document.createElement('link');
         faviconLink.rel = 'icon';
-        faviconLink.type = 'image/x-icon';
+        faviconLink.type = mime;
         faviconLink.href = currentFaviconUrl;
         faviconElements.current.icon = faviconLink;
 
-        // Also add apple-touch-icon for better mobile support
         const appleTouchIcon = document.createElement('link');
         appleTouchIcon.rel = 'apple-touch-icon';
         appleTouchIcon.href = currentFaviconUrl;
         faviconElements.current.appleTouch = appleTouchIcon;
 
-        // Add to document head
-        if (document.head) {
-          document.head.appendChild(faviconLink);
-          document.head.appendChild(appleTouchIcon);
-        }
+        document.head.appendChild(faviconLink);
+        document.head.appendChild(appleTouchIcon);
       } catch (error) {
-        // Silently fail if DOM manipulation fails (e.g., during navigation)
         console.warn('Failed to update favicon:', error);
       } finally {
         isUpdating.current = false;
       }
     }, 0);
 
-    // Cleanup
     return () => {
       clearTimeout(updateTimer);
       isUpdating.current = false;
     };
-  }, [data?.data?.favicon_url, isLoading]);
+  }, [data?.favicon_url, isLoading]);
 
-  // This component doesn't render anything
   return null;
 }

@@ -34,7 +34,7 @@ export const metadata = {
   title: "FAITH CommUNITY",
   description: "A unified platform for community extension programs.",
   icons: {
-    icon: '/assets/icons/favicon.ico', // Default fallback favicon
+    icon: '/assets/logos/faith-community-logo.png',
   },
 };
 

@@ -28,10 +28,14 @@ export const shouldFallbackOnError = (error) => {
   if (
     error.isNetworkError === true ||
     error.name === 'NetworkError' ||
+    error.name === 'AbortError' ||
+    error.name === 'TimeoutError' ||
     (error.message &&
       (error.message.includes('Failed to fetch') ||
         error.message.includes('Network error') ||
-        error.message.includes('Unable to connect')))
+        error.message.includes('Unable to connect') ||
+        error.message.includes('aborted') ||
+        error.message.includes('timeout')))
   ) {
     return true;
   }

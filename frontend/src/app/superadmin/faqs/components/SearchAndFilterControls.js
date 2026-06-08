@@ -15,7 +15,8 @@ const SearchAndFilterControls = ({
   totalCount,
   filteredCount,
   onAddNew,
-  isCreating
+  isCreating,
+  readOnly = false,
 }) => {
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -110,7 +111,8 @@ const SearchAndFilterControls = ({
         <button
           onClick={onAddNew}
           className={styles.addButton}
-          disabled={isCreating}
+          disabled={readOnly || isCreating}
+          title={readOnly ? 'Demo mode: changes not saved' : undefined}
         >
           <FiPlus /> Add New
         </button>

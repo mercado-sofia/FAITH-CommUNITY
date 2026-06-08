@@ -1,6 +1,8 @@
 import useSWR from 'swr';
 import logger from '@/utils/shared/logger';
 import { API_BASE_URL } from '@/config/api';
+import { isPortalDemoActive } from '@/config/portalDemo';
+import { portalSwrFetcher } from '@/utils/shared/fetchPortalWithFallback';
 
 // Fetcher function for admin profile data (now uses httpOnly cookies)
 const adminProfileFetcher = async (url) => {
@@ -8,6 +10,10 @@ const adminProfileFetcher = async (url) => {
     // Check if we're on the client side
     if (typeof window === 'undefined') {
       throw new Error('Cannot fetch on server side');
+    }
+
+    if (isPortalDemoActive()) {
+      return portalSwrFetcher(url);
     }
 
     // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'

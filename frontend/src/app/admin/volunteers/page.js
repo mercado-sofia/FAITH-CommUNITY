@@ -14,6 +14,7 @@ import { handleApiError } from '@/utils/admin/errorHandler';
 import { RATE_LIMITS, API_CONFIG, STATUS } from '@/utils/admin/constants';
 import { sanitizeInput } from '@/utils/admin/formValidation';
 import styles from './volunteers.module.css'
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode'
 
 // Validate status
 const validateStatus = (status) => {
@@ -49,6 +50,7 @@ class RateLimiter {
 }
 
 export default function VolunteersPage() {
+  const { isReadOnly } = usePortalDemoMode()
   const router = useRouter()
   const searchParams = useSearchParams()
   const dispatch = useDispatch()
@@ -672,6 +674,7 @@ export default function VolunteersPage() {
         isBulkUpdatingStatus={isBulkUpdatingStatus}
         sortOrder={sortOrder}
         totalCount={filteredVolunteers.length}
+        readOnly={isReadOnly}
       />
 
       {/* Delete Confirmation Modal */}

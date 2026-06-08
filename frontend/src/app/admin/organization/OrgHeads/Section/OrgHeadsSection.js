@@ -17,7 +17,8 @@ export default function OrgHeadsSection({
   onDeleteIndividualHead,
   onAddOrgHead,
   onReorderHeads,
-  saving = false
+  saving = false,
+  readOnly = false,
 }) {
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -162,7 +163,7 @@ export default function OrgHeadsSection({
           )}
           
           {/* Drag Mode Toggle */}
-          {orgHeadsData && orgHeadsData.length > 1 && (
+          {!readOnly && orgHeadsData && orgHeadsData.length > 1 && (
             <button
               onClick={toggleDragMode}
               className={`${styles.dragModeButton} ${isDragMode ? styles.active : ''}`}
@@ -172,6 +173,7 @@ export default function OrgHeadsSection({
             </button>
           )}
           
+          {!readOnly && (
           <button
             onClick={handleAddHeadsClick}
             className={styles.addButton}
@@ -179,6 +181,7 @@ export default function OrgHeadsSection({
           >
             <FaPlus /> Add Org Heads
           </button>
+          )}
         </div>
       </div>
 
@@ -233,6 +236,7 @@ export default function OrgHeadsSection({
             processedHeads.map((head, index) => (
               <div key={head.id || index} className={styles.headCard}>
                 {/* Individual Action Buttons Container */}
+                {!readOnly && (
                 <div className={styles.individualActionButtons}>
                   {/* Individual Edit Button */}
                   <button
@@ -253,6 +257,7 @@ export default function OrgHeadsSection({
                     <FiTrash2 />
                   </button>
                 </div>
+                )}
                 
                 <div className={styles.headPhoto}>
                   {head.photo ? (

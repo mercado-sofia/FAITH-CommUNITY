@@ -16,8 +16,10 @@ import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import { SkeletonLoader } from '../components';
 import styles from './faqs.module.css';
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
 
 export default function ManageFaqs() {
+  const { isReadOnly } = usePortalDemoMode();
   // URL management
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -395,8 +397,9 @@ export default function ManageFaqs() {
         onShowCountChange={handleShowEntriesChange}
         totalCount={totalCount}
         filteredCount={filteredFaqs.length}
-        onAddNew={() => setShowCreateModal(true)}
+        onAddNew={() => !isReadOnly && setShowCreateModal(true)}
         isCreating={isCreating}
+        readOnly={isReadOnly}
       />
 
       {/* FAQ Table */}

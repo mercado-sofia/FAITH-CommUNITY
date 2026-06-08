@@ -12,6 +12,8 @@ import { FiSmartphone } from 'react-icons/fi';
 import { useTokenRefresh } from "@/hooks/shared/useTokenRefresh";
 import styles from "./dashboard/dashboard.module.css";
 import logger from '@/utils/shared/logger';
+import { isPortalDemoActive, getActiveDemoUser } from '@/config/portalDemo';
+import DemoModeBanner from '@/components/layout/DemoModeBanner';
 
 // Track if admin has been initialized
 let adminInitialized = false;
@@ -108,6 +110,17 @@ function AdminLayoutContent({ children }) {
           return;
         }
         
+        if (isPortalDemoActive()) {
+          const userData = getActiveDemoUser();
+          if (userData?.role === 'admin') {
+            localStorage.setItem('adminData', JSON.stringify(userData));
+            dispatch(initializeAuth());
+            adminInitialized = true;
+            setIsInitialLoading(false);
+            return;
+          }
+        }
+
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
         const { getCurrentUser } = await import('@/utils/shared/authService');
@@ -204,6 +217,7 @@ function AdminLayoutContent({ children }) {
 
   return (
     <>
+      <DemoModeBanner />
       {/* Dynamic Favicon - optimized to prevent navigation delays */}
       <DynamicFavicon />
       <div className={styles.adminLayout}>

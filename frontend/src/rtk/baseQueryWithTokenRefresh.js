@@ -11,6 +11,11 @@ import {
   markFallbackUsed,
   shouldFallbackOnError,
 } from '@/config/fallback';
+import {
+  assertNotDemoMutation,
+  isPortalDemoActive,
+  DEMO_READONLY_MESSAGE,
+} from '@/config/portalDemo';
 import { normalizeFallbackPath, resolveFallbackApi } from '@/data';
 
 function getFallbackLookupUrl(basePath, args) {
@@ -29,6 +34,27 @@ function getFallbackLookupUrl(basePath, args) {
   }
   const combined = `${baseUrl}${normalizedPath}`.replace(/\/+/g, '/');
   return combined.startsWith('/') ? combined : `/${combined}`;
+}
+
+function shouldForcePortalFallback() {
+  return isPortalDemoActive() || isForceFallback();
+}
+
+function applyDemoMutationBlock(args) {
+  const method = (typeof args === 'string' ? 'GET' : args?.method || 'GET').toUpperCase();
+  if (isPortalDemoActive() && method !== 'GET') {
+    try {
+      assertNotDemoMutation(method);
+    } catch {
+      return {
+        error: {
+          status: 'DEMO_READONLY',
+          data: { message: DEMO_READONLY_MESSAGE },
+        },
+      };
+    }
+  }
+  return null;
 }
 
 function applyGetFallback(basePath, args) {
@@ -53,7 +79,10 @@ function applyGetFallback(basePath, args) {
  */
 const createReauthWrapper = (baseQuery, basePath) => {
   return async (args, api, extraOptions) => {
-    if (isForceFallback()) {
+    const blocked = applyDemoMutationBlock(args);
+    if (blocked) return blocked;
+
+    if (shouldForcePortalFallback()) {
       const forced = applyGetFallback(basePath, args);
       if (forced) return forced;
     }
@@ -61,7 +90,7 @@ const createReauthWrapper = (baseQuery, basePath) => {
     let result = await baseQuery(args, api, extraOptions);
 
     // If we get a 401, silently try refreshing token (works for all roles now!)
-    if (result?.error?.status === 401) {
+    if (result?.error?.status === 401 && !isPortalDemoActive()) {
       // Silently attempt to refresh the token (token is in httpOnly cookie)
       // Use silent mode to prevent console errors during normal refresh
       const refreshed = await getValidAccessToken(true, true); // Force refresh, silent mode
@@ -94,7 +123,7 @@ const createReauthWrapper = (baseQuery, basePath) => {
       }
     }
 
-    if (result?.error && shouldFallbackOnError(result.error)) {
+    if (result?.error && (shouldForcePortalFallback() || shouldFallbackOnError(result.error))) {
       const fallbackResult = applyGetFallback(basePath, args);
       if (fallbackResult) return fallbackResult;
     }
@@ -111,14 +140,17 @@ const createReauthWrapper = (baseQuery, basePath) => {
  */
 const createFallbackWrapper = (baseQuery, basePath) => {
   return async (args, api, extraOptions) => {
-    if (isForceFallback()) {
+    const blocked = applyDemoMutationBlock(args);
+    if (blocked) return blocked;
+
+    if (shouldForcePortalFallback()) {
       const forced = applyGetFallback(basePath, args);
       if (forced) return forced;
     }
 
     const result = await baseQuery(args, api, extraOptions);
 
-    if (result?.error && shouldFallbackOnError(result.error)) {
+    if (result?.error && (shouldForcePortalFallback() || shouldFallbackOnError(result.error))) {
       const fallbackResult = applyGetFallback(basePath, args);
       if (fallbackResult) return fallbackResult;
     }

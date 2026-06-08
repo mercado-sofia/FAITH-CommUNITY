@@ -22,8 +22,11 @@ import { FiArchive } from 'react-icons/fi';
 import { IoMdCheckboxOutline } from 'react-icons/io';
 import { LuCalendarClock } from 'react-icons/lu';
 import { HiLightningBolt } from 'react-icons/hi';
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
+import { DEMO_READONLY_MESSAGE } from '@/config/portalDemo';
 
 export default function AdminProgramsPage() {
+  const { isReadOnly } = usePortalDemoMode();
   const currentAdmin = useSelector(selectCurrentAdmin);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -177,6 +180,8 @@ export default function AdminProgramsPage() {
               <button 
                 onClick={() => modals.setPageMode('create')}
                 className={styles.addButton}
+                disabled={isReadOnly}
+                title={isReadOnly ? DEMO_READONLY_MESSAGE : undefined}
               >
                 <FaPlus /> Add Program
               </button>

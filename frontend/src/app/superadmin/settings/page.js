@@ -11,6 +11,9 @@ import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/shared/portalAuth';
 import { useScrollPosition } from '@/hooks/shared/useScrollPosition';
 import { SkeletonLoader } from '../components';
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
+import { isPortalDemoActive } from '@/config/portalDemo';
+import { getDemoSuperadminProfile } from '@/data/demoUsers';
 
 // Utility function for password change time
 const getPasswordChangeTime = (userData) => {
@@ -69,6 +72,7 @@ const getPasswordChangeTime = (userData) => {
 };
 
 export default function SuperAdminSettings() {
+  const { isReadOnly } = usePortalDemoMode();
   const { preserveScrollPositionAsync } = useScrollPosition();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,8 +97,16 @@ export default function SuperAdminSettings() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
+        if (isPortalDemoActive()) {
+          const demoProfile = getDemoSuperadminProfile();
+          setCurrentUser(demoProfile);
+          setTwofaEnabled(false);
+          setLoading(false);
+          return;
+        }
+
         // Check authentication status first
-        if (!checkAuthStatus('superadmin')) {
+        if (!(await checkAuthStatus('superadmin'))) {
           setLoading(false);
           return;
         }
@@ -341,6 +353,8 @@ export default function SuperAdminSettings() {
             <button 
               className={styles.editButton}
               onClick={() => setShowSecureEmailModal(true)}
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Demo mode: changes not saved' : undefined}
             >
               Edit
             </button>
@@ -371,6 +385,8 @@ export default function SuperAdminSettings() {
             <button 
               className={styles.editButton}
               onClick={() => setShowPasswordModal(true)}
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Demo mode: changes not saved' : undefined}
             >
               Change
             </button>
@@ -408,6 +424,8 @@ export default function SuperAdminSettings() {
             <button 
               className={styles.editButton}
               onClick={() => setShowTwoFAModal(true)}
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Demo mode: changes not saved' : undefined}
             >
               {twofaEnabled ? 'Manage' : 'Setup'}
             </button>

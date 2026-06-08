@@ -17,6 +17,8 @@ import { superadminHighlightsApi } from '@/rtk/superadmin/highlightsApi';
 import { dashboardApi } from '@/rtk/superadmin/dashboardApi';
 import { makeSuperadminRequest } from '@/utils/superadmin/apiClient';
 import styles from './approvals.module.css';
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
+import { DEMO_READONLY_MESSAGE } from '@/config/portalDemo';
 
 // Helper function to normalize organization acronym for comparison (case-insensitive, trim spaces)
 const normalizeOrgAcronym = (acronym) => {
@@ -50,6 +52,7 @@ const matchesOrganization = (approval, orgAcronym) => {
 };
 
 export default function PendingApprovalsPage() {
+  const { isReadOnly } = usePortalDemoMode();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -587,6 +590,10 @@ export default function PendingApprovalsPage() {
   }, [approvals, selectedOrganization, selectedSection, selectedStatus, searchTerm, sortBy]);
 
   const handleApprove = useCallback(async (item) => {
+    if (isReadOnly) {
+      showSuccessModal(DEMO_READONLY_MESSAGE, 'error');
+      return;
+    }
     try {
       const url = `${API_BASE_URL}/api/approvals/${item.id}/approve`;
 
@@ -666,9 +673,13 @@ export default function PendingApprovalsPage() {
       logError(err, { context: 'handleApprove', itemId: item.id });
       showSuccessModal('Failed to approve changes: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router, dispatch]);
+  }, [isReadOnly, showSuccessModal, fetchApprovals, router, dispatch]);
 
   const handleReject = useCallback(async (item, rejectComment = '') => {
+    if (isReadOnly) {
+      showSuccessModal(DEMO_READONLY_MESSAGE, 'error');
+      return;
+    }
     try {
       const url = `${API_BASE_URL}/api/approvals/${item.id}/reject`;
 
@@ -709,7 +720,7 @@ export default function PendingApprovalsPage() {
       logError(err, { context: 'handleReject', itemId: item.id });
       showSuccessModal('Failed to reject item: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router, dispatch]);
+  }, [isReadOnly, showSuccessModal, fetchApprovals, router, dispatch]);
 
   // Bulk action handlers
   const handleBulkApprove = useCallback(async (uniqueKeys) => {
@@ -1387,7 +1398,7 @@ export default function PendingApprovalsPage() {
             <div className={styles.bulkActionsRight}>
               <button 
                 onClick={handleBulkApproveSelected}
-                disabled={isBulkActionLoading || !selectedStatusInfo.canApprove}
+                disabled={isReadOnly || isBulkActionLoading || !selectedStatusInfo.canApprove}
                 className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn} ${isBulkActionLoading ? styles.loading : ''} ${!selectedStatusInfo.canApprove ? styles.disabled : ''}`}
                 title={!selectedStatusInfo.canApprove ? 'No pending items selected' : selectedStatusInfo.hasMixed ? `Approve ${selectedStatusInfo.pending} pending item${selectedStatusInfo.pending !== 1 ? 's' : ''}` : 'Approve all selected items'}
               >
@@ -1402,7 +1413,7 @@ export default function PendingApprovalsPage() {
               </button>
               <button 
                 onClick={handleBulkRejectSelected}
-                disabled={isBulkActionLoading || !selectedStatusInfo.canReject}
+                disabled={isReadOnly || isBulkActionLoading || !selectedStatusInfo.canReject}
                 className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn} ${isBulkActionLoading ? styles.loading : ''} ${!selectedStatusInfo.canReject ? styles.disabled : ''}`}
                 title={!selectedStatusInfo.canReject ? 'No pending items selected' : selectedStatusInfo.hasMixed ? `Reject ${selectedStatusInfo.pending} pending item${selectedStatusInfo.pending !== 1 ? 's' : ''}` : 'Reject all selected items'}
               >
@@ -1417,9 +1428,9 @@ export default function PendingApprovalsPage() {
               </button>
               <button 
                 onClick={handleBulkDeleteSelected}
-                disabled={isBulkActionLoading}
+                disabled={isReadOnly || isBulkActionLoading}
                 className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-                title="Delete selected items"
+                title={isReadOnly ? DEMO_READONLY_MESSAGE : 'Delete selected items'}
               >
                 <FiTrash2 />
               </button>
@@ -1463,6 +1474,7 @@ export default function PendingApprovalsPage() {
           startIndex={startIndex}
           sortBy={sortBy}
           totalCount={filteredApprovals.length}
+          readOnly={isReadOnly}
         />
 
         {/* Pagination - Only show if there are items */}

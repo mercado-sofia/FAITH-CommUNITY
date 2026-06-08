@@ -43,6 +43,9 @@
 .iconCircle {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  flex-shrink: 0;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -58,6 +61,10 @@
   background-color: #fbbf24;
 }
 
+.contactText {
+  min-width: 0;
+}
+
 .contactText small {
   font-size: 14px;
   color: #cccccc;
@@ -68,6 +75,7 @@
   font-size: 16px;
   font-weight: 600;
   color: #ffffff;
+  overflow-wrap: anywhere;
 }
 
 .sectionHeading {

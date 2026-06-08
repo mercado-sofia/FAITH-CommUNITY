@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { getValidAccessToken } from '@/utils/shared/tokenRefresh';
+import { isPortalDemoActive } from '@/config/portalDemo';
 
 /**
  * Hook to automatically refresh tokens before expiration
@@ -25,8 +26,8 @@ export const useTokenRefresh = (options = {}) => {
   const isRefreshingRef = useRef(false);
 
   useEffect(() => {
-    // Don't run on server side
-    if (typeof window === 'undefined' || !enabled) {
+    // Don't run on server side or in portal demo mode
+    if (typeof window === 'undefined' || !enabled || isPortalDemoActive()) {
       return;
     }
 

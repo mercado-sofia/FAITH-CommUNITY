@@ -14,11 +14,9 @@ import {
   prepareRedirectAfterLogin 
 } from "@/utils/(public)/redirectUtils"
 import {
-  isPortalDemoEnabled,
   matchDemoCredentials,
   startPortalDemoSession,
   clearPortalDemoSession,
-  DEMO_CREDENTIALS,
 } from "@/config/portalDemo"
 import { markFallbackUsed } from "@/config/fallback"
 
@@ -704,16 +702,6 @@ export default function LoginPage() {
                   Failed login attempts: {attemptCount}/10 ({remainingAttempts} attempt{remainingAttempts !== 1 ? 's' : ''} remaining)
                 </p>
               )}
-            </div>
-          )}
-
-          {isPortalDemoEnabled() && (
-            <div className={styles.errorContainer} role="note">
-              <p className={styles.errorMessage} style={{ color: '#64748b' }}>
-                Demo mode — Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}
-                <br />
-                Superadmin: {DEMO_CREDENTIALS.superadmin.email} / {DEMO_CREDENTIALS.superadmin.password}
-              </p>
             </div>
           )}
 

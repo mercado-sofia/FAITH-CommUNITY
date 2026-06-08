@@ -4,6 +4,8 @@ import {
   getProgramsApiResponse,
   getProgramsByOrgApiResponse,
   getApprovedUpcomingApiResponse,
+  getProgramBySlugApiResponse,
+  getOtherProgramsByOrgApiResponse,
 } from './programs';
 import { getFeaturedProjectsApiResponse } from './featuredProjects';
 import { getFeaturedHighlightsResponse } from './highlights';
@@ -89,6 +91,14 @@ const ROUTES = [
   {
     pattern: /^\/api\/programs\/featured$/i,
     resolve: () => getFeaturedProjectsApiResponse(),
+  },
+  {
+    pattern: /^\/api\/programs\/slug\/([^/]+)$/i,
+    resolve: (match) => getProgramBySlugApiResponse(match[1]),
+  },
+  {
+    pattern: /^\/api\/programs\/org\/([^/]+)\/other\/([^/]+)$/i,
+    resolve: (match) => getOtherProgramsByOrgApiResponse(match[1], match[2]),
   },
   {
     pattern: /^\/api\/programs\/org\/([^/]+)$/i,

@@ -16,6 +16,8 @@ import { usePublicPageLoader } from '@/hooks/(public)/usePublicPageLoader';
 import { getProgramStatusByDates } from '@/utils/shared/programStatusUtils';
 import { formatDateLong, formatDateShort } from '@/utils/shared/dateUtils';
 import { storeRedirectUrl } from '@/utils/(public)/redirectUtils';
+import { fetchPublicWithFallback } from '@/utils/shared/fetchPublicWithFallback';
+import { API_BASE_URL } from '@/config/api';
 
 // Custom functions to preserve exact date formatting for program details
 const formatEventDateWithWeekday = (dateString) => {
@@ -117,61 +119,32 @@ export default function ProgramDetailsPage() {
         
         // Check if slug is a number (ID) or string (slug)
         const isNumeric = !isNaN(slug) && !isNaN(parseFloat(slug));
-        let apiUrl;
-        
+        let programData;
+
         if (isNumeric) {
-          // If it's a number, fetch by ID using the programs list and find the program
-          apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs`;
+          const result = await fetchPublicWithFallback(`${API_BASE_URL}/api/programs`);
+          const programs = result?.data || [];
+          programData = programs.find((p) => p.id === parseInt(slug, 10));
         } else {
-          // If it's a string, fetch by slug
-          apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs/slug/${slug}`;
+          const result = await fetchPublicWithFallback(`${API_BASE_URL}/api/programs/slug/${slug}`);
+          programData = result?.success ? result.data : null;
         }
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
+
+        if (!programData) {
           throw new Error('Program not found');
         }
-        
-        // Parse JSON with error handling
-        let result;
-        try {
-          result = await response.json();
-        } catch (parseError) {
-          throw new Error('Invalid response format from server');
-        }
-        
-        let programData;
-        if (isNumeric) {
-          // Find the program by ID in the programs list
-          programData = result.data.find(p => p.id === parseInt(slug));
-          if (!programData) {
-            throw new Error('Program not found');
-          }
-        } else {
-          // Use the program data directly from slug endpoint
-          programData = result.data;
-        }
-        
+
         setProgram(programData);
-        
+
         // Fetch other programs from the same organization
-        if (programData.organization_id) {
+        const orgId = programData.organization_id || programData.orgID;
+        if (orgId) {
           try {
-            const { API_BASE_URL } = await import('@/config/api');
-            const otherResponse = await fetch(`${API_BASE_URL || ''}/api/programs/org/${programData.organization_id}/other/${programData.id}`, {
-              credentials: 'include', // CRITICAL: Include httpOnly cookies
-              headers: {
-                'Content-Type': 'application/json',
-              }
-            });
-            if (otherResponse.ok) {
-              try {
-                const otherResult = await otherResponse.json();
-                setOtherPrograms(otherResult.data);
-              } catch (parseError) {
-                // Silently fail JSON parsing for other programs - not critical
-              }
+            const otherResult = await fetchPublicWithFallback(
+              `${API_BASE_URL}/api/programs/org/${orgId}/other/${programData.id}`
+            );
+            if (otherResult?.success) {
+              setOtherPrograms(otherResult.data || []);
             }
           } catch (err) {
             // Silently fail for other programs - not critical

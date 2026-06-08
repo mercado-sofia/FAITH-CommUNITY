@@ -4,6 +4,11 @@
  */
 
 import { API_BASE_URL } from '@/config/api';
+import {
+  clearPortalDemoSession,
+  getActiveDemoUser,
+  isPortalDemoActive,
+} from '@/config/portalDemo';
 
 /**
  * User types in the system
@@ -66,6 +71,8 @@ export const clearAuthData = (userType = USER_TYPES.PUBLIC) => {
   // Note: httpOnly cookies (access_token, refresh_token) can only be cleared by backend
   document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+  clearPortalDemoSession();
 };
 
 /**
@@ -96,6 +103,8 @@ export const clearAuthImmediate = (userType = USER_TYPES.PUBLIC) => {
   // Clear ALL cookies (security critical)
   document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+  clearPortalDemoSession();
   
   // No redirect, no delays, no events - immediate cleanup only
 };
@@ -140,27 +149,24 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
       }));
     }
     
-    // Call logout API to clear httpOnly cookies (works for all roles now!)
-    // Do this after clearing local state to ensure UI updates immediately
-    try {
-      // Use unified logout endpoint - works for all roles
-      const logoutUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/logout` : '/api/users/logout';
-      const response = await fetch(logoutUrl, {
-        method: 'POST',
-        credentials: 'include', // Include cookies to clear them
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      // Wait for the response to ensure logout is processed on backend
-      if (!response.ok) {
-        console.warn('[logout] Logout API returned non-OK status:', response.status);
+    // Skip backend logout in portal demo mode (no API available)
+    if (!isPortalDemoActive()) {
+      try {
+        const logoutUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/logout` : '/api/users/logout';
+        const response = await fetch(logoutUrl, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.warn('[logout] Logout API returned non-OK status:', response.status);
+        }
+      } catch (error) {
+        console.error('[logout] Error calling logout API:', error);
       }
-    } catch (error) {
-      // Continue with redirect even if logout endpoint fails
-      // Local state is already cleared
-      console.error('[logout] Error calling logout API:', error);
     }
     
     // Call success callback
@@ -226,6 +232,14 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
 export const isAuthenticated = async (userType = USER_TYPES.PUBLIC) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return false;
+
+  if (isPortalDemoActive()) {
+    const demoUser = getActiveDemoUser();
+    if (!demoUser) return false;
+    if (userType === USER_TYPES.ADMIN) return demoUser.role === 'admin';
+    if (userType === USER_TYPES.SUPERADMIN) return demoUser.role === 'superadmin';
+    return demoUser.role === 'user';
+  }
   
   try {
     const response = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
@@ -273,6 +287,10 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
       // Logout is in progress, don't make any auth checks
       return null;
     }
+  }
+
+  if (isPortalDemoActive()) {
+    return getActiveDemoUser();
   }
   
   try {

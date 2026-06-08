@@ -12,8 +12,10 @@ import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, PAGINATION, TIMEOUTS } from '@/utils/admin/constants';
 import { makeAdminRequest } from '@/utils/admin/apiClient';
 import styles from './submissions.module.css';
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
 
 export default function SubmissionsPage() {
+  const { isReadOnly } = usePortalDemoMode();
   const router = useRouter();
   const searchParams = useSearchParams();
   const admin = useSelector((state) => state.admin.admin);
@@ -341,6 +343,7 @@ export default function SubmissionsPage() {
           submissions={filteredSubmissions}
           onCancel={handleBulkCancel}
           onDelete={handleBulkDelete}
+          readOnly={isReadOnly}
           onClearSelection={() => {
             setSelectedItems(new Set());
             setShowBulkActions(false);

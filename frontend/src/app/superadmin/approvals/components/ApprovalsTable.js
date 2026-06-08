@@ -24,7 +24,8 @@ export default function ApprovalsTable({
   calculateDropdownPosition,
   startIndex = 0,
   sortBy = 'latest',
-  totalCount = 0
+  totalCount = 0,
+  readOnly = false,
 }) {
   // Local modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -246,7 +247,7 @@ export default function ApprovalsTable({
                               >
                                 View Details
                               </li>
-                              {(item.status === 'pending' || item.status === 'pending_superadmin_approval') && (
+                              {!readOnly && (item.status === 'pending' || item.status === 'pending_superadmin_approval') && (
                                 <>
                                   <li 
                                     onMouseDown={(e) => {
@@ -274,6 +275,7 @@ export default function ApprovalsTable({
                                   </li>
                                 </>
                               )}
+                              {!readOnly && (
                               <li 
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -286,6 +288,7 @@ export default function ApprovalsTable({
                               >
                                 Delete
                               </li>
+                              )}
                             </ul>
                           )}
                         </div>

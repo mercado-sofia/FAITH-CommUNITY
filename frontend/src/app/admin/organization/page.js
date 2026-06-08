@@ -16,11 +16,14 @@ import { handleApiError } from '@/utils/admin/errorHandler';
 import { API_CONFIG, TIMEOUTS } from '@/utils/admin/constants';
 import { makeAdminRequest } from '@/utils/admin/apiClient';
 import pageStyles from "./page.module.css";
+import { usePortalDemoMode } from '@/hooks/shared/usePortalDemoMode';
+import { DEMO_READONLY_MESSAGE } from '@/config/portalDemo';
 
 // Track if organization page has been visited
 let hasVisitedOrganization = false;
 
 export default function OrganizationPage() {
+  const { isReadOnly } = usePortalDemoMode();
   const dispatch = useDispatch();
   const admin = useSelector((state) => state.admin.admin);
   const [pageReady, setPageReady] = useState(false);
@@ -449,6 +452,11 @@ export default function OrganizationPage() {
   };
 
   const handleSave = () => {
+    if (isReadOnly) {
+      showMessage(DEMO_READONLY_MESSAGE, 'error');
+      return;
+    }
+
     if (currentSection === 'organization') {
       if (!validateForm()) {
         showMessage("Please fix the errors before saving", "error");
@@ -1119,6 +1127,7 @@ export default function OrganizationPage() {
           currentSection={currentSection}
           setCurrentSection={setCurrentSection}
           setModalMessage={setModalMessage}
+          readOnly={isReadOnly}
         />
       )}
 
@@ -1136,6 +1145,7 @@ export default function OrganizationPage() {
               setOriginalData={setOriginalData}
               setCurrentSection={setCurrentSection}
               setTempEditData={setTempEditData}
+              readOnly={isReadOnly}
             />
           )}
         </div>
@@ -1153,6 +1163,7 @@ export default function OrganizationPage() {
               setOriginalData={setOriginalData}
               setCurrentSection={setCurrentSection}
               setTempEditData={setTempEditData}
+              readOnly={isReadOnly}
             />
           )}
         </div>
@@ -1169,6 +1180,7 @@ export default function OrganizationPage() {
           onAddOrgHead={() => updateUiState({ showAddOrgHeadModal: true })}
           onReorderHeads={handleReorderHeads}
           saving={uiState.saving}
+          readOnly={isReadOnly}
         />
       )}
 

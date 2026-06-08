@@ -11,7 +11,8 @@ export default function Section({
   setShowEditModal, 
   setOriginalData, 
   setCurrentSection,
-  setTempEditData 
+  setTempEditData,
+  readOnly = false,
 }) {
   const config = sectionConfigs[type]
 
@@ -20,6 +21,7 @@ export default function Section({
   }
 
   const handleEditClick = () => {
+    if (readOnly) return;
     setOriginalData({ ...data })
     setTempEditData({ ...data }) // Initialize temp data with current values
     setIsEditing(true)
@@ -31,6 +33,7 @@ export default function Section({
     <div className={styles.section}>
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>{config.title}</h2>
+        {!readOnly && (
         <button
           onClick={handleEditClick}
           className={styles.editIcon}
@@ -38,6 +41,7 @@ export default function Section({
         >
           <FaEdit />
         </button>
+        )}
       </div>
 
       <div className={styles.contentLayout}>

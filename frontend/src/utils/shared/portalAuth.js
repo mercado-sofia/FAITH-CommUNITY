@@ -5,6 +5,12 @@
 
 import { clearAuthImmediate, USER_TYPES } from './authService';
 import { API_BASE_URL } from '@/config/api';
+import {
+  assertNotDemoMutation,
+  getActiveDemoUser,
+  isPortalDemoActive,
+} from '@/config/portalDemo';
+import { fetchPortalWithFallback } from './fetchPortalWithFallback';
 
 /**
  * Clear all authentication data and redirect to login
@@ -64,6 +70,19 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') {
     throw new Error('Cannot make authenticated request on server side');
+  }
+
+  const method = (options.method || 'GET').toUpperCase();
+
+  if (isPortalDemoActive()) {
+    assertNotDemoMutation(method);
+    if (method === 'GET') {
+      const data = await fetchPortalWithFallback(url, { ...options, method });
+      return new Response(JSON.stringify(data ?? {}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // Prepare headers - don't set Content-Type for FormData (browser sets it with boundary)
@@ -242,6 +261,14 @@ export const showAuthError = (message = 'Your session has expired. Please log in
 export const checkAuthStatus = async (userType = 'admin') => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return false;
+
+  if (isPortalDemoActive()) {
+    const demoUser = getActiveDemoUser();
+    if (!demoUser) return false;
+    if (userType === 'admin') return demoUser.role === 'admin';
+    if (userType === 'superadmin') return demoUser.role === 'superadmin';
+    return false;
+  }
   
   try {
     // Check auth status from backend (reads from httpOnly cookie)

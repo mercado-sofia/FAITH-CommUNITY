@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { loginSuperAdmin } from "@/rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
 import { clearAuthImmediate, USER_TYPES } from "@/utils/shared/authService";
 import { Sidebar, superadminNavLinks, TopBar } from "@/components";
@@ -9,6 +11,8 @@ import { Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
 import { useTokenRefresh } from "@/hooks/shared/useTokenRefresh";
 import styles from "./styles/layout.module.css"
+import { isPortalDemoActive, getActiveDemoUser } from '@/config/portalDemo';
+import DemoModeBanner from '@/components/layout/DemoModeBanner';
 
 // Mobile restriction component
 function MobileRestrictionMessage({ portalName = "Super Admin" }) {
@@ -62,6 +66,7 @@ function MobileRestrictionMessage({ portalName = "Super Admin" }) {
 }
 
 function SuperAdminLayoutContent({ children }) {
+  const dispatch = useDispatch();
   const router = useRouter();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -101,6 +106,19 @@ function SuperAdminLayoutContent({ children }) {
           return;
         }
         
+        if (isPortalDemoActive()) {
+          const userData = getActiveDemoUser();
+          if (userData?.role === 'superadmin') {
+            localStorage.setItem('superAdminData', JSON.stringify(userData));
+            if (typeof document !== 'undefined' && !document.cookie.includes('userRole=superadmin')) {
+              document.cookie = 'userRole=superadmin; path=/; max-age=86400; SameSite=Lax';
+            }
+            dispatch(loginSuperAdmin({ token: null, superadmin: userData }));
+            setIsInitialLoading(false);
+            return;
+          }
+        }
+
         // Check auth status from backend (reads from httpOnly cookie)
         // Add retry mechanism to handle race condition where cookies might not be immediately available
         const { getCurrentUser } = await import('@/utils/shared/authService');
@@ -195,7 +213,7 @@ function SuperAdminLayoutContent({ children }) {
     };
 
     initializeSuperAdmin();
-  }, [router]);
+  }, [dispatch, router]);
 
   // Show full-screen loader only on initial page load/reload
   if (isInitialLoading || !isClient) {
@@ -209,6 +227,7 @@ function SuperAdminLayoutContent({ children }) {
 
   return (
     <>
+      <DemoModeBanner />
       {/* Dynamic Favicon - optimized to prevent navigation delays */}
       <DynamicFavicon />
       <div className={styles.superAdminLayout}>

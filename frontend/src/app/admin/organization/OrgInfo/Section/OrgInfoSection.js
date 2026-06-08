@@ -14,9 +14,11 @@ export default function OrgInfoSection({
   setEditPreviewData,
   currentSection,
   setCurrentSection,
-  setModalMessage
+  setModalMessage,
+  readOnly = false,
 }) {
   const handleEditClick = () => {
+    if (readOnly) return;
     setOriginalData({ ...orgData })
     setEditPreviewData({ ...orgData })
     setIsEditing(true)
@@ -30,11 +32,12 @@ export default function OrgInfoSection({
     <div className={styles.section}>
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>Organization Details</h2>
-        {(!isEditing || currentSection !== 'organization') && (
+        {!readOnly && (!isEditing || currentSection !== 'organization') && (
           <button
             onClick={handleEditClick}
             className={styles.editIcon}
             title="Edit Organization Information"
+            disabled={readOnly}
           >
             <FaEdit />
           </button>

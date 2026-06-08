@@ -59,7 +59,7 @@ const VolunteerAvatar = ({ volunteer, size = 40 }) => {
   );
 };
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10, isUpdatingStatus = false, isBulkUpdatingStatus = false, sortOrder = 'latest', totalCount = 0 }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10, isUpdatingStatus = false, isBulkUpdatingStatus = false, sortOrder = 'latest', totalCount = 0, readOnly = false }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -124,6 +124,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
   }
 
   const handleAction = (volunteer, action) => {
+    if (readOnly && action !== 'view') {
+      return;
+    }
+
     // Validate volunteer data before processing
     if (!validateVolunteerData(volunteer)) {
       return;
@@ -268,7 +272,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <button 
               className={`${styles.bulkButton} ${styles.approveButton} ${isApproveDisabled ? styles.disabled : ''}`}
               onClick={() => !isApproveDisabled && handleBulkAction('approve')}
-              disabled={isApproveDisabled}
+              disabled={readOnly || isApproveDisabled}
               title={isApproveDisabled ? 'Cannot approve: All selected volunteers are already approved' : 'Approve selected volunteers'}
             >
               Approve Selected
@@ -276,7 +280,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <button 
               className={`${styles.bulkButton} ${styles.declineButton} ${isDeclineDisabled ? styles.disabled : ''}`}
               onClick={() => !isDeclineDisabled && handleBulkAction('decline')}
-              disabled={isDeclineDisabled}
+              disabled={readOnly || isDeclineDisabled}
               title={isDeclineDisabled ? 'Cannot decline: All selected volunteers are already declined' : 'Decline selected volunteers'}
             >
               Decline Selected
@@ -284,7 +288,8 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
             <button 
               className={`${styles.bulkButton} ${styles.deleteButton}`}
               onClick={handleBulkDelete}
-              title="Delete selected volunteers"
+              disabled={readOnly}
+              title={readOnly ? 'Demo mode: changes not saved' : 'Delete selected volunteers'}
             >
               <FiTrash2 size={16} />
             </button>
@@ -393,22 +398,24 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onBulkStatu
                             }}
                           >
                             <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
-                            {volunteer.status !== "Approved" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
+                            {!readOnly && volunteer.status !== "Approved" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
                               <li onClick={() => handleAction(volunteer, "approve")}>
                                 Approve
                               </li>
                             )}
-                            {volunteer.status !== "Declined" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
+                            {!readOnly && volunteer.status !== "Declined" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
                               <li onClick={() => handleAction(volunteer, "decline")}>
                                 Decline
                               </li>
                             )}
+                            {!readOnly && (
                             <li 
                               onClick={() => onSoftDelete && onSoftDelete(volunteer.id, sanitizedName)}
                               style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
                             >
                               Delete
                             </li>
+                            )}
                           </ul>
                         )}
                       </div>

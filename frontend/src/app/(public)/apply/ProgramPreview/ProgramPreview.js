@@ -165,11 +165,11 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
           </div>
 
           {/* Event Date */}
-          <div className={styles.detailItem}>
-            <FaCalendarAlt className={styles.detailIcon} />
-            <div className={styles.detailContent}>
-              <span className={styles.detailLabel}>Event Date</span>
-              <span className={styles.detailValue}>
+          <div className={styles.eventDateSection}>
+            <h4 className={styles.sectionTitle}>Event Date</h4>
+            <div className={styles.eventDateValue}>
+              <FaCalendarAlt className={styles.eventDateIcon} />
+              <span className={styles.eventDateText}>
                 {formatProgramDates(selectedProgram)}
               </span>
             </div>

@@ -4,6 +4,8 @@ import logger from '@/utils/shared/logger';
 import { formatDateForAPI } from '@/utils/shared/dateUtils';
 import { API_BASE_URL } from '@/config/api';
 import { API_CONFIG } from '@/utils/admin/constants';
+import { isPortalDemoActive } from '@/config/portalDemo';
+import { portalSwrFetcher } from '@/utils/shared/fetchPortalWithFallback';
 
 // Note: Authentication is handled by the fetcher function via httpOnly cookies
 // We don't need to check authentication in guard clauses - the fetcher will handle 401/403 errors
@@ -22,6 +24,10 @@ const adminFetcher = async (url) => {
     // Check if we're on the client side
     if (typeof window === 'undefined') {
       throw new Error('Cannot fetch on server side');
+    }
+
+    if (isPortalDemoActive()) {
+      return portalSwrFetcher(url);
     }
 
     // Set timeout after window check
@@ -266,6 +272,10 @@ const organizationFetcher = async (url) => {
     // Check if we're on the client side
     if (typeof window === 'undefined') {
       throw new Error('Cannot fetch on server side');
+    }
+
+    if (isPortalDemoActive()) {
+      return portalSwrFetcher(url);
     }
 
     // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'

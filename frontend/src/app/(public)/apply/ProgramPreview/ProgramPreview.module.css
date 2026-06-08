@@ -204,39 +204,25 @@
   text-overflow: ellipsis;
 }
 
-.detailItem {
+.eventDateSection {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border-left: 3px solid #1A685B;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.detailIcon {
+.eventDateValue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventDateIcon {
   font-size: 16px;
   color: #1A685B;
-  margin-top: 2px;
   flex-shrink: 0;
 }
 
-.detailContent {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.detailLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detailValue {
+.eventDateText {
   font-size: 13px;
   font-weight: 600;
   color: #374151;
@@ -436,20 +422,11 @@
     font-size: 12px;
   }
   
-  .detailItem {
-    padding: 10px;
-    gap: 10px;
-  }
-  
-  .detailIcon {
+  .eventDateIcon {
     font-size: 14px;
   }
   
-  .detailLabel {
-    font-size: 11px;
-  }
-  
-  .detailValue {
+  .eventDateText {
     font-size: 12px;
   }
   
@@ -512,11 +489,6 @@
     padding: 6px 11px;
   }
   
-  .detailItem {
-    padding: 11px;
-    gap: 11px;
-  }
-  
   .emptyState {
     padding: 32px 20px;
     min-height: 350px;
@@ -540,10 +512,6 @@
   
   .imageContainer {
     height: 200px;
-  }
-  
-  .detailItem {
-    padding: 10px;
   }
   
   .emptyState {

@@ -13,6 +13,14 @@ import {
   getRedirectUrlFromParams, 
   prepareRedirectAfterLogin 
 } from "@/utils/(public)/redirectUtils"
+import {
+  isPortalDemoEnabled,
+  matchDemoCredentials,
+  startPortalDemoSession,
+  clearPortalDemoSession,
+  DEMO_CREDENTIALS,
+} from "@/config/portalDemo"
+import { markFallbackUsed } from "@/config/fallback"
 
 // Superadmin email constant (must match backend)
 const SUPERADMIN_EMAIL = 'faithcommunityfaces@gmail.com'
@@ -102,6 +110,8 @@ export default function LoginPage() {
     // Clear user tokens
     localStorage.removeItem("userToken")
     localStorage.removeItem("userData")
+
+    clearPortalDemoSession()
    
     // Clear general tokens
     localStorage.removeItem("token")
@@ -211,6 +221,22 @@ export default function LoginPage() {
     setShowError(false)
     setFieldErrors({})
     clearAllSessionData()
+
+    const demoRole = matchDemoCredentials(email, password)
+    if (demoRole) {
+      const demoUser = startPortalDemoSession(demoRole)
+      markFallbackUsed()
+
+      if (demoRole === "superadmin") {
+        dispatch(loginSuperAdmin({ token: null, superadmin: demoUser }))
+      } else if (demoRole === "admin") {
+        dispatch(loginAdmin({ token: null, admin: demoUser }))
+      }
+
+      setIsLoading(false)
+      window.location.replace(demoRole === "admin" ? "/admin" : "/superadmin")
+      return
+    }
 
     try {
       // Detect which system to try based on email or previous attempts
@@ -678,6 +704,16 @@ export default function LoginPage() {
                   Failed login attempts: {attemptCount}/10 ({remainingAttempts} attempt{remainingAttempts !== 1 ? 's' : ''} remaining)
                 </p>
               )}
+            </div>
+          )}
+
+          {isPortalDemoEnabled() && (
+            <div className={styles.errorContainer} role="note">
+              <p className={styles.errorMessage} style={{ color: '#64748b' }}>
+                Demo mode — Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}
+                <br />
+                Superadmin: {DEMO_CREDENTIALS.superadmin.email} / {DEMO_CREDENTIALS.superadmin.password}
+              </p>
             </div>
           )}
 

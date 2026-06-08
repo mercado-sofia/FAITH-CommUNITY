@@ -3,7 +3,7 @@ import { FiX, FiTrash2 } from 'react-icons/fi';
 import { ConfirmationModal } from '@/components';
 import styles from './BulkActionsBar.module.css';
 
-export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection }) {
+export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection, readOnly = false }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
@@ -52,7 +52,7 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
           <button 
             className={`${styles.actionButton} ${styles.cancelAction}`}
             onClick={() => setShowCancelConfirm(true)}
-            disabled={pendingCount === 0}
+            disabled={readOnly || pendingCount === 0}
             title={pendingCount === 0 ? 'No pending submissions selected' : `Cancel ${pendingCount} pending submission${pendingCount !== 1 ? 's' : ''}`}
           >
             <span>Cancel {pendingCount > 0 ? `(${pendingCount})` : ''}</span>
@@ -61,7 +61,8 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
         <button 
           className={`${styles.actionButton} ${styles.deleteAction}`}
           onClick={() => setShowDeleteConfirm(true)}
-          title="Delete selected submissions"
+          disabled={readOnly}
+          title={readOnly ? 'Demo mode: changes not saved' : 'Delete selected submissions'}
         >
           <FiTrash2 size={14} />
         </button>
